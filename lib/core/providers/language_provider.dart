@@ -11,11 +11,10 @@ class LanguageProvider extends ChangeNotifier {
   bool get isUrdu => _locale.languageCode == 'ur';
   TextDirection get textDirection => isUrdu ? TextDirection.rtl : TextDirection.ltr;
 
-  LanguageProvider() {
-    _loadLanguagePreference();
-  }
+  LanguageProvider();
 
-  Future<void> _loadLanguagePreference() async {
+  /// Initialize and load stored language preference from disk.
+  Future<void> init() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedCode = prefs.getString(_prefKey);

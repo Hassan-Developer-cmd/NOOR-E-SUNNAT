@@ -23,6 +23,7 @@ final LanguageProvider globalLanguageProvider = LanguageProvider();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await globalLanguageProvider.init();
   await FirebaseInitService.seedInitialDatabase();
   runApp(const FaizanEDuroodApp());
 }
@@ -82,11 +83,11 @@ class _WebAdminEntryGateState extends State<_WebAdminEntryGate> {
     // Force sign-out any lingering Firebase Auth session before showing login.
     // This ensures the admin must always explicitly authenticate on web.
     try {
-      globalLanguageProvider.setLanguage('en');
       await FirebaseAuth.instance.signOut();
     } catch (_) {}
     if (mounted) setState(() => _clearing = false);
   }
+
 
   @override
   Widget build(BuildContext context) {

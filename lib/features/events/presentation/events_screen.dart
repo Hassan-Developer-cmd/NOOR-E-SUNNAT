@@ -53,36 +53,39 @@ class UpcomingEventsScreen extends StatelessWidget {
               ),
             ],
           ),
-          body: StreamBuilder<List<EventModel>>(
-            stream: EventsService.eventsStream,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: CircularProgressIndicator(
-                    color: AppColors.primaryEmerald,
-                    strokeWidth: 2.5,
-                  ),
-                );
-              }
-
-              final events = snapshot.data ?? [];
-              if (events.isEmpty) {
-                return _buildEmptyState(context);
-              }
-
-              return ListView.builder(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.all(16),
-                itemCount: events.length,
-                itemBuilder: (context, index) {
-                  return _DetailedEventCard(
-                    event: events[index],
-                    isUrdu: isUrdu,
+          body: SafeArea(
+            child: StreamBuilder<List<EventModel>>(
+              stream: EventsService.eventsStream,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.primaryEmerald,
+                      strokeWidth: 2.5,
+                    ),
                   );
-                },
-              );
-            },
+                }
+
+                final events = snapshot.data ?? [];
+                if (events.isEmpty) {
+                  return _buildEmptyState(context);
+                }
+
+                return ListView.builder(
+                  physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  itemCount: events.length,
+                  itemBuilder: (context, index) {
+                    return _DetailedEventCard(
+                      event: events[index],
+                      isUrdu: isUrdu,
+                    );
+                  },
+                );
+              },
+            ),
           ),
+
         );
       },
     );

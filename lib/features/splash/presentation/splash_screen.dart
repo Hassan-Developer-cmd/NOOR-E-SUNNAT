@@ -44,11 +44,15 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     if (!mounted) return;
 
     if (AuthService.isLoggedIn) {
+      // User has active persistent login session
+      await AuthService.ensureUserDocExists();
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const MainShell()),
       );
     } else {
+      // User is not logged in, route to LoginScreen
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -64,6 +68,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

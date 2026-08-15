@@ -12,7 +12,9 @@ class DailyContentModel {
   final String citationUr;
   final String imageUrl;
   final bool isActive;
+  final bool isTopicOfTheDay;
   final DateTime? scheduledDate;
+  final DateTime? createdAt;
 
   const DailyContentModel({
     required this.id,
@@ -26,7 +28,9 @@ class DailyContentModel {
     this.citationUr = '',
     this.imageUrl = '',
     this.isActive = true,
+    this.isTopicOfTheDay = false,
     this.scheduledDate,
+    this.createdAt,
   });
 
   factory DailyContentModel.fromMap(String id, Map<String, dynamic> map) {
@@ -38,6 +42,14 @@ class DailyContentModel {
       date = DateTime.tryParse(rawDate);
     }
 
+    DateTime? created;
+    final rawCreated = map['created_at'];
+    if (rawCreated is Timestamp) {
+      created = rawCreated.toDate();
+    } else if (rawCreated is String && rawCreated.isNotEmpty) {
+      created = DateTime.tryParse(rawCreated);
+    }
+
     return DailyContentModel(
       id: id,
       type: map['type'] as String? ?? 'hadith',
@@ -46,11 +58,13 @@ class DailyContentModel {
       arabicText: map['arabic_text'] as String? ?? '',
       content: map['content'] as String? ?? '',
       contentUr: map['content_ur'] as String? ?? '',
-      citation: map['citation'] as String? ?? '',
-      citationUr: map['citation_ur'] as String? ?? '',
+      citation: (map['citation'] ?? map['book'] ?? map['reference']) as String? ?? '',
+      citationUr: (map['citation_ur'] ?? map['book_ur'] ?? map['reference_ur']) as String? ?? '',
       imageUrl: map['image_url'] as String? ?? '',
       isActive: map['is_active'] as bool? ?? true,
+      isTopicOfTheDay: map['is_topic_of_the_day'] as bool? ?? false,
       scheduledDate: date,
+      createdAt: created,
     );
   }
 
@@ -65,10 +79,13 @@ class DailyContentModel {
         'citation_ur': citationUr,
         'image_url': imageUrl,
         'is_active': isActive,
+        'is_topic_of_the_day': isTopicOfTheDay,
         'scheduled_date': scheduledDate != null
             ? Timestamp.fromDate(scheduledDate!)
             : FieldValue.serverTimestamp(),
-        'created_at': FieldValue.serverTimestamp(),
+        'created_at': createdAt != null
+            ? Timestamp.fromDate(createdAt!)
+            : FieldValue.serverTimestamp(),
       };
 
   String getTitle(bool isUrdu) {

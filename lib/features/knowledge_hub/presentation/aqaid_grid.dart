@@ -18,74 +18,101 @@ class _AqaidGridScreenState extends State<AqaidGridScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final lp = globalLanguageProvider;
+    return ListenableBuilder(
+      listenable: globalLanguageProvider,
+      builder: (context, _) {
+        final lp = globalLanguageProvider;
 
-    final allCategories = ContentService.getAqaidCategories();
-    final filteredCategories = allCategories.where((cat) {
-      final title = cat.title.toLowerCase();
-      final titleUr = cat.titleUr.toLowerCase();
-      final q = _searchQuery.toLowerCase();
-      return title.contains(q) || titleUr.contains(q);
-    }).toList();
+        final allCategories = ContentService.getAqaidCategories();
+        final filteredCategories = allCategories.where((cat) {
+          final title = cat.title.toLowerCase();
+          final titleUr = cat.titleUr.toLowerCase();
+          final q = _searchQuery.toLowerCase();
+          return title.contains(q) || titleUr.contains(q);
+        }).toList();
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: AppColors.primaryEmerald,
-        elevation: 0,
-        title: Text(
-          lp.isUrdu ? 'اسلامی عقائد' : 'Aqaid (Beliefs)',
-          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-      ),
-      body: StreamBuilder<List<AqaidItemModel>>(
-        stream: ContentService.aqaidStream,
-        builder: (context, snapshot) {
-          final allEntries = snapshot.data ?? [];
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Search Bar
-                Container(
+        return Scaffold(
+          backgroundColor: const Color(0xFFF8FAFC),
+          appBar: AppBar(
+            backgroundColor: AppColors.primaryEmerald,
+            elevation: 0,
+            title: Text(
+              lp.isUrdu ? 'اسلامی عقائد' : 'Aqaid (Beliefs)',
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            actions: [
+              GestureDetector(
+                onTap: () => lp.toggleLanguage(),
+                child: Container(
+                  margin: const EdgeInsetsDirectional.only(end: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.borderLight),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
                   ),
-                  child: TextField(
-                    onChanged: (val) => setState(() => _searchQuery = val),
-                    decoration: InputDecoration(
-                      hintText: lp.isUrdu ? 'عقائد کے موضوعات تلاش کریں...' : 'Search belief topics...',
-                      hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
-                      prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF64748B), size: 20),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                  child: Text(
+                    lp.isUrdu ? 'EN' : 'اردو',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+              ),
+            ],
+          ),
+          body: StreamBuilder<List<AqaidItemModel>>(
+            stream: ContentService.aqaidStream,
+            builder: (context, snapshot) {
+              final allEntries = snapshot.data ?? [];
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Search Bar
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.borderLight),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: TextField(
+                        onChanged: (val) => setState(() => _searchQuery = val),
+                        decoration: InputDecoration(
+                          hintText: lp.isUrdu ? 'عقائد کے موضوعات تلاش کریں...' : 'Search belief topics...',
+                          hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                          prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF64748B), size: 20),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
 
-                // ── Custom Layout for Aqaid Cards ──
-                _buildAqaidCards(context, filteredCategories, lp.isUrdu, allEntries),
-                const SizedBox(height: 24),
+                    // ── Custom Layout for Aqaid Cards ──
+                    _buildAqaidCards(context, filteredCategories, lp.isUrdu, allEntries),
+                    const SizedBox(height: 24),
 
-                // ── Did You Know? Card ──
-                const _DidYouKnowBanner(),
-                const SizedBox(height: 24),
-              ],
-            ),
-          );
-        },
-      ),
+                    // ── Did You Know? Card ──
+                    const _DidYouKnowBanner(),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -167,7 +194,6 @@ class _AqaidGridScreenState extends State<AqaidGridScreen> {
 
     return Column(children: rows);
   }
-
 
   void _openAqaidDetail(BuildContext context, AqaidCategory cat) {
     final localizedTitle = globalLanguageProvider.isUrdu ? cat.titleUr : cat.title;

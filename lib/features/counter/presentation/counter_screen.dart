@@ -18,8 +18,9 @@ class CounterScreen extends StatefulWidget {
 }
 
 class _CounterScreenState extends State<CounterScreen> {
-  bool _hapticsEnabled = true;
+  final bool _hapticsEnabled = true;
   int _dailyTargetGoal = 500;
+
 
   void _confirmBulkAddDialog(BuildContext context, int amount) {
     final lp = globalLanguageProvider;
@@ -220,42 +221,22 @@ class _CounterScreenState extends State<CounterScreen> {
           return Scaffold(
             backgroundColor: AppColors.bgPrimary,
             appBar: AppBar(
-              title: Text(lp.tr('durood_counter')),
+              centerTitle: true,
+              title: Text(
+                lp.tr('durood_counter'),
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+              ),
               actions: [
-                // Haptics Feedback Toggle Button
-                IconButton(
-                  icon: Icon(
-                    _hapticsEnabled ? Icons.vibration_rounded : Icons.do_not_disturb_on_rounded,
-                    color: Colors.white,
-                  ),
-                  tooltip: _hapticsEnabled
-                      ? (lp.isUrdu ? 'وائبریشن آن ہے' : 'Haptics Enabled')
-                      : (lp.isUrdu ? 'وائبریشن آف ہے' : 'Haptics Disabled'),
-                  onPressed: () {
-                    setState(() => _hapticsEnabled = !_hapticsEnabled);
-                    if (_hapticsEnabled) HapticFeedback.selectionClick();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          _hapticsEnabled
-                              ? (lp.isUrdu ? 'وائبریشن آن کر دی گئی' : 'Haptic vibration enabled')
-                              : (lp.isUrdu ? 'وائبریشن بند کر دی گئی' : 'Haptic vibration disabled'),
-                        ),
-                        duration: const Duration(seconds: 1),
-                      ),
-                    );
-                  },
-                ),
-
                 // Language toggle button
                 GestureDetector(
                   onTap: () => lp.toggleLanguage(),
                   child: Container(
-                    margin: const EdgeInsetsDirectional.only(end: 8),
+                    margin: const EdgeInsetsDirectional.only(end: 16),
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
                     ),
                     child: Text(
                       lp.isUrdu ? 'EN' : 'اردو',
@@ -267,13 +248,9 @@ class _CounterScreenState extends State<CounterScreen> {
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.refresh_rounded),
-                  tooltip: lp.tr('reset_today'),
-                  onPressed: widget.counterService.resetPersonalToday,
-                ),
               ],
             ),
+
             body: SafeArea(
               child: LayoutBuilder(
                 builder: (context, constraints) {

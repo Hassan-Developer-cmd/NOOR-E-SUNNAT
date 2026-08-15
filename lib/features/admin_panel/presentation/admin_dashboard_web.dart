@@ -26,6 +26,25 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
   String _selectedMasailCategory = 'all';
   String _selectedAqaidCategory = 'all';
   String _selectedEventStatus = 'all';
+  final TextEditingController _searchController = TextEditingController();
+
+  void _switchTab(int index) {
+    setState(() {
+      _selectedNavIndex = index;
+      _searchQuery = '';
+      _searchController.clear();
+      _selectedMasailCategory = 'all';
+      _selectedAqaidCategory = 'all';
+      _selectedEventStatus = 'all';
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
 
 
 
@@ -105,10 +124,20 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                           width: screenWidth < 600 ? 140 : 220,
                           height: 38,
                           child: TextField(
+                            controller: _searchController,
                             onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
                             decoration: InputDecoration(
                               hintText: screenWidth < 600 ? 'Search...' : 'Search records...',
                               prefixIcon: const Icon(Icons.search, size: 18),
+                              suffixIcon: _searchQuery.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear, size: 16),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        setState(() => _searchQuery = '');
+                                      },
+                                    )
+                                  : null,
                               contentPadding: EdgeInsets.zero,
                               filled: true,
                               fillColor: AppColors.bgOffWhite,
@@ -118,6 +147,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                               ),
                             ),
                           ),
+
                         ),
                         const SizedBox(width: 12),
                         const CircleAvatar(
@@ -201,11 +231,12 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                       ),
                     ),
                     onTap: () {
-                      setState(() => _selectedNavIndex = index);
+                      _switchTab(index);
                       if (isDrawer) {
                         Navigator.pop(context);
                       }
                     },
+
                   ),
                 );
               },
@@ -990,17 +1021,32 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
         final items = (snap.data ?? [])
             .where((d) =>
                 d.title.toLowerCase().contains(_searchQuery) ||
-                d.content.toLowerCase().contains(_searchQuery))
+                d.content.toLowerCase().contains(_searchQuery) ||
+                d.citation.toLowerCase().contains(_searchQuery))
             .toList();
         return _tableCard([
           const DataColumn(label: Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
           const DataColumn(label: Text('Title', style: TextStyle(fontWeight: FontWeight.bold))),
+          const DataColumn(label: Text('Topic of the Day', style: TextStyle(fontWeight: FontWeight.bold))),
           const DataColumn(label: Text('Book / Reference', style: TextStyle(fontWeight: FontWeight.bold))),
           const DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
           const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
         ], items.map((d) => DataRow(cells: [
           DataCell(_statusChip(d.type.toUpperCase(), AppColors.emeraldContainer, AppColors.primaryEmerald)),
           DataCell(Text(d.title, style: const TextStyle(fontWeight: FontWeight.w600))),
+          DataCell(
+            GestureDetector(
+              onTap: () async {
+                await AdminService.setTopicOfTheDay(d.id, !d.isTopicOfTheDay);
+                _snack(d.isTopicOfTheDay ? 'Topic of the day deactivated.' : '"${d.title}" set as active Topic of the Day! ⭐');
+              },
+              child: _statusChip(
+                d.isTopicOfTheDay ? 'TOPIC OF THE DAY ⭐' : 'STANDARD',
+                d.isTopicOfTheDay ? AppColors.goldLight : Colors.grey[200]!,
+                d.isTopicOfTheDay ? AppColors.goldDark : Colors.grey[700]!,
+              ),
+            ),
+          ),
           DataCell(Text(d.citation, style: const TextStyle(fontSize: 12))),
           DataCell(
             GestureDetector(
@@ -1023,7 +1069,6 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
             ),
           ])),
         ])).toList());
-
       },
     );
   }
@@ -1037,19 +1082,40 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        final list = snap.data ?? [];
+        final list = (snap.data ?? [])
+            .where((n) =>
+                (n['title'] as String? ?? '').toLowerCase().contains(_searchQuery) ||
+                (n['body'] as String? ?? '').toLowerCase().contains(_searchQuery))
+            .toList();
         return _tableCard([
           const DataColumn(label: Text('Title', style: TextStyle(fontWeight: FontWeight.bold))),
           const DataColumn(label: Text('Message Body', style: TextStyle(fontWeight: FontWeight.bold))),
           const DataColumn(label: Text('Target Audience', style: TextStyle(fontWeight: FontWeight.bold))),
-        ], list.map((n) => DataRow(cells: [
-          DataCell(Text(n['title'] as String? ?? 'Notice', style: const TextStyle(fontWeight: FontWeight.w600))),
-          DataCell(Text(n['body'] as String? ?? '')),
-          DataCell(_statusChip(n['target'] as String? ?? 'all_users', AppColors.goldLight, AppColors.goldDark)),
-        ])).toList());
+          const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
+        ], list.map((n) {
+          final id = n['id'] as String? ?? '';
+          return DataRow(cells: [
+            DataCell(Text(n['title'] as String? ?? 'Notice', style: const TextStyle(fontWeight: FontWeight.w600))),
+            DataCell(Text(n['body'] as String? ?? '')),
+            DataCell(_statusChip(n['target'] as String? ?? 'all_users', AppColors.goldLight, AppColors.goldDark)),
+            DataCell(
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                tooltip: 'Delete Notification',
+                onPressed: () => _confirmDelete(context, () async {
+                  if (id.isNotEmpty) {
+                    await AdminService.deleteNotification(id);
+                    _snack('Notification deleted successfully!');
+                  }
+                }),
+              ),
+            ),
+          ]);
+        }).toList());
       },
     );
   }
+
 
   // ── User Management Table ──────────────────────────────────────
 
@@ -1559,6 +1625,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     final citUrC = TextEditingController();
     final imgC = TextEditingController();
     String type = 'hadith';
+    bool isTopicOfTheDay = false;
 
     showDialog(
       context: context,
@@ -1578,6 +1645,15 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                     DropdownMenuItem(value: 'ayat', child: Text('Ayat')),
                   ],
                   onChanged: (v) => setModal(() => type = v ?? 'hadith'),
+                ),
+                const SizedBox(height: 12),
+                SwitchListTile(
+                  title: const Text('Set as Active Topic of the Day ⭐', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  subtitle: const Text('Highlights this entry at the top of the mobile app home screen.', style: TextStyle(fontSize: 11)),
+                  value: isTopicOfTheDay,
+                  activeThumbColor: AppColors.primaryEmerald,
+                  onChanged: (val) => setModal(() => isTopicOfTheDay = val),
+                  contentPadding: EdgeInsets.zero,
                 ),
                 const SizedBox(height: 12),
                 _field(titleC, 'Title (English)'),
@@ -1605,15 +1681,16 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 await AdminService.addDailyContent(DailyContentModel(
                   id: '',
                   type: type,
-                  title: titleC.text,
-                  titleUr: titleUrC.text,
-                  arabicText: arabicC.text,
-                  content: contentC.text,
-                  contentUr: contentUrC.text,
-                  citation: citC.text,
-                  citationUr: citUrC.text,
-                  imageUrl: imgC.text,
+                  title: titleC.text.trim(),
+                  titleUr: titleUrC.text.trim(),
+                  arabicText: arabicC.text.trim(),
+                  content: contentC.text.trim(),
+                  contentUr: contentUrC.text.trim(),
+                  citation: citC.text.trim(),
+                  citationUr: citUrC.text.trim(),
+                  imageUrl: imgC.text.trim(),
                   isActive: true,
+                  isTopicOfTheDay: isTopicOfTheDay,
                 ));
                 if (ctx.mounted) {
                   Navigator.pop(ctx);
@@ -1637,59 +1714,73 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     final citC = TextEditingController(text: item.citation);
     final citUrC = TextEditingController(text: item.citationUr);
     final imgC = TextEditingController(text: item.imageUrl);
+    bool isTopicOfTheDay = item.isTopicOfTheDay;
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Edit Daily Content Entry', style: AppTypography.titleMedium),
-        content: SizedBox(
-          width: _dialogWidth(context),
-          child: SingleChildScrollView(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              _field(titleC, 'Title (English)'),
-              const SizedBox(height: 12),
-              _field(titleUrC, 'Title (Urdu / اردو)'),
-              const SizedBox(height: 12),
-              _field(arabicC, 'Arabic Text'),
-              const SizedBox(height: 12),
-              _field(contentC, 'Content (English)', maxLines: 3),
-              const SizedBox(height: 12),
-              _field(contentUrC, 'Content (Urdu / اردو)', maxLines: 3),
-              const SizedBox(height: 12),
-              _field(citC, 'Book / Reference (English)', hintText: 'e.g., Sahih Muslim 408'),
-              const SizedBox(height: 12),
-              _field(citUrC, 'Book / Reference (Urdu / اردو)', hintText: 'e.g., صحیح مسلم ۴۰۸'),
-              const SizedBox(height: 12),
-              _field(imgC, 'Image URL'),
-            ]),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModal) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Edit Daily Content Entry', style: AppTypography.titleMedium),
+          content: SizedBox(
+            width: _dialogWidth(context),
+            child: SingleChildScrollView(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                SwitchListTile(
+                  title: const Text('Set as Active Topic of the Day ⭐', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  subtitle: const Text('Highlights this entry at the top of the mobile app home screen.', style: TextStyle(fontSize: 11)),
+                  value: isTopicOfTheDay,
+                  activeThumbColor: AppColors.primaryEmerald,
+                  onChanged: (val) => setModal(() => isTopicOfTheDay = val),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                const SizedBox(height: 12),
+                _field(titleC, 'Title (English)'),
+                const SizedBox(height: 12),
+                _field(titleUrC, 'Title (Urdu / اردو)'),
+                const SizedBox(height: 12),
+                _field(arabicC, 'Arabic Text'),
+                const SizedBox(height: 12),
+                _field(contentC, 'Content (English)', maxLines: 3),
+                const SizedBox(height: 12),
+                _field(contentUrC, 'Content (Urdu / اردو)', maxLines: 3),
+                const SizedBox(height: 12),
+                _field(citC, 'Book / Reference (English)', hintText: 'e.g., Sahih Muslim 408'),
+                const SizedBox(height: 12),
+                _field(citUrC, 'Book / Reference (Urdu / اردو)', hintText: 'e.g., صحیح مسلم ۴۰۸'),
+                const SizedBox(height: 12),
+                _field(imgC, 'Image URL'),
+              ]),
+            ),
           ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                await AdminService.updateDailyContent(item.id, {
+                  'title': titleC.text.trim(),
+                  'title_ur': titleUrC.text.trim(),
+                  'arabic_text': arabicC.text.trim(),
+                  'content': contentC.text.trim(),
+                  'content_ur': contentUrC.text.trim(),
+                  'citation': citC.text.trim(),
+                  'citation_ur': citUrC.text.trim(),
+                  'image_url': imgC.text.trim(),
+                  'is_topic_of_the_day': isTopicOfTheDay,
+                });
+                if (ctx.mounted) {
+                  Navigator.pop(ctx);
+                  _snack('Daily content updated!');
+                }
+              },
+              child: const Text('Update Entry'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              await AdminService.updateDailyContent(item.id, {
-                'title': titleC.text,
-                'title_ur': titleUrC.text,
-                'arabic_text': arabicC.text,
-                'content': contentC.text,
-                'content_ur': contentUrC.text,
-                'citation': citC.text,
-                'citation_ur': citUrC.text,
-                'image_url': imgC.text,
-              });
-              if (ctx.mounted) {
-                Navigator.pop(ctx);
-                _snack('Daily content updated!');
-              }
-            },
-            child: const Text('Update Entry'),
-          ),
-        ],
       ),
     );
   }
+
 
 
   void _showSendNotificationModal(BuildContext context) {

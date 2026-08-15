@@ -297,16 +297,43 @@ class AdminService {
     return _firestore
         .collection('daily_content')
         .snapshots()
-        .map((snap) => snap.docs
-            .map((doc) => DailyContentModel.fromMap(doc.id, doc.data()))
-            .toList());
+        .map((snap) {
+      final list = snap.docs
+          .map((doc) => DailyContentModel.fromMap(doc.id, doc.data()))
+          .toList();
+      list.sort((a, b) {
+        final aTime = a.createdAt ?? a.scheduledDate ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bTime = b.createdAt ?? b.scheduledDate ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bTime.compareTo(aTime);
+      });
+      return list;
+    });
   }
 
   static Future<void> addDailyContent(DailyContentModel item) async {
+    if (item.isTopicOfTheDay) {
+      // Unset previous topic of the day
+      final snap = await _firestore.collection('daily_content').where('is_topic_of_the_day', isEqualTo: true).get();
+      final batch = _firestore.batch();
+      for (var doc in snap.docs) {
+        batch.update(doc.reference, {'is_topic_of_the_day': false});
+      }
+      await batch.commit();
+    }
     await _firestore.collection('daily_content').add(item.toMap());
   }
 
   static Future<void> updateDailyContent(String id, Map<String, dynamic> data) async {
+    if (data['is_topic_of_the_day'] == true) {
+      final snap = await _firestore.collection('daily_content').where('is_topic_of_the_day', isEqualTo: true).get();
+      final batch = _firestore.batch();
+      for (var doc in snap.docs) {
+        if (doc.id != id) {
+          batch.update(doc.reference, {'is_topic_of_the_day': false});
+        }
+      }
+      await batch.commit();
+    }
     await _firestore.collection('daily_content').doc(id).update({
       ...data,
       'updated_at': FieldValue.serverTimestamp(),
@@ -326,13 +353,39 @@ class AdminService {
     await batch.commit();
   }
 
+  static Future<void> setTopicOfTheDay(String id, bool isTopic) async {
+    final batch = _firestore.batch();
+    if (isTopic) {
+      final allSnap = await _firestore.collection('daily_content').get();
+      for (var doc in allSnap.docs) {
+        batch.update(doc.reference, {
+          'is_topic_of_the_day': doc.id == id,
+          if (doc.id == id) 'is_active': true,
+        });
+      }
+    } else {
+      batch.update(_firestore.collection('daily_content').doc(id), {
+        'is_topic_of_the_day': false,
+      });
+    }
+    await batch.commit();
+  }
+
   // ── Push Notifications ─────────────────────────────────────
 
   static Stream<List<Map<String, dynamic>>> get notificationsStream {
     return _firestore
         .collection('notifications')
+        .orderBy('sent_at', descending: true)
         .snapshots()
-        .map((snap) => snap.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
+        .map((snap) => snap.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList())
+        .handleError((e) {
+      // Fallback if index building
+      return _firestore
+          .collection('notifications')
+          .snapshots()
+          .map((snap) => snap.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
+    });
   }
 
   static Future<void> sendNotification({
@@ -354,8 +407,12 @@ class AdminService {
       'event_id': ?eventId,
       'sent_at': FieldValue.serverTimestamp(),
     });
-
   }
+
+  static Future<void> deleteNotification(String id) async {
+    await _firestore.collection('notifications').doc(id).delete();
+  }
+
 
 
   // ── User Management ─────────────────────────────────────────

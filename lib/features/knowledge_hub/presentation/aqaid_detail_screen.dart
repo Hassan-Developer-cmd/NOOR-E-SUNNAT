@@ -42,20 +42,25 @@ class _AqaidDetailScreenState extends State<AqaidDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final lp = globalLanguageProvider;
-    final isUrdu = lp.isUrdu;
-    final categoryName = isUrdu ? widget.category.titleUr : widget.category.title;
+    return ListenableBuilder(
+      listenable: globalLanguageProvider,
+      builder: (context, _) {
+        final lp = globalLanguageProvider;
+        final isUrdu = lp.isUrdu;
+        final catTitle = isUrdu ? widget.category.titleUr : widget.category.title;
+        final categoryName = isUrdu ? widget.category.titleUr : widget.category.title;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: AppColors.primaryEmerald,
-        elevation: 0,
-        title: Text(
-          widget.localizedTitle,
-          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
+        return Scaffold(
+          backgroundColor: const Color(0xFFF8FAFC),
+          appBar: AppBar(
+            backgroundColor: AppColors.primaryEmerald,
+            elevation: 0,
+            title: Text(
+              catTitle.isNotEmpty ? catTitle : widget.localizedTitle,
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            iconTheme: const IconThemeData(color: Colors.white),
+
         actions: [
           GestureDetector(
             onTap: () => lp.toggleLanguage(),
@@ -172,7 +177,10 @@ class _AqaidDetailScreenState extends State<AqaidDetailScreen> {
         ],
       ),
     );
+      },
+    );
   }
+
 
   Widget _buildEmptyState(BuildContext context, bool isUrdu, String query) {
     return Center(

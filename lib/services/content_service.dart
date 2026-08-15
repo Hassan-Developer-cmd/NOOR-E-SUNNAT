@@ -9,23 +9,53 @@ import '../core/dummy_data/mock_aqaid.dart';
 class ContentService {
   static final _firestore = FirebaseFirestore.instance;
 
-  // ── Hadith / Ayat of the Day ─────────────────────────────────
+  // ── Hadith / Ayat of the Day & Topic of the Day ────────────
 
-  /// Live stream of the active Daily Hadith / Ayat of the Day.
+  /// Live stream of the active Daily Hadith / Ayat or Topic of the Day.
   static Stream<DailyContentModel?> get dailyContentStream {
     return _firestore
         .collection('daily_content')
-        .where('is_active', isEqualTo: true)
-        .limit(1)
         .snapshots()
         .map((snap) {
       if (snap.docs.isNotEmpty) {
+        // Priority 1: Topic of the day
+        final topicDoc = snap.docs.where((d) => d.data()['is_topic_of_the_day'] == true).firstOrNull;
+        if (topicDoc != null) {
+          return DailyContentModel.fromMap(topicDoc.id, topicDoc.data());
+        }
+        // Priority 2: is_active == true
+        final activeDoc = snap.docs.where((d) => d.data()['is_active'] == true).firstOrNull;
+        if (activeDoc != null) {
+          return DailyContentModel.fromMap(activeDoc.id, activeDoc.data());
+        }
+        // Fallback: newest document
         return DailyContentModel.fromMap(snap.docs.first.id, snap.docs.first.data());
       }
       return _defaultDailyContent;
     }).handleError((e) {
       if (kDebugMode) print('ContentService.dailyContentStream error: $e');
       return _defaultDailyContent;
+    });
+  }
+
+  /// Live stream of all historical Daily Hadith & Ayat documents (Archive).
+  static Stream<List<DailyContentModel>> get allDailyContentHistoryStream {
+    return _firestore
+        .collection('daily_content')
+        .snapshots()
+        .map((snap) {
+      final list = snap.docs
+          .map((doc) => DailyContentModel.fromMap(doc.id, doc.data()))
+          .toList();
+      list.sort((a, b) {
+        final aTime = a.createdAt ?? a.scheduledDate ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bTime = b.createdAt ?? b.scheduledDate ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bTime.compareTo(aTime); // newest first
+      });
+      return list.isNotEmpty ? list : [_defaultDailyContent];
+    }).handleError((e) {
+      if (kDebugMode) print('ContentService.allDailyContentHistoryStream error: $e');
+      return [_defaultDailyContent];
     });
   }
 
@@ -41,7 +71,9 @@ class ContentService {
             'جو شخص مجھ پر ایک بار درود بھیجتا ہے، اللہ تعالیٰ اس پر دس رحمتیں نازل فرماتا ہے۔',
         citation: 'Sahih Muslim 408',
         citationUr: 'صحیح مسلم ۴۰۸',
+        isTopicOfTheDay: true,
       );
+
 
   // ── Masail ──────────────────────────────────────────────────
 
