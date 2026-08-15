@@ -371,24 +371,26 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildGoogleSignInButton(LanguageProvider lp) {
     return Container(
       width: double.infinity,
-      height: 54,
+      height: 52,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFDADCE0), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
+          splashColor: const Color(0xFF4285F4).withValues(alpha: 0.1),
+          highlightColor: Colors.black.withValues(alpha: 0.04),
           onTap: (_googleLoading || _loading) ? null : _handleGoogleSignIn,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -397,19 +399,25 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 if (_googleLoading)
                   const SizedBox(
-                    width: 22,
-                    height: 22,
+                    width: 20,
+                    height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
                       valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4285F4)),
                     ),
                   )
                 else ...[
-                  const SizedBox(
+                  Image.asset(
+                    'assets/icons/google.png',
                     width: 22,
                     height: 22,
-                    child: CustomPaint(
-                      painter: _GoogleGLogoPainter(),
+                    filterQuality: FilterQuality.high,
+                    errorBuilder: (context, error, stackTrace) => const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CustomPaint(
+                        painter: _GoogleGLogoPainter(),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -417,9 +425,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     lp.tr('continue_with_google'),
                     style: const TextStyle(
                       fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1E293B),
-                      letterSpacing: -0.2,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF3C4043),
+                      letterSpacing: 0.1,
                     ),
                   ),
                 ],
