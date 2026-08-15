@@ -91,67 +91,83 @@ class _AqaidGridScreenState extends State<AqaidGridScreen> {
 
   Widget _buildAqaidCards(
       BuildContext context, List<AqaidCategory> categories, bool isUrdu, List<AqaidItemModel> allEntries) {
-    // Separate categories into row groups
-    final topTwo = categories.where((c) => !c.isFullWidth).take(2).toList();
-    final fullWidth = categories.where((c) => c.isFullWidth).toList();
-    final bottomTwo = categories.where((c) => !c.isFullWidth).skip(2).toList();
-
-    return Column(
-      children: [
-        // Row 1 (Top 2 cards side by side)
-        if (topTwo.isNotEmpty)
-          Row(
-            children: topTwo.map((cat) {
-              final count = ContentService.getAqaidByCategory(allEntries, cat.id).length;
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 6, left: 6, bottom: 12),
-                  child: _AqaidImageCard(
-                    cat: cat,
-                    isUrdu: isUrdu,
-                    itemCount: count,
-                    onTap: () => _openAqaidDetail(context, cat),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-
-        // Row 2 (Full Width Card)
-        if (fullWidth.isNotEmpty)
+    final List<Widget> rows = [];
+    int i = 0;
+    while (i < categories.length) {
+      final cat = categories[i];
+      if (cat.isFullWidth) {
+        final count = ContentService.getAqaidByCategory(allEntries, cat.id).length;
+        rows.add(
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
             child: _AqaidImageCard(
-              cat: fullWidth.first,
+              cat: cat,
               isUrdu: isUrdu,
-              itemCount: ContentService.getAqaidByCategory(allEntries, fullWidth.first.id).length,
+              itemCount: count,
               height: 120,
-              onTap: () => _openAqaidDetail(context, fullWidth.first),
+              onTap: () => _openAqaidDetail(context, cat),
             ),
           ),
-        const SizedBox(height: 8),
-
-        // Row 3 (Bottom 2 cards side by side)
-        if (bottomTwo.isNotEmpty)
-          Row(
-            children: bottomTwo.map((cat) {
-              final count = ContentService.getAqaidByCategory(allEntries, cat.id).length;
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 6, left: 6, top: 4),
-                  child: _AqaidImageCard(
-                    cat: cat,
-                    isUrdu: isUrdu,
-                    itemCount: count,
-                    onTap: () => _openAqaidDetail(context, cat),
+        );
+        i++;
+      } else if (i + 1 < categories.length && !categories[i + 1].isFullWidth) {
+        final cat1 = categories[i];
+        final cat2 = categories[i + 1];
+        final count1 = ContentService.getAqaidByCategory(allEntries, cat1.id).length;
+        final count2 = ContentService.getAqaidByCategory(allEntries, cat2.id).length;
+        rows.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: _AqaidImageCard(
+                      cat: cat1,
+                      isUrdu: isUrdu,
+                      itemCount: count1,
+                      onTap: () => _openAqaidDetail(context, cat1),
+                    ),
                   ),
                 ),
-              );
-            }).toList(),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: _AqaidImageCard(
+                      cat: cat2,
+                      isUrdu: isUrdu,
+                      itemCount: count2,
+                      onTap: () => _openAqaidDetail(context, cat2),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-      ],
-    );
+        );
+        i += 2;
+      } else {
+        final count = ContentService.getAqaidByCategory(allEntries, cat.id).length;
+        rows.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+            child: _AqaidImageCard(
+              cat: cat,
+              isUrdu: isUrdu,
+              itemCount: count,
+              height: 120,
+              onTap: () => _openAqaidDetail(context, cat),
+            ),
+          ),
+        );
+        i++;
+      }
+    }
+
+    return Column(children: rows);
   }
+
 
   void _openAqaidDetail(BuildContext context, AqaidCategory cat) {
     final localizedTitle = globalLanguageProvider.isUrdu ? cat.titleUr : cat.title;

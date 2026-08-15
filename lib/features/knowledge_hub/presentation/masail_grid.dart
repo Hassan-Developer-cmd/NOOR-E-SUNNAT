@@ -375,8 +375,7 @@ class _MasailListScreen extends StatelessWidget {
               final item = filtered[index];
               final qText = item.getQuestion(isUrdu);
               final aText = item.getAnswer(isUrdu);
-              final cText = item.getCitation(isUrdu);
-              final rText = item.getReferenceBook(isUrdu);
+              final bookText = item.getBook(isUrdu);
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
@@ -412,7 +411,7 @@ class _MasailListScreen extends StatelessWidget {
                                 color: const Color(0xFF334155),
                               ),
                             ),
-                            if (cText.isNotEmpty || rText.isNotEmpty) ...[
+                            if (bookText.isNotEmpty) ...[
                               const SizedBox(height: 12),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -420,13 +419,22 @@ class _MasailListScreen extends StatelessWidget {
                                   color: AppColors.emeraldContainer,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: Text(
-                                  '${rText.isNotEmpty ? rText : 'Reference'}: ${cText.isNotEmpty ? cText : 'Fiqh'}',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: AppColors.emeraldDeep,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.menu_book_rounded, size: 14, color: AppColors.primaryEmerald),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        '${isUrdu ? "کتاب / حوالہ" : "Book"}: $bookText',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.emeraldDeep,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -437,6 +445,7 @@ class _MasailListScreen extends StatelessWidget {
                   ),
                 ),
               );
+
             },
           );
         },

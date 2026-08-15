@@ -65,6 +65,8 @@ class AppTranslations {
       'category_hajj': 'Hajj',
       'detailed_answer_title': 'Detailed Answer & Explanation',
       'reference_label': 'Reference',
+      'book_label': 'Book',
+
 
       // Aqaid (Beliefs) Section
       'aqaid_title': 'Islamic Aqaid (Beliefs)',
@@ -177,6 +179,8 @@ class AppTranslations {
       'category_hajj': 'حج',
       'detailed_answer_title': 'تفصیلی جواب و وضاحت',
       'reference_label': 'حوالہ و کتاب',
+      'book_label': 'کتاب / حوالہ',
+
 
       // Aqaid (Beliefs) Section
       'aqaid_title': 'اسلامی عقائد',

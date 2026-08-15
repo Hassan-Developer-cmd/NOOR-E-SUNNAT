@@ -23,6 +23,9 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
   int _selectedNavIndex = 0;
   String _searchQuery = '';
   bool _isSeeding = false;
+  String _selectedMasailCategory = 'all';
+  String _selectedAqaidCategory = 'all';
+
 
   final List<String> _navItems = [
     'Dashboard Overview',
@@ -653,7 +656,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     );
   }
 
-  // ── Masail Table ──────────────────────────────────────────────
+  // ── Masail Table (Category-Wise) ──────────────────────────────
 
   Widget _buildMasailTable() {
     return StreamBuilder<List<MasailItemModel>>(
@@ -662,34 +665,103 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        final items = (snap.data ?? [])
-            .where((m) => m.question.toLowerCase().contains(_searchQuery))
-            .toList();
-        return _tableCard([
-          const DataColumn(label: Text('Question', style: TextStyle(fontWeight: FontWeight.bold))),
-          const DataColumn(label: Text('Category', style: TextStyle(fontWeight: FontWeight.bold))),
-          const DataColumn(label: Text('Citation', style: TextStyle(fontWeight: FontWeight.bold))),
-          const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
-        ], items.map((m) => DataRow(cells: [
-          DataCell(Text(m.question, style: const TextStyle(fontWeight: FontWeight.w600))),
-          DataCell(_statusChip(m.categoryId.toUpperCase(), AppColors.emeraldContainer, AppColors.primaryEmerald)),
-          DataCell(Text(m.citation, style: const TextStyle(fontSize: 12))),
-          DataCell(Row(children: [
-            IconButton(
-              icon: const Icon(Icons.edit, size: 18, color: AppColors.primaryEmerald),
-              onPressed: () => _showEditMasailModal(context, m),
+        final allItems = snap.data ?? [];
+        final masailCategories = [
+          {'id': 'all', 'label': 'All Categories'},
+          {'id': 'namaz', 'label': 'Namaz'},
+          {'id': 'wuzu', 'label': 'Wuzu'},
+          {'id': 'roza', 'label': 'Roza'},
+          {'id': 'zakat', 'label': 'Zakat'},
+          {'id': 'hajj', 'label': 'Hajj'},
+          {'id': 'tayamum', 'label': 'Tayamum'},
+          {'id': 'nikah', 'label': 'Nikah'},
+          {'id': 'taharat', 'label': 'Taharat'},
+          {'id': 'miras', 'label': 'Miras'},
+        ];
+
+        final filtered = allItems.where((m) {
+          final matchesCategory = _selectedMasailCategory == 'all' ||
+              m.categoryId.toLowerCase() == _selectedMasailCategory.toLowerCase();
+          final matchesSearch = _searchQuery.isEmpty ||
+              m.question.toLowerCase().contains(_searchQuery) ||
+              m.questionUr.toLowerCase().contains(_searchQuery) ||
+              m.book.toLowerCase().contains(_searchQuery);
+          return matchesCategory && matchesSearch;
+        }).toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Category Filter Chips
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.borderLight),
+              ),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: masailCategories.map((cat) {
+                    final catId = cat['id']!;
+                    final isSelected = _selectedMasailCategory == catId;
+                    final count = catId == 'all'
+                        ? allItems.length
+                        : allItems.where((m) => m.categoryId.toLowerCase() == catId.toLowerCase()).length;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilterChip(
+                        selected: isSelected,
+                        selectedColor: AppColors.primaryEmerald,
+                        backgroundColor: AppColors.bgOffWhite,
+                        label: Text(
+                          '${cat['label']} ($count)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                            color: isSelected ? Colors.white : AppColors.textPrimary,
+                          ),
+                        ),
+                        onSelected: (selected) {
+                          setState(() {
+                            _selectedMasailCategory = selected ? catId : 'all';
+                          });
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
             ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-              onPressed: () => _confirmDelete(context, () => AdminService.deleteMasail(m.id)),
-            ),
-          ])),
-        ])).toList());
+            _tableCard([
+              const DataColumn(label: Text('Question', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Category', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Book', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
+            ], filtered.map((m) => DataRow(cells: [
+              DataCell(Text(m.question, style: const TextStyle(fontWeight: FontWeight.w600))),
+              DataCell(_statusChip(m.categoryId.toUpperCase(), AppColors.emeraldContainer, AppColors.primaryEmerald)),
+              DataCell(Text(m.getBook(false), style: const TextStyle(fontSize: 12))),
+              DataCell(Row(children: [
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 18, color: AppColors.primaryEmerald),
+                  onPressed: () => _showEditMasailModal(context, m),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                  onPressed: () => _confirmDelete(context, () => AdminService.deleteMasail(m.id)),
+                ),
+              ])),
+            ])).toList()),
+          ],
+        );
       },
     );
   }
 
-  // ── Aqaid Table ───────────────────────────────────────────────
+  // ── Aqaid Table (Category-Wise) ───────────────────────────────
 
   Widget _buildAqaidTable() {
     return StreamBuilder<List<AqaidItemModel>>(
@@ -698,29 +770,96 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        final items = (snap.data ?? [])
-            .where((a) => a.title.toLowerCase().contains(_searchQuery))
-            .toList();
-        return _tableCard([
-          const DataColumn(label: Text('Title', style: TextStyle(fontWeight: FontWeight.bold))),
-          const DataColumn(label: Text('Category', style: TextStyle(fontWeight: FontWeight.bold))),
-          const DataColumn(label: Text('Reference', style: TextStyle(fontWeight: FontWeight.bold))),
-          const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
-        ], items.map((a) => DataRow(cells: [
-          DataCell(Text(a.title, style: const TextStyle(fontWeight: FontWeight.w600))),
-          DataCell(_statusChip(a.categoryId.toUpperCase(), AppColors.emeraldContainer, AppColors.primaryEmerald)),
-          DataCell(Text(a.reference, style: const TextStyle(fontSize: 12))),
-          DataCell(Row(children: [
-            IconButton(
-              icon: const Icon(Icons.edit, size: 18, color: AppColors.primaryEmerald),
-              onPressed: () => _showEditAqaidModal(context, a),
+        final allItems = snap.data ?? [];
+        final aqaidCategories = [
+          {'id': 'all', 'label': 'All Categories'},
+          {'id': 'tawheed', 'label': 'Tawheed'},
+          {'id': 'risalat', 'label': 'Risalat'},
+          {'id': 'ahle_sunnat', 'label': 'Ahle Sunnat'},
+          {'id': 'quran', 'label': 'Quran'},
+          {'id': 'sahaba_ahlebait', 'label': 'Sahaba o Ahlebait'},
+          {'id': 'ishq_rasool', 'label': 'Ishq-e-Rasool'},
+          {'id': 'wilayat', 'label': 'Wilayat'},
+        ];
+
+        final filtered = allItems.where((a) {
+          final matchesCategory = _selectedAqaidCategory == 'all' ||
+              a.categoryId.toLowerCase() == _selectedAqaidCategory.toLowerCase();
+          final matchesSearch = _searchQuery.isEmpty ||
+              a.title.toLowerCase().contains(_searchQuery) ||
+              a.titleUr.toLowerCase().contains(_searchQuery) ||
+              a.book.toLowerCase().contains(_searchQuery);
+          return matchesCategory && matchesSearch;
+        }).toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Category Filter Chips
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.borderLight),
+              ),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: aqaidCategories.map((cat) {
+                    final catId = cat['id']!;
+                    final isSelected = _selectedAqaidCategory == catId;
+                    final count = catId == 'all'
+                        ? allItems.length
+                        : allItems.where((a) => a.categoryId.toLowerCase() == catId.toLowerCase()).length;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilterChip(
+                        selected: isSelected,
+                        selectedColor: AppColors.primaryEmerald,
+                        backgroundColor: AppColors.bgOffWhite,
+                        label: Text(
+                          '${cat['label']} ($count)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                            color: isSelected ? Colors.white : AppColors.textPrimary,
+                          ),
+                        ),
+                        onSelected: (selected) {
+                          setState(() {
+                            _selectedAqaidCategory = selected ? catId : 'all';
+                          });
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
             ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-              onPressed: () => _confirmDelete(context, () => AdminService.deleteAqaid(a.id)),
-            ),
-          ])),
-        ])).toList());
+            _tableCard([
+              const DataColumn(label: Text('Title', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Category', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Book', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
+            ], filtered.map((a) => DataRow(cells: [
+              DataCell(Text(a.title, style: const TextStyle(fontWeight: FontWeight.w600))),
+              DataCell(_statusChip(a.categoryId.toUpperCase(), AppColors.emeraldContainer, AppColors.primaryEmerald)),
+              DataCell(Text(a.getBook(false), style: const TextStyle(fontSize: 12))),
+              DataCell(Row(children: [
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 18, color: AppColors.primaryEmerald),
+                  onPressed: () => _showEditAqaidModal(context, a),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                  onPressed: () => _confirmDelete(context, () => AdminService.deleteAqaid(a.id)),
+                ),
+              ])),
+            ])).toList()),
+          ],
+        );
       },
     );
   }
@@ -742,7 +881,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
         return _tableCard([
           const DataColumn(label: Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
           const DataColumn(label: Text('Title', style: TextStyle(fontWeight: FontWeight.bold))),
-          const DataColumn(label: Text('Citation', style: TextStyle(fontWeight: FontWeight.bold))),
+          const DataColumn(label: Text('Book / Reference', style: TextStyle(fontWeight: FontWeight.bold))),
           const DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
           const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
         ], items.map((d) => DataRow(cells: [
@@ -770,6 +909,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
             ),
           ])),
         ])).toList());
+
       },
     );
   }
@@ -1002,10 +1142,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     final qUrC = TextEditingController();
     final aC = TextEditingController();
     final aUrC = TextEditingController();
-    final citC = TextEditingController();
-    final citUrC = TextEditingController();
-    final refC = TextEditingController();
-    final refUrC = TextEditingController();
+    final bookC = TextEditingController();
+    final bookUrC = TextEditingController();
     String catId = 'namaz';
 
     showDialog(
@@ -1021,9 +1159,17 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 DropdownButtonFormField<String>(
                   initialValue: catId,
                   decoration: const InputDecoration(labelText: 'Category', border: OutlineInputBorder()),
-                  items: ['namaz', 'wuzu', 'tayamum', 'roza', 'zakat', 'hajj', 'nikah', 'taharat', 'miras']
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c.toUpperCase())))
-                      .toList(),
+                  items: [
+                    'namaz',
+                    'wuzu',
+                    'roza',
+                    'zakat',
+                    'hajj',
+                    'tayamum',
+                    'nikah',
+                    'taharat',
+                    'miras'
+                  ].map((c) => DropdownMenuItem(value: c, child: Text(c.toUpperCase()))).toList(),
                   onChanged: (v) => setModal(() => catId = v ?? 'namaz'),
                 ),
                 const SizedBox(height: 12),
@@ -1035,13 +1181,9 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 const SizedBox(height: 12),
                 _field(aUrC, 'Answer (Urdu / اردو)', maxLines: 3),
                 const SizedBox(height: 12),
-                _field(citC, 'Citation (English)'),
+                _field(bookC, 'Book / Reference (English)', hintText: 'e.g., Bahar-e-Shariat, Vol. 1, Page 450'),
                 const SizedBox(height: 12),
-                _field(citUrC, 'Citation (Urdu / اردو)'),
-                const SizedBox(height: 12),
-                _field(refC, 'Reference Book (English)'),
-                const SizedBox(height: 12),
-                _field(refUrC, 'Reference Book (Urdu / اردو)'),
+                _field(bookUrC, 'Book / Reference (Urdu / اردو)', hintText: 'e.g., بہارِ شریعت، حصہ ۳، صفحہ ۴۵۰'),
               ]),
             ),
           ),
@@ -1060,10 +1202,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   questionUr: qUrC.text.trim().isEmpty ? qC.text.trim() : qUrC.text.trim(),
                   answer: aC.text.trim(),
                   answerUr: aUrC.text.trim().isEmpty ? aC.text.trim() : aUrC.text.trim(),
-                  citation: citC.text.trim(),
-                  citationUr: citUrC.text.trim(),
-                  referenceBook: refC.text.trim(),
-                  referenceBookUr: refUrC.text.trim(),
+                  book: bookC.text.trim(),
+                  bookUr: bookUrC.text.trim(),
                 ));
                 if (ctx.mounted) {
                   Navigator.pop(ctx);
@@ -1083,10 +1223,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     final qUrC = TextEditingController(text: item.questionUr);
     final aC = TextEditingController(text: item.answer);
     final aUrC = TextEditingController(text: item.answerUr);
-    final citC = TextEditingController(text: item.citation);
-    final citUrC = TextEditingController(text: item.citationUr);
-    final refC = TextEditingController(text: item.referenceBook);
-    final refUrC = TextEditingController(text: item.referenceBookUr);
+    final bookC = TextEditingController(text: item.book);
+    final bookUrC = TextEditingController(text: item.bookUr);
 
     showDialog(
       context: context,
@@ -1105,13 +1243,9 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
               const SizedBox(height: 12),
               _field(aUrC, 'Answer (Urdu / اردو)', maxLines: 3),
               const SizedBox(height: 12),
-              _field(citC, 'Citation (English)'),
+              _field(bookC, 'Book / Reference (English)', hintText: 'e.g., Bahar-e-Shariat, Vol. 1, Page 450'),
               const SizedBox(height: 12),
-              _field(citUrC, 'Citation (Urdu / اردو)'),
-              const SizedBox(height: 12),
-              _field(refC, 'Reference Book (English)'),
-              const SizedBox(height: 12),
-              _field(refUrC, 'Reference Book (Urdu / اردو)'),
+              _field(bookUrC, 'Book / Reference (Urdu / اردو)', hintText: 'e.g., بہارِ شریعت، حصہ ۳، صفحہ ۴۵۰'),
             ]),
           ),
         ),
@@ -1124,10 +1258,12 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 'question_ur': qUrC.text,
                 'answer': aC.text,
                 'answer_ur': aUrC.text,
-                'citation': citC.text,
-                'citation_ur': citUrC.text,
-                'reference_book': refC.text,
-                'reference_book_ur': refUrC.text,
+                'book': bookC.text,
+                'book_ur': bookUrC.text,
+                'citation': bookC.text,
+                'citation_ur': bookUrC.text,
+                'reference_book': bookC.text,
+                'reference_book_ur': bookUrC.text,
               });
               if (ctx.mounted) {
                 Navigator.pop(ctx);
@@ -1147,8 +1283,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     final arabicC = TextEditingController();
     final expC = TextEditingController();
     final expUrC = TextEditingController();
-    final refC = TextEditingController();
-    final refUrC = TextEditingController();
+    final bookC = TextEditingController();
+    final bookUrC = TextEditingController();
     String catId = 'tawheed';
 
     showDialog(
@@ -1164,9 +1300,15 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 DropdownButtonFormField<String>(
                   initialValue: catId,
                   decoration: const InputDecoration(labelText: 'Category', border: OutlineInputBorder()),
-                  items: ['tawheed', 'risalat', 'sahaba_ahlebait', 'ishq_rasool', 'wilayat']
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c.toUpperCase())))
-                      .toList(),
+                  items: [
+                    'tawheed',
+                    'risalat',
+                    'ahle_sunnat',
+                    'quran',
+                    'sahaba_ahlebait',
+                    'ishq_rasool',
+                    'wilayat'
+                  ].map((c) => DropdownMenuItem(value: c, child: Text(c.toUpperCase()))).toList(),
                   onChanged: (v) => setModal(() => catId = v ?? 'tawheed'),
                 ),
                 const SizedBox(height: 12),
@@ -1180,9 +1322,9 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 const SizedBox(height: 12),
                 _field(expUrC, 'Explanation (Urdu / اردو)', maxLines: 3),
                 const SizedBox(height: 12),
-                _field(refC, 'Reference (English)'),
+                _field(bookC, 'Book / Reference (English)', hintText: 'e.g., Surah Al-Ikhlas (112:1-4) or Bahar-e-Shariat'),
                 const SizedBox(height: 12),
-                _field(refUrC, 'Reference (Urdu / اردو)'),
+                _field(bookUrC, 'Book / Reference (Urdu / اردو)', hintText: 'e.g., سورۃ الاخلاص (۱۱۲:۱-۴)'),
               ]),
             ),
           ),
@@ -1202,8 +1344,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   arabicText: arabicC.text.trim(),
                   explanation: expC.text.trim(),
                   explanationUr: expUrC.text.trim().isEmpty ? expC.text.trim() : expUrC.text.trim(),
-                  reference: refC.text.trim(),
-                  referenceUr: refUrC.text.trim(),
+                  book: bookC.text.trim(),
+                  bookUr: bookUrC.text.trim(),
                 ));
                 if (ctx.mounted) {
                   Navigator.pop(ctx);
@@ -1224,8 +1366,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     final arabicC = TextEditingController(text: item.arabicText);
     final expC = TextEditingController(text: item.explanation);
     final expUrC = TextEditingController(text: item.explanationUr);
-    final refC = TextEditingController(text: item.reference);
-    final refUrC = TextEditingController(text: item.referenceUr);
+    final bookC = TextEditingController(text: item.book);
+    final bookUrC = TextEditingController(text: item.bookUr);
 
     showDialog(
       context: context,
@@ -1246,9 +1388,9 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
               const SizedBox(height: 12),
               _field(expUrC, 'Explanation (Urdu / اردو)', maxLines: 3),
               const SizedBox(height: 12),
-              _field(refC, 'Reference (English)'),
+              _field(bookC, 'Book / Reference (English)', hintText: 'e.g., Surah Al-Ikhlas (112:1-4) or Bahar-e-Shariat'),
               const SizedBox(height: 12),
-              _field(refUrC, 'Reference (Urdu / اردو)'),
+              _field(bookUrC, 'Book / Reference (Urdu / اردو)', hintText: 'e.g., سورۃ الاخلاص (۱۱۲:۱-۴)'),
             ]),
           ),
         ),
@@ -1262,8 +1404,10 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 'arabic_text': arabicC.text,
                 'explanation': expC.text,
                 'explanation_ur': expUrC.text,
-                'reference': refC.text,
-                'reference_ur': refUrC.text,
+                'book': bookC.text,
+                'book_ur': bookUrC.text,
+                'reference': bookC.text,
+                'reference_ur': bookUrC.text,
               });
               if (ctx.mounted) {
                 Navigator.pop(ctx);
@@ -1318,9 +1462,9 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 const SizedBox(height: 12),
                 _field(contentUrC, 'Content / Translation (Urdu / اردو)', maxLines: 3),
                 const SizedBox(height: 12),
-                _field(citC, 'Citation (English)'),
+                _field(citC, 'Book / Reference (English)', hintText: 'e.g., Sahih Muslim 408'),
                 const SizedBox(height: 12),
-                _field(citUrC, 'Citation (Urdu / اردو)'),
+                _field(citUrC, 'Book / Reference (Urdu / اردو)', hintText: 'e.g., صحیح مسلم ۴۰۸'),
                 const SizedBox(height: 12),
                 _field(imgC, 'Image URL (Optional)'),
               ]),
@@ -1385,9 +1529,9 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
               const SizedBox(height: 12),
               _field(contentUrC, 'Content (Urdu / اردو)', maxLines: 3),
               const SizedBox(height: 12),
-              _field(citC, 'Citation (English)'),
+              _field(citC, 'Book / Reference (English)', hintText: 'e.g., Sahih Muslim 408'),
               const SizedBox(height: 12),
-              _field(citUrC, 'Citation (Urdu / اردو)'),
+              _field(citUrC, 'Book / Reference (Urdu / اردو)', hintText: 'e.g., صحیح مسلم ۴۰۸'),
               const SizedBox(height: 12),
               _field(imgC, 'Image URL'),
             ]),
@@ -1418,6 +1562,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
       ),
     );
   }
+
 
   void _showSendNotificationModal(BuildContext context) {
     final titleC = TextEditingController();
@@ -1597,13 +1742,19 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     );
   }
 
-  Widget _field(TextEditingController controller, String label, {int maxLines = 1}) {
+  Widget _field(TextEditingController controller, String label, {int maxLines = 1, String? hintText}) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
-      decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hintText,
+        hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
+        border: const OutlineInputBorder(),
+      ),
     );
   }
+
 
   String _fmt(int n) {
     return n.toString().replaceAllMapped(

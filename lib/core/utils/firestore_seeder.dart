@@ -52,10 +52,8 @@ class FirestoreSeeder {
             questionUr: m.questionUr,
             answer: m.answer,
             answerUr: m.answerUr,
-            citation: m.citation,
-            citationUr: m.citationUr,
-            referenceBook: m.referenceBook,
-            referenceBookUr: m.referenceBookUr,
+            book: m.book,
+            bookUr: m.bookUr,
           );
           batch.set(docRef, itemModel.toMap(), SetOptions(merge: true));
         }
@@ -89,8 +87,8 @@ class FirestoreSeeder {
             arabicText: a.arabicText,
             explanation: a.explanation,
             explanationUr: a.explanationUr,
-            reference: a.reference,
-            referenceUr: a.referenceUr,
+            book: a.book,
+            bookUr: a.bookUr,
           );
           batch.set(docRef, itemModel.toMap(), SetOptions(merge: true));
         }

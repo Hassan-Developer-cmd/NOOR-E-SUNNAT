@@ -230,7 +230,7 @@ class _SubAqaidCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final titleText = item.getTitle(isUrdu);
     final bodyText = item.getExplanation(isUrdu);
-    final refText = item.getReference(isUrdu);
+    final bookText = item.getBook(isUrdu);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -308,16 +308,16 @@ class _SubAqaidCard extends StatelessWidget {
             ),
           ),
 
-          // Reference / Citation
-          if (refText.isNotEmpty) ...[
+          // Book / Reference
+          if (bookText.isNotEmpty) ...[
             const SizedBox(height: 14),
             Row(
               children: [
-                const Icon(Icons.verified_rounded, size: 14, color: AppColors.accentGold),
+                const Icon(Icons.menu_book_rounded, size: 15, color: AppColors.accentGold),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    refText,
+                    '${isUrdu ? "کتاب / حوالہ" : "Book"}: $bookText',
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -332,4 +332,5 @@ class _SubAqaidCard extends StatelessWidget {
       ),
     );
   }
+
 }

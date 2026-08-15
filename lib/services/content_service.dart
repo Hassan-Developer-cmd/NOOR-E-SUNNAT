@@ -128,10 +128,8 @@ class ContentService {
               questionUr: m.questionUr,
               answer: m.answer,
               answerUr: m.answerUr,
-              citation: m.citation,
-              citationUr: m.citationUr,
-              referenceBook: m.referenceBook,
-              referenceBookUr: m.referenceBookUr,
+              book: m.book,
+              bookUr: m.bookUr,
             ))
         .toList();
   }
@@ -146,10 +144,11 @@ class ContentService {
               arabicText: a.arabicText,
               explanation: a.explanation,
               explanationUr: a.explanationUr,
-              reference: a.reference,
-              referenceUr: a.referenceUr,
+              book: a.book,
+              bookUr: a.bookUr,
             ))
         .toList();
   }
 }
+
 

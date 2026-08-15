@@ -8,8 +8,7 @@ class KnowledgeDetailView extends StatelessWidget {
   final String category;
   final String? arabicCalligraphy;
   final String bodyContent;
-  final String citation;
-  final String referenceBook;
+  final String book;
 
   const KnowledgeDetailView({
     super.key,
@@ -17,9 +16,13 @@ class KnowledgeDetailView extends StatelessWidget {
     required this.category,
     this.arabicCalligraphy,
     required this.bodyContent,
-    required this.citation,
-    required this.referenceBook,
+    required this.book,
+    String? citation,
+    String? referenceBook,
   });
+
+  String get citation => book;
+  String get referenceBook => book;
 
   @override
   Widget build(BuildContext context) {
@@ -138,46 +141,48 @@ class KnowledgeDetailView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            // Citation & Reference Card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.goldLight,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.verified, color: AppColors.accentGold, size: 28),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${lp.tr('reference_label')}: $referenceBook',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.goldDark,
+            // Book & Reference Card
+            if (book.isNotEmpty) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.goldLight,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.menu_book_rounded, color: AppColors.accentGold, size: 28),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            lp.tr('book_label'),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.goldDark,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          citation,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w500,
+                          const SizedBox(height: 2),
+                          Text(
+                            book,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),

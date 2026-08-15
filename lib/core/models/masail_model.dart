@@ -24,10 +24,8 @@ class MasailItemModel {
   final String questionUr;
   final String answer;
   final String answerUr;
-  final String citation;
-  final String citationUr;
-  final String referenceBook;
-  final String referenceBookUr;
+  final String book;
+  final String bookUr;
 
   const MasailItemModel({
     required this.id,
@@ -36,18 +34,46 @@ class MasailItemModel {
     this.questionUr = '',
     required this.answer,
     this.answerUr = '',
-    required this.citation,
-    this.citationUr = '',
-    required this.referenceBook,
-    this.referenceBookUr = '',
+    required this.book,
+    this.bookUr = '',
+    String? citation,
+    String? citationUr,
+    String? referenceBook,
+    String? referenceBookUr,
   });
+
+  // Backward compatibility getters
+  String get citation => book;
+  String get citationUr => bookUr;
+  String get referenceBook => book;
+  String get referenceBookUr => bookUr;
 
   String getQuestion(bool isUrdu) => isUrdu && questionUr.isNotEmpty ? questionUr : question;
   String getAnswer(bool isUrdu) => isUrdu && answerUr.isNotEmpty ? answerUr : answer;
-  String getCitation(bool isUrdu) => isUrdu && citationUr.isNotEmpty ? citationUr : citation;
-  String getReferenceBook(bool isUrdu) => isUrdu && referenceBookUr.isNotEmpty ? referenceBookUr : referenceBook;
+  String getBook(bool isUrdu) => isUrdu && bookUr.isNotEmpty ? bookUr : book;
+  String getCitation(bool isUrdu) => getBook(isUrdu);
+  String getReferenceBook(bool isUrdu) => getBook(isUrdu);
 
   factory MasailItemModel.fromMap(String id, Map<String, dynamic> map) {
+    final rawBook = (map['book'] as String?)?.trim();
+    final rawBookUr = (map['book_ur'] as String?)?.trim();
+    final rawCit = (map['citation'] as String?)?.trim();
+    final rawCitUr = (map['citation_ur'] as String?)?.trim();
+    final rawRef = (map['reference_book'] as String?)?.trim();
+    final rawRefUr = (map['reference_book_ur'] as String?)?.trim();
+
+    final effectiveBook = (rawBook != null && rawBook.isNotEmpty)
+        ? rawBook
+        : ((rawCit != null && rawCit.isNotEmpty)
+            ? rawCit
+            : (rawRef ?? ''));
+
+    final effectiveBookUr = (rawBookUr != null && rawBookUr.isNotEmpty)
+        ? rawBookUr
+        : ((rawCitUr != null && rawCitUr.isNotEmpty)
+            ? rawCitUr
+            : (rawRefUr ?? ''));
+
     return MasailItemModel(
       id: id,
       categoryId: map['category_id'] as String? ?? '',
@@ -55,10 +81,8 @@ class MasailItemModel {
       questionUr: map['question_ur'] as String? ?? '',
       answer: map['answer'] as String? ?? '',
       answerUr: map['answer_ur'] as String? ?? '',
-      citation: map['citation'] as String? ?? '',
-      citationUr: map['citation_ur'] as String? ?? '',
-      referenceBook: map['reference_book'] as String? ?? '',
-      referenceBookUr: map['reference_book_ur'] as String? ?? '',
+      book: effectiveBook,
+      bookUr: effectiveBookUr,
     );
   }
 
@@ -68,10 +92,13 @@ class MasailItemModel {
         'question_ur': questionUr,
         'answer': answer,
         'answer_ur': answerUr,
-        'citation': citation,
-        'citation_ur': citationUr,
-        'reference_book': referenceBook,
-        'reference_book_ur': referenceBookUr,
+        'book': book,
+        'book_ur': bookUr,
+        // Keep legacy fields for backward compatibility
+        'citation': book,
+        'citation_ur': bookUr,
+        'reference_book': book,
+        'reference_book_ur': bookUr,
         'created_at': FieldValue.serverTimestamp(),
       };
 }

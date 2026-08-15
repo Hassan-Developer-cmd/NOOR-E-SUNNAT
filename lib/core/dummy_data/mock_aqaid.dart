@@ -17,7 +17,7 @@ class AqaidCategory {
     required this.arabicTitle,
     required this.subtitle,
     required this.icon,
-    required this.bgAsset,
+    this.bgAsset = '',
     this.isFullWidth = false,
   });
 }
@@ -30,8 +30,8 @@ class AqaidItem {
   final String arabicText;
   final String explanation;
   final String explanationUr;
-  final String reference;
-  final String referenceUr;
+  final String book;
+  final String bookUr;
 
   const AqaidItem({
     required this.id,
@@ -41,9 +41,18 @@ class AqaidItem {
     required this.arabicText,
     required this.explanation,
     required this.explanationUr,
-    required this.reference,
-    required this.referenceUr,
+    required this.book,
+    required this.bookUr,
+    String? reference,
+    String? referenceUr,
+    String? citation,
+    String? citationUr,
   });
+
+  String get reference => book;
+  String get referenceUr => bookUr;
+  String get citation => book;
+  String get citationUr => bookUr;
 }
 
 class MockAqaidData {
@@ -67,12 +76,30 @@ class MockAqaidData {
       bgAsset: 'assets/images/risalat.png',
     ),
     AqaidCategory(
+      id: 'ahle_sunnat',
+      title: 'Ahle Sunnat',
+      titleUr: 'اہلِ سنت',
+      arabicTitle: 'اہلِ سنت',
+      subtitle: 'Creed of Ahle Sunnat Wal Jama\'at',
+      icon: Icons.shield_rounded,
+      bgAsset: 'assets/images/sahaba.png',
+    ),
+    AqaidCategory(
+      id: 'quran',
+      title: 'Quran',
+      titleUr: 'قرآن پاک',
+      arabicTitle: 'القرآن',
+      subtitle: 'The Holy Quran & Divine Revelations',
+      icon: Icons.menu_book_rounded,
+      bgAsset: 'assets/images/ishq_rasool.png',
+    ),
+    AqaidCategory(
       id: 'sahaba_ahlebait',
       title: 'Sahaba o Ahlebait',
       titleUr: 'صحابہ و اہل بیت',
       arabicTitle: 'صحابہ و اہل بیت',
       subtitle: 'Companions & Blessed Household',
-      icon: Icons.shield,
+      icon: Icons.people_alt_rounded,
       bgAsset: 'assets/images/sahaba.png',
       isFullWidth: true,
     ),
@@ -106,8 +133,8 @@ class MockAqaidData {
       arabicText: 'قُلْ هُوَ اللَّهُ أَحَدٌ ۝ اللَّهُ الصَّمَدُ ۝ لَمْ يَلِدْ وَلَمْ يُولَدْ ۝ وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ',
       explanation: 'Allah is Supreme, Absolute, and Unique. He has no partner, spouse, or child. He is free from time, place, physical shape, or weakness. He alone is worthy of worship and ultimate devotion.',
       explanationUr: 'اللہ تعالیٰ واحد و یکتا ہے، بے نیاز ہے، نہ اس کی کوئی اولاد ہے اور نہ وہ کسی کی اولاد ہے، اور کوئی اس کا ہمسر نہیں۔ وہ زمان و مکان، جسمانیت اور عیب سے پاک ہے اور صرف وہی عبادت کا مستحق ہے۔',
-      reference: 'Surah Al-Ikhlas (112:1-4)',
-      referenceUr: 'سورۃ الاخلاص (۱۱۲:۱-۴)',
+      book: 'Surah Al-Ikhlas (112:1-4)',
+      bookUr: 'سورۃ الاخلاص (۱۱۲:۱-۴)',
     ),
     AqaidItem(
       id: 't2',
@@ -117,8 +144,8 @@ class MockAqaidData {
       arabicText: 'لَيْسَ كَمِثْلِهِ شَيْءٌ ۖ وَهُوَ السَّمِيعُ الْبَصِيرُ',
       explanation: 'Allah\'s attributes are eternal (Qadeem) and inherent to His Being. He is All-Knowing, All-Seeing, All-Hearing, and All-Powerful. Nothing in creation resembles His Divine Essence.',
       explanationUr: 'اللہ تعالیٰ کی صفات قدیم اور اس کی ذات کے ساتھ قائم ہیں۔ وہ علیم، بصیر، سمیع اور قدیر ہے۔ کائنات میں کوئی چیز اس کی ذات و صفات کے مثل نہیں۔',
-      reference: 'Surah Ash-Shura (42:11)',
-      referenceUr: 'سورۃ الشوریٰ (۴۲:۱۱)',
+      book: 'Surah Ash-Shura (42:11)',
+      bookUr: 'سورۃ الشوریٰ (۴۲:۱۱)',
     ),
     AqaidItem(
       id: 't3',
@@ -128,8 +155,8 @@ class MockAqaidData {
       arabicText: 'إِنَّا كُلَّ شَيْءٍ خَلَقْنَاهُ بِقَدَرٍ',
       explanation: 'Everything that happens in the universe occurs by Allah\'s divine knowledge, absolute decree, and eternal wisdom.',
       explanationUr: 'بے شک ہم نے ہر چیز کو ایک اندازے (تقدیر) کے ساتھ پیدا فرمایا ہے۔ خیر و شر سب اللہ کے علم و مشیت کے تحت ہے۔',
-      reference: 'Surah Al-Qamar (54:49)',
-      referenceUr: 'سورۃ القمر (۵۴:۴۹)',
+      book: 'Surah Al-Qamar (54:49)',
+      bookUr: 'سورۃ القمر (۵۴:۴۹)',
     ),
 
     // ── RISALAT AQAID ──────────────────────────────────────────────
@@ -141,8 +168,8 @@ class MockAqaidData {
       arabicText: 'مَّا كَانَ مُحَمَّدٌ أَبَا أَحَدٍ مِّن رِّجَالِكُمْ وَلَٰكِن رَّسُولَ اللَّهِ وَخَاتَمَ النَّبِيِّينَ',
       explanation: 'Prophet Muhammad (ﷺ) is the Last and Final Messenger of Allah. The chain of prophethood is completed through Him, and anyone claiming prophethood after Him is outside Islam.',
       explanationUr: 'حضرت محمد مصطفیٰ (صلی اللہ علیہ وآلہ وسلم) تمام کائنات کے لیے آخری اور خاتم النبیین ہیں۔ نبوت کا سلسلہ آپ پر مکمل ہو چکا ہے اور آپ کے بعد کوئی نیا نبی ہرگز نہیں آ سکتا۔',
-      reference: 'Surah Al-Ahzab (33:40)',
-      referenceUr: 'سورۃ الاحزاب (۳۳:۴۰)',
+      book: 'Surah Al-Ahzab (33:40)',
+      bookUr: 'سورۃ الاحزاب (۳۳:۴۰)',
     ),
     AqaidItem(
       id: 'r2',
@@ -152,8 +179,8 @@ class MockAqaidData {
       arabicText: 'وَمَا أَرْسَلْنَاكَ إِلَّا رَحْمَةً لِّلْعَالَمِينَ',
       explanation: 'Allah has granted Prophet Muhammad (ﷺ) the Station of Praise (Maqam-e-Mahmood) and supreme power of intercession (Shafa\'at-e-Kubra) for sinners on the Day of Judgment.',
       explanationUr: 'اللہ تعالیٰ نے سرکارِ دو عالم (صلی اللہ علیہ وسلم) کو مقامِ محمود اور قیامت کے دن گنہگاروں کی شفاعتِ عظمیٰ کا عظیم مقام عطا فرمایا ہے۔ آپ تمام جہانوں کے لیے رحمت ہیں۔',
-      reference: 'Surah Al-Anbiya (21:107) & Sahih Muslim',
-      referenceUr: 'سورۃ الانبیاء (۲۱:۱۰۷) و صحیح مسلم',
+      book: 'Surah Al-Anbiya (21:107) & Sahih Muslim',
+      bookUr: 'سورۃ الانبیاء (۲۱:۱۰۷) و صحیح مسلم',
     ),
     AqaidItem(
       id: 'r3',
@@ -163,8 +190,56 @@ class MockAqaidData {
       arabicText: 'قَدْ جَاءَكُم مِّنَ اللَّهِ نُورٌ وَكِتَابٌ مُّبِينٌ',
       explanation: 'The Prophet (ﷺ) possesses both luminous spiritual reality (Noor) and perfect holy physical creation (Bashar-e-Athar). He is the supreme creation of Allah.',
       explanationUr: 'بے شک تمہارے پاس اللہ کی طرف سے ایک عظیم نور (رسول اکرم ﷺ) اور روشن کتاب آئی ہے۔ آپ نورانیت اور مطہر بشریت دونوں کا جامع ہیں۔',
-      reference: 'Surah Al-Ma\'idah (5:15)',
-      referenceUr: 'سورۃ المائدة (۵:۱۵)',
+      book: 'Surah Al-Ma\'idah (5:15)',
+      bookUr: 'سورۃ المائدة (۵:۱۵)',
+    ),
+
+    // ── AHLE SUNNAT AQAID ──────────────────────────────────────────
+    AqaidItem(
+      id: 'as1',
+      categoryId: 'ahle_sunnat',
+      title: 'Creed of As-Sawad al-Azam (Ahle Sunnat Wal Jama\'at)',
+      titleUr: 'مسلکِ اہل ِ سنت و الجماعت اور سوادِ اعظم',
+      arabicText: 'فَعَلَيْكُمْ بِالسَّوَادِ الأَعْظَمِ',
+      explanation: 'Ahle Sunnat Wal Jama\'at represents the mainstream path of the vast majority of Muslims adhering strictly to the Sunnah of Prophet Muhammad (ﷺ) and the way of the blessed Sahaba.',
+      explanationUr: 'اہلِ سنت و الجماعت مسلمانوں کا سوادِ اعظم اور وہ راہِ حق ہے جو حضور اکرم (صلی اللہ علیہ وسلم) اور صحابہ کرام کے مبارک طریقے پر سختی سے قائم ہے۔',
+      book: 'Sunan Ibn Majah & Bahar-e-Shariat',
+      bookUr: 'سنن ابن ماجہ و بہارِ شریعت',
+    ),
+    AqaidItem(
+      id: 'as2',
+      categoryId: 'ahle_sunnat',
+      title: 'Status of Ijma (Consensus) and Qiyas',
+      titleUr: 'اجماعِ امت اور قیاسِ شرعی کی حجیت',
+      arabicText: 'لَا تَجْتَمِعُ أُمَّتِي عَلَى ضَلَالَةٍ',
+      explanation: 'My Ummah will never unite upon misguidance. Consensus of the Islamic scholars (Ijma) is a binding source of Islamic Law after Quran and Sunnah.',
+      explanationUr: 'میری امت کبھی گمراہی پر جمع نہیں ہوگی۔ قرآن و سنت کے بعد اجماعِ امت اور قیاسِ شرعی دین میں حجتِ قطعی ہیں۔',
+      book: 'Jami\' at-Tirmidhi & Fatawa Ridawiyyah',
+      bookUr: 'جامع الترمذی و فتاویٰ رضویہ',
+    ),
+
+    // ── QURAN AQAID ────────────────────────────────────────────────
+    AqaidItem(
+      id: 'q1',
+      categoryId: 'quran',
+      title: 'The Holy Quran is the Uncreated Word of Allah (Kalamullah)',
+      titleUr: 'قرآن مجید کلامِ الٰہی اور غیر مخلوق ہے',
+      arabicText: 'إِنَّا نَحْنُ نَزَّلْنَا الذِّكْرَ وَإِنَّا لَهُ لَحَافِظُونَ',
+      explanation: 'The Glorious Quran is the literal, eternal Word of Allah revealed unto the heart of Prophet Muhammad (ﷺ). Allah Himself has guaranteed its eternal preservation from alteration.',
+      explanationUr: 'بے شک ہم ہی نے اس قرآن کو نازل فرمایا اور بے شک ہم ہی اس کی حفاظت فرمانے والے ہیں۔ قرآن مجید اللہ کا غیر مخلوق اور ابدی کلام ہے۔',
+      book: 'Surah Al-Hijr (15:9) & Bahar-e-Shariat',
+      bookUr: 'سورۃ الحجر (۱۵:۹) و بہارِ شریعت',
+    ),
+    AqaidItem(
+      id: 'q2',
+      categoryId: 'quran',
+      title: 'Inimitability & Perfection of the Quran (I\'jaz)',
+      titleUr: 'قرآن مجید کا اعجاز اور فصاحت و بلاغت',
+      arabicText: 'قُل لَّئِنِ اجْتَمَعَتِ الْإِنسُ وَالْجِنُّ عَلَىٰ أَن يَأْتُوا بِمِثْلِ هَٰذَا الْقُرْآنِ لَا يَأْتُونَ بِمِثْلِهِ',
+      explanation: 'Say: If mankind and the jinn were to come together to produce the like of this Quran, they could not produce the like of it, even if they assisted one another.',
+      explanationUr: 'فرما دیجئے: اگر تمام انسان اور جن اس بات پر جمع ہو جائیں کہ اس قرآن جیسا کلام لائیں تو وہ اس کی مثل نہیں لا سکیں گے۔',
+      book: 'Surah Al-Isra (17:88)',
+      bookUr: 'سورۃ الاسراء (۱۷:۸۸)',
     ),
 
     // ── SAHABA O AHLEBAIT AQAID ────────────────────────────────────
@@ -176,8 +251,8 @@ class MockAqaidData {
       arabicText: 'قُل لَّا أَسْأَلُكُمْ عَلَيْهِ أَجْرًا إِلَّا الْمَوَدَّةَ فِي الْقُرْبَىٰ',
       explanation: 'Reverence for the Blessed Household (Ahl al-Bayt) and all Noble Companions (Sahaba) of the Holy Prophet (ﷺ) is an imperative requirement of true faith in Ahle Sunnat creed.',
       explanationUr: 'سرکارِ دو عالم (صلی اللہ علیہ وسلم) کی پاک آل (اہل بیت) اور تمام صحابہ کرام (رضی اللہ عنہم) کی محبت و تعظیم جزوِ ایمان ہے اور ہدایت کا راستہ ہے۔',
-      reference: 'Surah Ash-Shura (42:23)',
-      referenceUr: 'سورۃ الشوریٰ (۴۲:۲۳)',
+      book: 'Surah Ash-Shura (42:23)',
+      bookUr: 'سورۃ الشوریٰ (۴۲:۲۳)',
     ),
     AqaidItem(
       id: 's2',
@@ -187,8 +262,8 @@ class MockAqaidData {
       arabicText: 'وَالسَّابِقُونَ الْأَوَّلُونَ مِنَ الْمُهَاجِرِينَ وَالْأَنصَارِ وَالَّذِينَ اتَّبَعُوهُم بِإِحْسَانٍ رَّضِيَ اللَّهُ عَنْهُمْ وَرَضُوا عَنْهُ',
       explanation: 'The rightful succession of the Khulafa-e-Rashideen (Abu Bakr, Umar, Uthman, Ali - may Allah be pleased with them) is in order of their spiritual excellence.',
       explanationUr: 'خلفائے راشدین (سیدنا ابو بکر، عمر، عثمان، علی رضی اللہ عنہم) کی خلافت برحق ہے اور ان کی فضیلت اسی ترتیب سے ہے۔',
-      reference: 'Surah At-Tawbah (9:100)',
-      referenceUr: 'سورۃ التوبہ (۹:۱۰۰)',
+      book: 'Surah At-Tawbah (9:100)',
+      bookUr: 'سورۃ التوبہ (۹:۱۰۰)',
     ),
 
     // ── ISHQ-E-RASOOL AQAID ────────────────────────────────────────
@@ -200,8 +275,8 @@ class MockAqaidData {
       arabicText: 'لَا يُؤْمِنُ أَحَدُكُمْ حَتَّى أَكُونَ أَحَبَّ إِلَيْهِ مِنْ وَالِدِهِ وَوَلَدِهِ وَالنَّاسِ أَجْمَعِينَ',
       explanation: 'None of you truly believes until I become more beloved to him than his father, his children, and all mankind combined.',
       explanationUr: 'تم میں سے کوئی شخص اس وقت تک کامل مومن نہیں ہو سکتا جب تک کہ میں اس کے نزدیک اس کے والد، اس کی اولاد اور تمام انسانوں سے زیادہ محبوب نہ ہو جاؤں۔',
-      reference: 'Sahih Bukhari & Sahih Muslim',
-      referenceUr: 'صحیح البخاری و صحیح مسلم',
+      book: 'Sahih Bukhari & Sahih Muslim',
+      bookUr: 'صحیح البخاری و صحیح مسلم',
     ),
     AqaidItem(
       id: 'i2',
@@ -211,8 +286,8 @@ class MockAqaidData {
       arabicText: 'إِنَّ اللَّهَ وَمَلَائِكَتَهُ يُصَلُّونَ عَلَى النَّبِيِّ ۚ يَا أَيُّهَا الَّذِينَ آمَنُوا صَلُّوا عَلَيْهِ وَسَلِّمُوا تَسْلِيمًا',
       explanation: 'Sending Durood and Salam upon the Prophet (ﷺ) is a Divine command that brings immense spiritual elevation and forgiveness of sins.',
       explanationUr: 'بے شک اللہ اور اس کے فرشتے نبی پر درود بھیجتے ہیں۔ اے ایمان والو! تم بھی ان پر درود اور سلام بھیجو۔',
-      reference: 'Surah Al-Ahzab (33:56)',
-      referenceUr: 'سورۃ الاحزاب (۳۳:۵۶)',
+      book: 'Surah Al-Ahzab (33:56)',
+      bookUr: 'سورۃ الاحزاب (۳۳:۵۶)',
     ),
 
     // ── WILAYAT AQAID ──────────────────────────────────────────────
@@ -224,8 +299,8 @@ class MockAqaidData {
       arabicText: 'أَلَا إِنَّ أَوْلِيَاءَ اللَّهِ لَا خَوْفٌ عَلَيْهِمْ وَلَا هُمْ يَحْزَنُونَ',
       explanation: 'Unquestionably, for the allies and close friends of Allah (Awliya), there will be no fear concerning them, nor will they grieve.',
       explanationUr: 'خبردار! بے شک اللہ کے ولیوں پر نہ کوئی خوف ہے اور نہ وہ غمگین ہوں گے۔',
-      reference: 'Surah Yunus (10:62)',
-      referenceUr: 'سورۃ یونس (۱۰:۶۲)',
+      book: 'Surah Yunus (10:62)',
+      bookUr: 'سورۃ یونس (۱۰:۶۲)',
     ),
     AqaidItem(
       id: 'w2',
@@ -235,8 +310,8 @@ class MockAqaidData {
       arabicText: 'كُلَّمَا دَخَلَ عَلَيْهَا مِحْرَابَ زَكَرِيَّا وَجَدَ عِندَهَا رِزْقًا',
       explanation: 'Extraordinary miraculous deeds (Karamat) manifested at the hands of righteous pious Awliya are true and proven by Quran and Sunnah.',
       explanationUr: 'اولیاءِ کرام کے ہاتھوں سے ظاہر ہونے والی خلافِ عادت کرامات برحق ہیں اور قرآن و سنت سے ثابت ہیں۔',
-      reference: 'Surah Aal-e-Imran (3:37)',
-      referenceUr: 'سورۃ آل عمران (۳:۳۷)',
+      book: 'Surah Aal-e-Imran (3:37)',
+      bookUr: 'سورۃ آل عمران (۳:۳۷)',
     ),
   ];
 }
