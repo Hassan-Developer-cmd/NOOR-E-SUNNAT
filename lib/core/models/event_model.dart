@@ -1,8 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
+
 
 class EventModel {
+  static const List<String> supportedStatuses = [
+    'Coming Soon',
+    'Featured',
+    'Ongoing',
+    'Completed',
+    'Cancelled',
+  ];
+
   final String id;
   final String title;
   final String titleUr;
@@ -12,6 +20,11 @@ class EventModel {
   final String status;
   final String description;
   final String descriptionUr;
+  final List<Map<String, dynamic>> statusHistory;
+  final String? lastNotifiedStatus;
+  final dynamic lastNotificationSentAt;
+  final dynamic createdAt;
+  final dynamic updatedAt;
 
   const EventModel({
     required this.id,
@@ -23,6 +36,11 @@ class EventModel {
     required this.status,
     required this.description,
     this.descriptionUr = '',
+    this.statusHistory = const [],
+    this.lastNotifiedStatus,
+    this.lastNotificationSentAt,
+    this.createdAt,
+    this.updatedAt,
   });
 
   String getTitle(bool isUrdu) => isUrdu && titleUr.isNotEmpty ? titleUr : title;
@@ -33,15 +51,63 @@ class EventModel {
   List<Color> get gradientColors {
     switch (status.toLowerCase()) {
       case 'featured':
-        return [AppColors.primaryEmerald, AppColors.emeraldDark];
-      case 'recurring':
-        return [const Color(0xFF1E5631), const Color(0xFF4C9A2A)];
+        return [const Color(0xFF0F766E), const Color(0xFF065F46)]; // Deep Teal / Emerald
+      case 'ongoing':
+        return [const Color(0xFFDC2626), const Color(0xFF991B1B)]; // Live Crimson
+      case 'completed':
+        return [const Color(0xFF059669), const Color(0xFF047857)]; // Emerald Green
+      case 'cancelled':
+        return [const Color(0xFF64748B), const Color(0xFF475569)]; // Slate Grey
+      case 'coming soon':
       default:
-        return [const Color(0xFF8B6B23), const Color(0xFFD4AF37)];
+        return [const Color(0xFF0284C7), const Color(0xFF0369A1)]; // Ocean Indigo / Gold
+    }
+  }
+
+  // Chip background color for tables & badges
+  Color get statusBgColor {
+    switch (status.toLowerCase()) {
+      case 'featured':
+        return const Color(0xFFFEF3C7);
+      case 'ongoing':
+        return const Color(0xFFFEE2E2);
+      case 'completed':
+        return const Color(0xFFD1FAE5);
+      case 'cancelled':
+        return const Color(0xFFF1F5F9);
+      case 'coming soon':
+      default:
+        return const Color(0xFFE0F2FE);
+    }
+  }
+
+  // Chip text color for tables & badges
+  Color get statusFgColor {
+    switch (status.toLowerCase()) {
+      case 'featured':
+        return const Color(0xFFB45309);
+      case 'ongoing':
+        return const Color(0xFFDC2626);
+      case 'completed':
+        return const Color(0xFF059669);
+      case 'cancelled':
+        return const Color(0xFF64748B);
+      case 'coming soon':
+      default:
+        return const Color(0xFF0284C7);
     }
   }
 
   factory EventModel.fromMap(String id, Map<String, dynamic> map) {
+    // Parse status history
+    List<Map<String, dynamic>> history = [];
+    if (map['status_history'] is List) {
+      history = (map['status_history'] as List)
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    }
+
     return EventModel(
       id: id,
       title: map['title'] as String? ?? '',
@@ -49,9 +115,14 @@ class EventModel {
       dateTime: map['date_time'] as String? ?? '',
       location: map['location'] as String? ?? '',
       locationUr: map['location_ur'] as String? ?? '',
-      status: map['status'] as String? ?? 'Upcoming',
+      status: map['status'] as String? ?? 'Coming Soon',
       description: map['description'] as String? ?? '',
       descriptionUr: map['description_ur'] as String? ?? '',
+      statusHistory: history,
+      lastNotifiedStatus: map['last_notified_status'] as String?,
+      lastNotificationSentAt: map['last_notification_sent_at'],
+      createdAt: map['created_at'],
+      updatedAt: map['updated_at'],
     );
   }
 
@@ -64,6 +135,10 @@ class EventModel {
         'status': status,
         'description': description,
         'description_ur': descriptionUr,
-        'created_at': FieldValue.serverTimestamp(),
+        'status_history': statusHistory,
+        'last_notified_status': lastNotifiedStatus ?? status,
+        'last_notification_sent_at': lastNotificationSentAt ?? FieldValue.serverTimestamp(),
+        'created_at': createdAt ?? FieldValue.serverTimestamp(),
+        'updated_at': FieldValue.serverTimestamp(),
       };
 }

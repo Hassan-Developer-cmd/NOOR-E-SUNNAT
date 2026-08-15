@@ -36,7 +36,16 @@ class AppTranslations {
       'send_salawat_now': 'Send Salawat Now',
       'upcoming_events': 'Upcoming Events',
       'no_upcoming_events': 'No upcoming events currently scheduled.',
+      'notifications_title': 'Notifications & Announcements',
+      'mark_all_read': 'Mark all read',
+      'no_notifications': 'No notifications yet',
+      'status_coming_soon': 'Coming Soon',
+      'status_featured': 'Featured',
+      'status_ongoing': 'Ongoing',
+      'status_completed': 'Completed',
+      'status_cancelled': 'Cancelled',
       'hadith_wisdom_title': 'Hadith of the Day',
+
       'hadith_quote': 'He who sends a single Salawat upon me, Allah will send ten blessings upon him.',
       'hadith_citation': 'Sahih Muslim (408)',
 
@@ -150,7 +159,16 @@ class AppTranslations {
       'send_salawat_now': 'درود پاک پڑھیں',
       'upcoming_events': 'آنے والے پروگرام',
       'no_upcoming_events': 'فی الحال کوئی پروگرام شیڈول نہیں ہے۔',
+      'notifications_title': 'اعلانات و اطلاعات',
+      'mark_all_read': 'سب پڑھا ہوا نشان زد کریں',
+      'no_notifications': 'کوئی نیا اعلان نہیں ہے',
+      'status_coming_soon': 'عنقریب',
+      'status_featured': 'نمایاں',
+      'status_ongoing': 'جاری ہے',
+      'status_completed': 'مکمل ہو گیا',
+      'status_cancelled': 'منسوخ',
       'hadith_wisdom_title': 'آج کی حدیثِ پاک',
+
       'hadith_quote': 'جس نے مجھ پر ایک بار درود بھیجا، اللہ تعالیٰ اس پر دس رحمتیں نازل فرماتا ہے۔',
       'hadith_citation': 'صحیح مسلم (۴۰۸)',
 

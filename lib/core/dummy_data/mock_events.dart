@@ -48,10 +48,10 @@ class MockEventsData {
       dateTime: 'Every Friday after Asr',
       location: 'Live Stream & Central Masjid',
       locationUr: 'لائیو اسٹریم و مرکزی جامع مسجد',
-      status: 'Recurring',
+      status: 'Ongoing',
       description: 'Sending special Salawat upon Prophet Muhammad (ﷺ) on the blessed day of Friday.',
       descriptionUr: 'جمعۃ المبارک کے بابرکت دن نمازِ عصر کے بعد نبی کریم صلی اللہ علیہ وآلہ وسلم کی بارگاہ میں خصوصی درود و سلام نذر کرنا۔',
-      gradientColors: [Color(0xFF1E5631), Color(0xFF4C9A2A)],
+      gradientColors: [Color(0xFFDC2626), Color(0xFF991B1B)],
     ),
     const IslamicEvent(
       id: '3',
@@ -60,10 +60,11 @@ class MockEventsData {
       dateTime: 'Mar 15, 6:30 PM',
       location: 'Islamic Cultural Center Auditorium',
       locationUr: 'اسلامک کلچرل سینٹر آڈیٹوریم',
-      status: 'Upcoming',
+      status: 'Coming Soon',
       description: 'Preparing our hearts for Ramadan through Durood, Istighfar, and lectures on Fiqh.',
       descriptionUr: 'درود پاک، استغفار اور فتاویٰ و مسائل کے بیانات کے ذریعے رمضان المبارک کے لیے دلوں کی تیاری۔',
-      gradientColors: [Color(0xFF8B6B23), Color(0xFFD4AF37)],
+      gradientColors: [Color(0xFF0284C7), Color(0xFF0369A1)],
     ),
   ];
+
 }

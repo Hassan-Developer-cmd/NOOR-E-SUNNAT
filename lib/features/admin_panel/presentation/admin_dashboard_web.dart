@@ -25,6 +25,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
   bool _isSeeding = false;
   String _selectedMasailCategory = 'all';
   String _selectedAqaidCategory = 'all';
+  String _selectedEventStatus = 'all';
+
 
 
   final List<String> _navItems = [
@@ -620,7 +622,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     }
   }
 
-  // ── Events Table ──────────────────────────────────────────────
+  // ── Events Table (Dynamic Status & Filters) ───────────────────
 
   Widget _buildEventsTable() {
     return StreamBuilder<List<EventModel>>(
@@ -629,32 +631,144 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        final events = (snap.data ?? [])
-            .where((e) => e.title.toLowerCase().contains(_searchQuery))
-            .toList();
-        return _tableCard([
-          const DataColumn(label: Text('Title', style: TextStyle(fontWeight: FontWeight.bold))),
-          const DataColumn(label: Text('Date/Time', style: TextStyle(fontWeight: FontWeight.bold))),
-          const DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
-          const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
-        ], events.map((e) => DataRow(cells: [
-          DataCell(Text(e.title, style: const TextStyle(fontWeight: FontWeight.w600))),
-          DataCell(Text(e.dateTime)),
-          DataCell(_statusChip(e.status, AppColors.goldLight, AppColors.goldDark)),
-          DataCell(Row(children: [
-            IconButton(
-              icon: const Icon(Icons.edit, size: 18, color: AppColors.primaryEmerald),
-              onPressed: () => _showEditEventModal(context, e),
+        final allEvents = snap.data ?? [];
+        final statusFilters = [
+          {'id': 'all', 'label': 'All Events'},
+          {'id': 'coming soon', 'label': 'Coming Soon'},
+          {'id': 'featured', 'label': 'Featured'},
+          {'id': 'ongoing', 'label': 'Ongoing'},
+          {'id': 'completed', 'label': 'Completed'},
+          {'id': 'cancelled', 'label': 'Cancelled'},
+        ];
+
+        final filtered = allEvents.where((e) {
+          final matchesStatus = _selectedEventStatus == 'all' ||
+              e.status.toLowerCase() == _selectedEventStatus.toLowerCase();
+          final matchesSearch = _searchQuery.isEmpty ||
+              e.title.toLowerCase().contains(_searchQuery) ||
+              e.titleUr.toLowerCase().contains(_searchQuery) ||
+              e.location.toLowerCase().contains(_searchQuery);
+          return matchesStatus && matchesSearch;
+        }).toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Status Filter Chips
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.borderLight),
+              ),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: statusFilters.map((st) {
+                    final stId = st['id']!;
+                    final isSelected = _selectedEventStatus == stId;
+                    final count = stId == 'all'
+                        ? allEvents.length
+                        : allEvents.where((e) => e.status.toLowerCase() == stId.toLowerCase()).length;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilterChip(
+                        selected: isSelected,
+                        selectedColor: AppColors.primaryEmerald,
+                        backgroundColor: AppColors.bgOffWhite,
+                        label: Text(
+                          '${st['label']} ($count)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                            color: isSelected ? Colors.white : AppColors.textPrimary,
+                          ),
+                        ),
+                        onSelected: (selected) {
+                          setState(() {
+                            _selectedEventStatus = selected ? stId : 'all';
+                          });
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
             ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-              onPressed: () => _confirmDelete(context, () => AdminService.deleteEvent(e.id)),
-            ),
-          ])),
-        ])).toList());
+            _tableCard([
+              const DataColumn(label: Text('Title', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Date/Time', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Status (Click to Change)', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
+            ], filtered.map((e) => DataRow(cells: [
+              DataCell(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(e.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    if (e.location.isNotEmpty)
+                      Text(e.location, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                  ],
+                ),
+              ),
+              DataCell(Text(e.dateTime, style: const TextStyle(fontSize: 12))),
+              DataCell(
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: e.statusBgColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: e.statusFgColor.withValues(alpha: 0.3)),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: EventModel.supportedStatuses.contains(e.status) ? e.status : 'Coming Soon',
+                      icon: Icon(Icons.arrow_drop_down, color: e.statusFgColor, size: 18),
+                      isDense: true,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: e.statusFgColor,
+                      ),
+                      items: EventModel.supportedStatuses.map((s) {
+                        return DropdownMenuItem<String>(
+                          value: s,
+                          child: Text(
+                            s.toUpperCase(),
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (newStatus) async {
+                        if (newStatus != null && newStatus != e.status) {
+                          await AdminService.updateEventStatus(e.id, newStatus, currentEvent: e);
+                          _snack('Event status updated to $newStatus! Notification emitted.');
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              DataCell(Row(children: [
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 18, color: AppColors.primaryEmerald),
+                  onPressed: () => _showEditEventModal(context, e),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                  onPressed: () => _confirmDelete(context, () => AdminService.deleteEvent(e.id)),
+                ),
+              ])),
+            ])).toList()),
+          ],
+        );
       },
     );
   }
+
 
   // ── Masail Table (Category-Wise) ──────────────────────────────
 
@@ -1009,7 +1123,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     final locUrC = TextEditingController();
     final descC = TextEditingController();
     final descUrC = TextEditingController();
-    String status = 'Upcoming';
+    String status = 'Coming Soon';
 
     showDialog(
       context: context,
@@ -1037,11 +1151,11 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: status,
-                  decoration: const InputDecoration(labelText: 'Status', border: OutlineInputBorder()),
-                  items: ['Upcoming', 'Featured', 'Recurring']
+                  decoration: const InputDecoration(labelText: 'Event Status', border: OutlineInputBorder()),
+                  items: EventModel.supportedStatuses
                       .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                       .toList(),
-                  onChanged: (v) => setModal(() => status = v ?? 'Upcoming'),
+                  onChanged: (v) => setModal(() => status = v ?? 'Coming Soon'),
                 ),
               ]),
             ),
@@ -1067,7 +1181,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 ));
                 if (ctx.mounted) {
                   Navigator.pop(ctx);
-                  _snack('Event added successfully!');
+                  _snack('Event added & automated notification dispatched!');
                 }
               },
               child: const Text('Save Event'),
@@ -1086,56 +1200,70 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     final locUrC = TextEditingController(text: event.locationUr);
     final descC = TextEditingController(text: event.description);
     final descUrC = TextEditingController(text: event.descriptionUr);
+    String status = EventModel.supportedStatuses.contains(event.status) ? event.status : 'Coming Soon';
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Edit Event', style: AppTypography.titleMedium),
-        content: SizedBox(
-          width: _dialogWidth(context),
-          child: SingleChildScrollView(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              _field(titleC, 'Event Title (English)'),
-              const SizedBox(height: 12),
-              _field(titleUrC, 'Event Title (Urdu / اردو)'),
-              const SizedBox(height: 12),
-              _field(dateC, 'Date & Time'),
-              const SizedBox(height: 12),
-              _field(locC, 'Location (English)'),
-              const SizedBox(height: 12),
-              _field(locUrC, 'Location (Urdu / اردو)'),
-              const SizedBox(height: 12),
-              _field(descC, 'Description (English)', maxLines: 2),
-              const SizedBox(height: 12),
-              _field(descUrC, 'Description (Urdu / اردو)', maxLines: 2),
-            ]),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModal) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Edit Event', style: AppTypography.titleMedium),
+          content: SizedBox(
+            width: _dialogWidth(context),
+            child: SingleChildScrollView(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                _field(titleC, 'Event Title (English)'),
+                const SizedBox(height: 12),
+                _field(titleUrC, 'Event Title (Urdu / اردو)'),
+                const SizedBox(height: 12),
+                _field(dateC, 'Date & Time'),
+                const SizedBox(height: 12),
+                _field(locC, 'Location (English)'),
+                const SizedBox(height: 12),
+                _field(locUrC, 'Location (Urdu / اردو)'),
+                const SizedBox(height: 12),
+                _field(descC, 'Description (English)', maxLines: 2),
+                const SizedBox(height: 12),
+                _field(descUrC, 'Description (Urdu / اردو)', maxLines: 2),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: status,
+                  decoration: const InputDecoration(labelText: 'Event Status', border: OutlineInputBorder()),
+                  items: EventModel.supportedStatuses
+                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                      .toList(),
+                  onChanged: (v) => setModal(() => status = v ?? 'Coming Soon'),
+                ),
+              ]),
+            ),
           ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                await AdminService.updateEvent(event.id, {
+                  'title': titleC.text,
+                  'title_ur': titleUrC.text,
+                  'date_time': dateC.text,
+                  'location': locC.text,
+                  'location_ur': locUrC.text,
+                  'description': descC.text,
+                  'description_ur': descUrC.text,
+                  'status': status,
+                });
+                if (ctx.mounted) {
+                  Navigator.pop(ctx);
+                  _snack('Event updated!');
+                }
+              },
+              child: const Text('Update Event'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              await AdminService.updateEvent(event.id, {
-                'title': titleC.text,
-                'title_ur': titleUrC.text,
-                'date_time': dateC.text,
-                'location': locC.text,
-                'location_ur': locUrC.text,
-                'description': descC.text,
-                'description_ur': descUrC.text,
-              });
-              if (ctx.mounted) {
-                Navigator.pop(ctx);
-                _snack('Event updated!');
-              }
-            },
-            child: const Text('Update Event'),
-          ),
-        ],
       ),
     );
   }
+
 
   void _showAddMasailModal(BuildContext context) {
     final qC = TextEditingController();

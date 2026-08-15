@@ -11,8 +11,11 @@ import 'widgets/event_card.dart';
 import 'widgets/durood_summary_card.dart';
 import 'widgets/gamification_bar.dart';
 import 'widgets/hadith_wisdom_card.dart';
+import 'widgets/notifications_sheet.dart';
+import '../../../services/notification_service.dart';
 
 class HomeScreen extends StatelessWidget {
+
   final CounterService counterService;
   final VoidCallback onNavigateToCounter;
 
@@ -108,10 +111,65 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 actions: [
+                  // Notification Bell with live unread badge
+                  Center(
+                    child: StreamBuilder<int>(
+                      stream: NotificationService.unreadCountStream,
+                      builder: (context, snapshot) {
+                        final unreadCount = snapshot.data ?? 0;
+                        return Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            GestureDetector(
+                              onTap: () => NotificationsSheet.show(context),
+                              child: Container(
+                                padding: const EdgeInsets.all(7),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                                ),
+                                child: const Icon(
+                                  Icons.notifications_none_rounded,
+                                  color: Colors.white,
+                                  size: 19,
+                                ),
+                              ),
+                            ),
+                            if (unreadCount > 0)
+                              Positioned(
+                                top: -3,
+                                right: -3,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFEF4444),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                                  child: Text(
+                                    unreadCount > 9 ? '9+' : '$unreadCount',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                      height: 1,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
                   // Language toggle
                   Center(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsetsDirectional.only(end: 16),
                       child: GestureDetector(
                         onTap: () => lp.toggleLanguage(),
                         child: Container(
@@ -134,6 +192,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                 ],
+
               ),
 
               // ── Content ─────────────────────────────────────────────────────

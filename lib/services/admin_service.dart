@@ -43,19 +43,198 @@ class AdminService {
             .toList());
   }
 
+  /// Adds a new event and dispatches an automated deduplicated notification.
   static Future<void> addEvent(EventModel event) async {
-    await _firestore.collection('events').add(event.toMap());
-  }
+    final initialHistory = [
+      {
+        'status': event.status,
+        'changed_at': Timestamp.now(),
+        'note': 'Initial event created',
+      }
+    ];
 
-  static Future<void> updateEvent(String id, Map<String, dynamic> data) async {
-    await _firestore.collection('events').doc(id).update({
-      ...data,
+    final docRef = await _firestore.collection('events').add({
+      'title': event.title,
+      'title_ur': event.titleUr,
+      'date_time': event.dateTime,
+      'location': event.location,
+      'location_ur': event.locationUr,
+      'status': event.status,
+      'description': event.description,
+      'description_ur': event.descriptionUr,
+      'status_history': initialHistory,
+      'last_notified_status': event.status,
+      'last_notification_sent_at': FieldValue.serverTimestamp(),
+      'created_at': FieldValue.serverTimestamp(),
       'updated_at': FieldValue.serverTimestamp(),
     });
+
+    // Dispatch automated event creation notification
+    await sendNotification(
+      title: 'New Event Announced! 📢',
+      titleUr: 'نئے ایونٹ کا اعلان! 📢',
+      body: '${event.title} is ${event.status.toLowerCase() == 'coming soon' ? 'coming soon' : event.status}. Stay tuned!',
+      bodyUr: '${event.titleUr.isNotEmpty ? event.titleUr : event.title} جلد آ رہا ہے۔ باخبر رہیں!',
+      target: 'all_users',
+      type: 'event_announcement',
+      eventId: docRef.id,
+    );
+  }
+
+  /// Modifies event status directly with deduplicated status transition notification.
+  static Future<void> updateEventStatus(String eventId, String newStatus, {EventModel? currentEvent}) async {
+    EventModel? event = currentEvent;
+    if (event == null) {
+      final doc = await _firestore.collection('events').doc(eventId).get();
+      if (!doc.exists || doc.data() == null) return;
+      event = EventModel.fromMap(doc.id, doc.data()!);
+    }
+
+    final oldStatus = event.status;
+    final lastNotified = event.lastNotifiedStatus;
+
+    // Deduplication check: only notify if status has truly transitioned to an unnotified state
+    final shouldNotify = newStatus != oldStatus && newStatus != lastNotified;
+
+    final updateData = <String, dynamic>{
+      'status': newStatus,
+      'updated_at': FieldValue.serverTimestamp(),
+      'status_history': FieldValue.arrayUnion([
+        {
+          'status': newStatus,
+          'previous_status': oldStatus,
+          'changed_at': Timestamp.now(),
+        }
+      ]),
+    };
+
+    if (shouldNotify) {
+      updateData['last_notified_status'] = newStatus;
+      updateData['last_notification_sent_at'] = FieldValue.serverTimestamp();
+    }
+
+    await _firestore.collection('events').doc(eventId).update(updateData);
+
+    // If status changed and hasn't been notified yet, dispatch tailored notification
+    if (shouldNotify) {
+      final title = _getNotificationTitleForStatus(event.title, newStatus);
+      final titleUr = _getNotificationTitleUrForStatus(event.getTitle(true), newStatus);
+      final body = _getNotificationBodyForStatus(event.title, newStatus);
+      final bodyUr = _getNotificationBodyUrForStatus(event.getTitle(true), newStatus);
+
+      await sendNotification(
+        title: title,
+        titleUr: titleUr,
+        body: body,
+        bodyUr: bodyUr,
+        target: 'all_users',
+        type: 'event_update',
+        eventId: eventId,
+      );
+    }
+  }
+
+  /// Updates event document with deduplicated status checking.
+  static Future<void> updateEvent(String id, Map<String, dynamic> data) async {
+    final doc = await _firestore.collection('events').doc(id).get();
+    if (!doc.exists || doc.data() == null) {
+      await _firestore.collection('events').doc(id).set({
+        ...data,
+        'updated_at': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      return;
+    }
+
+    final currentEvent = EventModel.fromMap(doc.id, doc.data()!);
+    final newStatus = data['status'] as String?;
+
+    if (newStatus != null && newStatus != currentEvent.status) {
+      await updateEventStatus(id, newStatus, currentEvent: currentEvent);
+      // Remove status from data since updateEventStatus handled status + history + notifications
+      final remainingData = Map<String, dynamic>.from(data)..remove('status');
+      if (remainingData.isNotEmpty) {
+        await _firestore.collection('events').doc(id).update({
+          ...remainingData,
+          'updated_at': FieldValue.serverTimestamp(),
+        });
+      }
+    } else {
+      // No status change -> only update other fields (NO notification emitted)
+      await _firestore.collection('events').doc(id).update({
+        ...data,
+        'updated_at': FieldValue.serverTimestamp(),
+      });
+    }
   }
 
   static Future<void> deleteEvent(String id) async {
     await _firestore.collection('events').doc(id).delete();
+  }
+
+  // ── Notification Helpers ─────────────────────────────────────
+
+  static String _getNotificationTitleForStatus(String eventTitle, String status) {
+    switch (status.toLowerCase()) {
+      case 'featured':
+        return 'Event Update: $eventTitle ⭐';
+      case 'ongoing':
+        return 'Event Started: $eventTitle 🔴';
+      case 'completed':
+        return 'Event Concluded: $eventTitle ✅';
+      case 'cancelled':
+        return 'Event Notice: $eventTitle ⚠️';
+      case 'coming soon':
+      default:
+        return 'Event Update: $eventTitle 📢';
+    }
+  }
+
+  static String _getNotificationTitleUrForStatus(String eventTitleUr, String status) {
+    switch (status.toLowerCase()) {
+      case 'featured':
+        return 'نمایاں ایونٹ: $eventTitleUr ⭐';
+      case 'ongoing':
+        return 'ایونٹ شروع ہو چکا ہے: $eventTitleUr 🔴';
+      case 'completed':
+        return 'ایونٹ مکمل ہوا: $eventTitleUr ✅';
+      case 'cancelled':
+        return 'اہم اطلاع: $eventTitleUr ⚠️';
+      case 'coming soon':
+      default:
+        return 'ایونٹ کی معلومات: $eventTitleUr 📢';
+    }
+  }
+
+  static String _getNotificationBodyForStatus(String eventTitle, String status) {
+    switch (status.toLowerCase()) {
+      case 'featured':
+        return '$eventTitle is now Featured! Check the schedule and details.';
+      case 'ongoing':
+        return '$eventTitle is now Live & Ongoing! Join now.';
+      case 'completed':
+        return '$eventTitle has successfully concluded. JazakAllah Khair for participating!';
+      case 'cancelled':
+        return '$eventTitle has been cancelled or rescheduled.';
+      case 'coming soon':
+      default:
+        return '$eventTitle is coming soon. Stay tuned for further updates!';
+    }
+  }
+
+  static String _getNotificationBodyUrForStatus(String eventTitleUr, String status) {
+    switch (status.toLowerCase()) {
+      case 'featured':
+        return '$eventTitleUr اب نمایاں ایونٹ ہے۔ شیڈول اور تفصیلات دیکھیں۔';
+      case 'ongoing':
+        return '$eventTitleUr اس وقت جاری ہے! ابھی شرکت کریں۔';
+      case 'completed':
+        return '$eventTitleUr کامیابی سے مکمل ہو گیا۔ شرکت کرنے پر جزاک اللہ خیراً!';
+      case 'cancelled':
+        return '$eventTitleUr منسوخ یا مؤخر کر دیا گیا ہے۔';
+      case 'coming soon':
+      default:
+        return '$eventTitleUr جلد آ رہا ہے۔ مزید معلومات کے لیے باخبر رہیں!';
+    }
   }
 
   // ── Masail CRUD ─────────────────────────────────────────────
@@ -159,15 +338,25 @@ class AdminService {
   static Future<void> sendNotification({
     required String title,
     required String body,
+    String? titleUr,
+    String? bodyUr,
     String target = 'all_users',
+    String type = 'broadcast',
+    String? eventId,
   }) async {
     await _firestore.collection('notifications').add({
       'title': title,
+      'title_ur': titleUr ?? title,
       'body': body,
+      'body_ur': bodyUr ?? body,
       'target': target,
+      'type': type,
+      'event_id': ?eventId,
       'sent_at': FieldValue.serverTimestamp(),
     });
+
   }
+
 
   // ── User Management ─────────────────────────────────────────
 
