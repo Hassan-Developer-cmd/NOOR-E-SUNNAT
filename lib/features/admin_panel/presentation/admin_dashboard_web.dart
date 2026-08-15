@@ -310,7 +310,9 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
               child: Text(
                 _selectedNavIndex == 0
                     ? 'Users Leaderboard'
-                    : 'Manage ${_navItems[_selectedNavIndex]}',
+                    : (_selectedNavIndex == 6
+                        ? 'Manage User Questions & Q&A'
+                        : 'Manage ${_navItems[_selectedNavIndex]}'),
                 style: AppTypography.headingMedium,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -1183,8 +1185,28 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
       stream: AdminService.questionsStream,
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(40),
+              child: CircularProgressIndicator(color: AppColors.primaryEmerald),
+            ),
+          );
         }
+        if (snap.hasError) {
+          return Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.red.shade200),
+            ),
+            child: Text(
+              'Error loading questions: ${snap.error}',
+              style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+          );
+        }
+
         final allItems = snap.data ?? [];
         final statusFilters = [
           {'id': 'all', 'label': 'All Questions'},
@@ -1253,81 +1275,147 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 ),
               ),
             ),
-            _tableCard([
-              const DataColumn(label: Text('User / Email', style: TextStyle(fontWeight: FontWeight.bold))),
-              const DataColumn(label: Text('Category', style: TextStyle(fontWeight: FontWeight.bold))),
-              const DataColumn(label: Text('Question', style: TextStyle(fontWeight: FontWeight.bold))),
-              const DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
-              const DataColumn(label: Text('Public', style: TextStyle(fontWeight: FontWeight.bold))),
-              const DataColumn(label: Text('Submitted', style: TextStyle(fontWeight: FontWeight.bold))),
-              const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
-            ], filtered.map((q) {
-              final isPending = q.isPending;
-              return DataRow(cells: [
-                DataCell(
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(q.userName, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      Text(q.userEmail, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-                    ],
-                  ),
+
+            if (filtered.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(40),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.borderLight),
+                  boxShadow: const [
+                    BoxShadow(color: AppColors.shadowColor, blurRadius: 8, offset: Offset(0, 2)),
+                  ],
                 ),
-                DataCell(_statusChip(q.category.toUpperCase(), AppColors.emeraldContainer, AppColors.primaryEmerald)),
-                DataCell(
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 240),
-                    child: Text(
-                      q.question,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: const BoxDecoration(
+                        color: AppColors.emeraldContainer,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.question_answer_outlined,
+                        size: 38,
+                        color: AppColors.primaryEmerald,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      allItems.isEmpty ? 'No Questions Submitted Yet' : 'No Matching Inquiries Found',
+                      style: AppTypography.headingMedium.copyWith(fontSize: 17),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      allItems.isEmpty
+                          ? 'When mobile app users submit questions, they will appear here with an automatic 24-hour SLA badge.'
+                          : 'Try adjusting your search query or status filter chips.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.grey, fontSize: 13),
+                    ),
+                    if (allItems.isEmpty) ...[
+                      const SizedBox(height: 20),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryEmerald,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () async {
+                          setState(() => _isSeeding = true);
+                          await FirestoreSeeder.checkAndSeedFirestore(force: true);
+                          if (mounted) {
+                            setState(() => _isSeeding = false);
+                            _snack('Sample Q&A inquiries seeded successfully to Firestore.');
+                          }
+                        },
+                        icon: const Icon(Icons.cloud_download_outlined, size: 18),
+                        label: const Text('Seed Sample Questions for Testing'),
+                      ),
+                    ],
+                  ],
+                ),
+              )
+            else
+              _tableCard([
+                const DataColumn(label: Text('User / Email', style: TextStyle(fontWeight: FontWeight.bold))),
+                const DataColumn(label: Text('Category', style: TextStyle(fontWeight: FontWeight.bold))),
+                const DataColumn(label: Text('Question', style: TextStyle(fontWeight: FontWeight.bold))),
+                const DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
+                const DataColumn(label: Text('Public', style: TextStyle(fontWeight: FontWeight.bold))),
+                const DataColumn(label: Text('Submitted', style: TextStyle(fontWeight: FontWeight.bold))),
+                const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
+              ], filtered.map((q) {
+                final isPending = q.isPending;
+                return DataRow(cells: [
+                  DataCell(
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(q.userName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                        Text(q.userEmail, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                      ],
                     ),
                   ),
-                ),
-                DataCell(
-                  _statusChip(
-                    isPending ? 'PENDING (24h SLA)' : 'ANSWERED',
-                    isPending ? AppColors.goldLight : AppColors.emeraldContainer,
-                    isPending ? AppColors.goldDark : AppColors.primaryEmerald,
+                  DataCell(_statusChip(q.category.toUpperCase(), AppColors.emeraldContainer, AppColors.primaryEmerald)),
+                  DataCell(
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 240),
+                      child: Text(
+                        q.question,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                    ),
                   ),
-                ),
-                DataCell(
-                  _statusChip(
-                    q.isPublic ? 'PUBLIC' : 'PRIVATE',
-                    q.isPublic ? const Color(0xFFE0F2FE) : Colors.grey.shade200,
-                    q.isPublic ? const Color(0xFF0369A1) : Colors.grey.shade700,
+                  DataCell(
+                    _statusChip(
+                      isPending ? 'PENDING (24h SLA)' : 'ANSWERED',
+                      isPending ? AppColors.goldLight : AppColors.emeraldContainer,
+                      isPending ? AppColors.goldDark : AppColors.primaryEmerald,
+                    ),
                   ),
-                ),
-                DataCell(
-                  Text(
-                    q.createdAt != null ? '${q.createdAt!.day}/${q.createdAt!.month}/${q.createdAt!.year}' : '',
-                    style: const TextStyle(fontSize: 12),
+                  DataCell(
+                    _statusChip(
+                      q.isPublic ? 'PUBLIC' : 'PRIVATE',
+                      q.isPublic ? const Color(0xFFE0F2FE) : Colors.grey.shade200,
+                      q.isPublic ? const Color(0xFF0369A1) : Colors.grey.shade700,
+                    ),
                   ),
-                ),
-                DataCell(
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          isPending ? Icons.rate_review_rounded : Icons.edit_note_rounded,
-                          size: 20,
-                          color: isPending ? AppColors.accentGold : AppColors.primaryEmerald,
+                  DataCell(
+                    Text(
+                      q.createdAt != null ? '${q.createdAt!.day}/${q.createdAt!.month}/${q.createdAt!.year}' : '',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                  DataCell(
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            isPending ? Icons.rate_review_rounded : Icons.edit_note_rounded,
+                            size: 20,
+                            color: isPending ? AppColors.accentGold : AppColors.primaryEmerald,
+                          ),
+                          tooltip: isPending ? 'Answer Question' : 'Edit Answer',
+                          onPressed: () => _showAnswerQuestionModal(context, q),
                         ),
-                        tooltip: isPending ? 'Answer Question' : 'Edit Answer',
-                        onPressed: () => _showAnswerQuestionModal(context, q),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                        tooltip: 'Delete Question',
-                        onPressed: () => _confirmDelete(context, () => AdminService.deleteQuestion(q.id)),
-                      ),
-                    ],
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                          tooltip: 'Delete Question',
+                          onPressed: () => _confirmDelete(context, () => AdminService.deleteQuestion(q.id)),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ]);
-            }).toList()),
+                ]);
+              }).toList()),
           ],
         );
       },

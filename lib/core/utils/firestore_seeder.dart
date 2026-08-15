@@ -4,11 +4,12 @@ import '../models/masail_model.dart';
 import '../models/aqaid_model.dart';
 import '../models/daily_content_model.dart';
 import '../models/event_model.dart';
+import '../models/question_model.dart';
 
 class FirestoreSeeder {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Checks essential Firestore collections (`masail_entries`, `aqaid_entries`, `daily_content`, `events`, `global_counter`).
+  /// Checks essential Firestore collections (`masail_entries`, `aqaid_entries`, `daily_content`, `events`, `global_counter`, `user_questions`).
   ///
   /// If a collection already contains documents (`count > 0`), seeding is skipped for that collection.
   /// If a collection is empty (`count == 0`), default data is safely seeded.
@@ -19,6 +20,7 @@ class FirestoreSeeder {
       'daily_content': {'count': 0, 'seeded': false, 'status': ''},
       'events': {'count': 0, 'seeded': false, 'status': ''},
       'global_counter': {'count': 0, 'seeded': false, 'status': ''},
+      'user_questions': {'count': 0, 'seeded': false, 'status': ''},
     };
 
     try {
@@ -78,19 +80,21 @@ class FirestoreSeeder {
           title: 'Virtue of Sending Durood',
           titleUr: 'درود شریف کی فضیلت',
           arabicText: 'مَنْ صَلَّى عَلَيَّ وَاحِدَةً صَلَّى اللهُ عَلَيْهِ عَشْرًا',
-          content:
-              'Whoever sends blessings upon me once, Allah will send blessings upon him ten times.',
-          contentUr:
-              'جو شخص مجھ پر ایک بار درود بھیجتا ہے، اللہ تعالیٰ اس پر دس رحمتیں نازل فرماتا ہے۔',
-          citation: 'Sahih Muslim 408',
-          citationUr: 'صحیح مسلم ۴۰۸',
+          content: 'He who sends a single Salawat upon me, Allah will send ten blessings upon him.',
+          contentUr: 'جس نے مجھ پر ایک مرتبہ درود بھیجا، اللہ تعالیٰ اس پر دس رحمتیں نازل فرمائے گا۔',
+          citation: 'Sahih Muslim (408)',
+          citationUr: 'صحیح مسلم (۴۰۸)',
           isActive: true,
           isTopicOfTheDay: true,
         );
-        await _firestore.collection('daily_content').doc(defaultHadith.id).set(
-              defaultHadith.toMap(),
-              SetOptions(merge: true),
-            );
+
+        final batch = _firestore.batch();
+        batch.set(
+          _firestore.collection('daily_content').doc(defaultHadith.id),
+          defaultHadith.toMap(),
+          SetOptions(merge: true),
+        );
+        await batch.commit();
         results['daily_content']['seeded'] = true;
         results['daily_content']['status'] = 'Seeded default Hadith';
       }
@@ -130,6 +134,24 @@ class FirestoreSeeder {
         }, SetOptions(merge: true));
         results['global_counter']['seeded'] = true;
         results['global_counter']['status'] = 'Seeded global counter main doc';
+      }
+
+      // 6. Check & Seed User Questions
+      final questionsSnap = await _firestore.collection('user_questions').get();
+      final questionsCount = questionsSnap.docs.length;
+      results['user_questions']['count'] = questionsCount;
+
+      if (questionsCount > 0 && !force) {
+        results['user_questions']['status'] = 'Skipped (Already has $questionsCount docs)';
+      } else {
+        final batch = _firestore.batch();
+        for (var q in _initialQuestionsSeed) {
+          final docRef = _firestore.collection('user_questions').doc(q.id);
+          batch.set(docRef, q.toMap(), SetOptions(merge: true));
+        }
+        await batch.commit();
+        results['user_questions']['seeded'] = true;
+        results['user_questions']['status'] = 'Seeded ${_initialQuestionsSeed.length} sample inquiries';
       }
 
       return results;
@@ -180,78 +202,68 @@ class FirestoreSeeder {
     MasailItemModel(
       id: 'namaz_2',
       categoryId: 'namaz',
-      question: 'Is it permissible to perform Salah while wearing socks with moisture or perfume?',
-      questionUr: 'کیا عطر یا خوشبو لگی جرابوں پر نماز ادا کی جا سکتی ہے؟',
-      answer: 'Yes, as long as the perfume does not contain impure alcohol and the socks are clean (paak). Salah is completely valid.',
-      answerUr: 'جی ہاں، اگر عطر یا خوشبو ناپاک الکحل سے پاک ہو اور جرابیں طاہر و پاک ہوں تو نماز بالکل جائز اور درست ہے۔',
-      book: 'Fatawa Razawiyyah, Vol. 6, Page 120',
-      bookUr: 'فتاویٰ رضویہ، جلد ۶، صفحہ ۱۲۰',
+      question: 'Is it permissible to perform Salah while wearing socks with holes?',
+      questionUr: 'کیا سوراخ والی جرابوں میں نماز ادا ہو جاتی ہے؟',
+      answer: 'Normal thin cotton or nylon socks with small tears do not invalidate prayer as long as the total exposed skin of the required body area (Satr) does not equal or exceed the width of three fingers during a single pillar.',
+      answerUr: 'عام سوتی یا نائلون کی جرابوں پر اگر چھوٹا سوراخ ہو تو نماز ادا ہو جائے گی، بشرطیکہ وہ تین انگلیوں کے برابر نہ کھلا ہو۔',
+      book: 'Fatawa Razawiyya, Vol. 7, Page 245',
+      bookUr: 'فتاویٰ رضویہ، جلد ۷، صفحہ ۲۴۵',
     ),
     MasailItemModel(
       id: 'wuzu_1',
       categoryId: 'wuzu',
-      question: 'What are the 4 Fard (obligatory) acts of Wuzu?',
-      questionUr: 'وضو کے چار فرائض کون کون سے ہیں؟',
-      answer: '1. Washing the face from hairline to below chin and ear to ear.\n2. Washing both arms including elbows.\n3. Masah (wiping) of one-fourth of the head.\n4. Washing both feet including ankles.',
-      answerUr: '۱. پیشانی کے بالوں سے ٹھوڑی کے نیچے تک اور ایک کان کی لو سے دوسرے کان تک چہرہ دھونا۔\n۲. دونوں ہاتھوں کو کہنیوں سمیت دھونا۔\n۳. چوتھائی سر کا مسح کرنا۔\n۴. دونوں پاؤں ٹخنوں سمیت دھونا۔',
-      book: 'Bahar-e-Shariat, Vol. 1, Page 288',
-      bookUr: 'بہارِ شریعت، حصہ ۲، صفحہ ۲۸۸',
-    ),
-    MasailItemModel(
-      id: 'roza_1',
-      categoryId: 'roza',
-      question: 'Does using an inhaler for asthma invalidate the fast (Sawm)?',
-      questionUr: 'کیا دمہ کے مریض کا انہیلر استعمال کرنے سے روزہ ٹوٹ جاتا ہے؟',
-      answer: 'Yes, using a medicinal inhaler breaks the fast because medication reaches the stomach/lungs. A Qada fast is required later when health permits.',
-      answerUr: 'جی ہاں، انہیلر کے ذریعے دوا کے ذرات پھیپھڑوں اور حلق کے راستے معدے تک پہنچتے ہیں، اس لیے روزہ فاسد ہو جاتا ہے اور بعد میں قضا لازم ہے۔',
-      book: 'Fatawa Razawiyyah, Vol. 10, Page 512',
-      bookUr: 'فتاویٰ رضویہ، جلد ۱۰، صفحہ ۵۱۲',
+      question: 'Does bleeding from gums invalidate Wuzu?',
+      questionUr: 'کیا مسوڑھوں سے خون نکلنے سے وضو ٹوٹ جاتا ہے؟',
+      answer: 'If the blood is equal to or more prominent than the saliva (indicated by yellow or reddish color upon spitting), Wuzu is invalidated. If saliva remains predominantly clear or slightly yellowish, Wuzu remains intact.',
+      answerUr: 'اگر تھوک میں خون کا رنگ غالب یا برابر ہو (سرخی یا گہرا پن ہو) تو وضو ٹوٹ جاتا ہے۔ اگر تھوک غالب ہو اور زردی مائل ہو تو وضو نہیں ٹوٹتا۔',
+      book: 'Al-Durr Al-Mukhtar, Vol. 1',
+      bookUr: 'الدر المختار، جلد ۱',
     ),
     MasailItemModel(
       id: 'zakat_1',
       categoryId: 'zakat',
-      question: 'What is the Nisab of Zakat for Gold and Silver?',
-      questionUr: 'سونے اور چاندی پر زکوٰۃ کا نصاب کیا ہے؟',
-      answer: 'The Nisab for Gold is 7.5 Tolas (87.48 grams) and for Silver is 52.5 Tolas (612.36 grams). 2.5% of total wealth held for a lunar year is given as Zakat.',
-      answerUr: 'سونے کا نصاب ساڑھے سات تولے (۸۷.۴۸ گرام) اور چاندی کا نصاب ساڑھے باون تولے (۶۱۲.۳۶ گرام) ہے۔ مکمل سال گزرنے پر کل مالیت کا ۲.۵ فیصد زکوٰۃ ادا کرنا فرض ہے۔',
-      book: 'Bahar-e-Shariat, Vol. 1, Page 875',
-      bookUr: 'بہارِ شریعت، حصہ ۵، صفحہ ۸۷۵',
+      question: 'Can Zakat be given to close relatives?',
+      questionUr: 'کیا زکوٰۃ قریبی رشتہ داروں کو دی جا سکتی ہے؟',
+      answer: 'Zakat cannot be given to direct ascendants (parents, grandparents) or direct descendants (children, grandchildren) nor between spouses. It CAN be given to needy brothers, sisters, uncles, aunts, and cousins, which earns double reward (charity + upholding family ties).',
+      answerUr: 'زکوٰۃ اپنے اصول (ماں، باپ، دادا وغیرہ) اور فروع (بیٹا، بیٹی، پوتا وغیرہ) اور میاں بیوی ایک دوسرے کو نہیں دے سکتے۔ بھائی، بہن، چچا، ماموں، خالہ اگر مستحق ہوں تو انہیں دینا جائز اور دگنے ثواب کا باعث ہے۔',
+      book: 'Radd al-Muhtar, Vol. 2',
+      bookUr: 'رد المحتار، جلد ۲',
     ),
   ];
 
   static const List<AqaidItemModel> _initialAqaidSeed = [
     AqaidItemModel(
-      id: 'tawheed_1',
+      id: 'aq_1',
       categoryId: 'tawheed',
-      title: 'Tawheed: The Oneness of Allah Almighty',
-      titleUr: 'عقیدہ توحید: اللہ تعالیٰ کی یکتائی اور وحدانیت',
-      arabicText: 'قُلْ هُوَ اللَّهُ أَحَدٌ ۝ اللَّهُ الصَّمَدُ ۝ لَمْ يَلِدْ وَلَمْ يُولَدْ ۝ وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ',
-      explanation: 'Allah is One in His Essence, Attributes, and Actions. He has no partner, no equal, no parents, and no children. He is Eternal and Self-Sufficient.',
-      explanationUr: 'اللہ تعالیٰ اپنی ذات، صفات اور افعال میں یکتا ہے۔ اس کا کوئی شریک یا ہمسر نہیں، نہ اس کے کوئی والدین ہیں اور نہ اولاد۔ وہ سدا قائم رہنے والا اور بے نیاز ہے۔',
-      book: 'Surah Al-Ikhlas (112:1-4) & Kitab al-Aqaid',
-      bookUr: 'سورۃ الاخلاص (۱۱۲:۱-۴) و کتاب العقائد',
+      title: 'Tawheed: Absolute Oneness of Allah',
+      titleUr: 'توحید: اللہ تعالیٰ کی یکتائی اور صفات',
+      arabicText: 'قُلْ هُوَ اللَّهُ أَحَدٌ',
+      explanation: 'Allah Almighty is One in His Being, Attributes, and Actions. He has no partner, equal, or associate. He alone is Eternal, without beginning or end, and all creation is dependent upon Him.',
+      explanationUr: 'اللہ تعالیٰ اپنی ذات، صفات اور افعال میں یکتا و بے مثال ہے۔ اس کا کوئی شریک یا ہمسر نہیں۔ وہ ازلی و ابدی ہے اور تمام کائنات اس کی محتاج ہے۔',
+      book: 'Surah Al-Ikhlas (112:1-4)',
+      bookUr: 'سورۃ الاخلاص (۱-۴)',
     ),
     AqaidItemModel(
-      id: 'risalat_1',
+      id: 'aq_2',
       categoryId: 'risalat',
-      title: 'Khatm-e-Nubuwwat: Finality of Prophethood',
-      titleUr: 'عقیدہ ختمِ نبوت: حضور ﷺ آخری نبی ہیں',
-      arabicText: 'مَّا كَانَ مُحَمَّدٌ أَبَا أَحَدٍ مِّن رِّجَالِكُمْ وَلَكِن رَّسُولَ اللَّهِ وَخَاتَمَ النَّبِيِّينَ',
-      explanation: 'Prophet Muhammad (ﷺ) is the Last and Final Messenger of Allah. No new prophet will ever come after him. Denying this fundamental belief takes one outside Islam.',
-      explanationUr: 'حضرت محمد مصطفیٰ صلی اللہ علیہ وآلہ وسلم اللہ کے آخری نبی اور رسول ہیں۔ آپ کے بعد قیامت تک کوئی نیا نبی نہیں آ سکتا۔ اس عقیدے کا انکار دائرہ اسلام سے خارج کر دیتا ہے۔',
-      book: 'Surah Al-Ahzab (33:40) & Sahih Muslim 523',
-      bookUr: 'سورۃ الاحزاب (۳۳:۴۰) و صحیح مسلم ۵۲۳',
+      title: 'Finality of Prophethood (Khatam-an-Nabiyyin)',
+      titleUr: 'عقیدہ ختمِ نبوت (خاتم النبیین)',
+      arabicText: 'مَّا كَانَ مُحَمَّدٌ أَبَا أَحَدٍ مِّن رِّجَالِكُمْ وَلَٰكِن رَّسُولَ اللَّهِ وَخَاتَمَ النَّبِيِّينَ',
+      explanation: 'Prophet Muhammad (ﷺ) is the final and ultimate Messenger of Allah. No new prophet will ever come after him until the Day of Judgment. Believing in the finality of his Prophethood is an essential article of Islamic faith.',
+      explanationUr: 'سیدنا محمد رسول اللہ صلی اللہ علیہ وآلہ وسلم اللہ کے آخری نبی ہیں۔ آپ کے بعد قیامت تک کوئی نیا نبی نہیں آ سکتا۔ ختمِ نبوت پر ایمان لانا ہر مسلمان پر فرضِ عین ہے۔',
+      book: 'Surah Al-Ahzab (33:40)',
+      bookUr: 'سورۃ الاحزاب (۴۰)',
     ),
     AqaidItemModel(
-      id: 'ishq_1',
-      categoryId: 'ishq_rasool',
-      title: 'Love of the Holy Prophet (ﷺ)',
-      titleUr: 'عشقِ رسول ﷺ: ایمان کی اصل اور روح',
-      arabicText: 'لَا يُؤْمِنُ أَحَدُكُمْ حَتَّى أَكُونَ أَحَبَّ إِلَيْهِ مِنْ وَالِدِهِ وَوَلَدِهِ وَالنَّاسِ أَجْمَعِينَ',
-      explanation: 'None of you truly believes until I am more beloved to him than his father, his child, and all of mankind.',
-      explanationUr: 'تم میں سے کوئی شخص اس وقت تک سچا مومن نہیں ہو سکتا جب تک کہ میں اس کے نزدیک اس کے والدین، اس کی اولاد اور تمام انسانوں سے زیادہ محبوب نہ ہو جاؤں۔',
-      book: 'Sahih al-Bukhari 15 & Sahih Muslim 44',
-      bookUr: 'صحیح البخاری ۱۵ و صحیح مسلم ۴۴',
+      id: 'aq_3',
+      categoryId: 'ahle_sunnat',
+      title: 'Love and Reverence for the Noble Ahl al-Bayt and Sahaba',
+      titleUr: 'اہل ِ بیتِ اطہار اور صحابہ کرام سے محبت',
+      arabicText: 'أَصْحَابِي كَالنُّجُومِ بِأَيِّهِمُ اقْتَدَيْتُمُ اهْتَدَيْتُمْ',
+      explanation: 'The authentic creed of Ahle Sunnat requires profound love and reverence for the pure Ahl al-Bayt (family of the Prophet) and all the noble Sahaba (Companions). Slandering or disrespecting any Companion is strictly prohibited.',
+      explanationUr: 'اہل ِ سنت والجماعت کا عقیدہ ہے کہ تمام صحابہ کرام عادل و باوقار ہیں اور اہلِ بیتِ اطہار سے محبت ایمان کا حصہ ہے۔ کسی بھی صحابی کی تنقیص گمراہی ہے۔',
+      book: 'Sharh Al-Aqaid Al-Nasafiyya',
+      bookUr: 'شرح العقائد النسفیہ',
     ),
   ];
 
@@ -288,6 +300,45 @@ class FirestoreSeeder {
       status: 'Coming Soon',
       description: 'Preparing our hearts for Ramadan through Durood, Istighfar, and lectures on Fiqh.',
       descriptionUr: 'درود پاک، استغفار اور فتاویٰ و مسائل کے بیانات کے ذریعے رمضان المبارک کے لیے دلوں کی تیاری۔',
+    ),
+  ];
+
+  static final List<QuestionModel> _initialQuestionsSeed = [
+    QuestionModel(
+      id: 'sample_q_1',
+      userId: 'user_sample_1',
+      userName: 'Ahmad Raza',
+      userEmail: 'ahmad.raza@example.com',
+      category: 'Namaz',
+      question: 'What is the ruling on praying Namaz with a watch or leather belt? / گھڑی یا چمڑے کی بیلٹ پہن کر نماز پڑھنے کا کیا حکم ہے؟',
+      status: 'Pending',
+      createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+      isPublic: false,
+    ),
+    QuestionModel(
+      id: 'sample_q_2',
+      userId: 'user_sample_2',
+      userName: 'Muhammad Bilal',
+      userEmail: 'bilal.muhammad@example.com',
+      category: 'Zakat',
+      question: 'How is Zakat calculated on gold jewelry given as a wedding gift?',
+      status: 'Answered',
+      answer: 'Zakat is obligatory on gold if it reaches the Nisab threshold (7.5 Tolas / 87.48 grams) and has been possessed for a full lunar year. The rate is 2.5% of the total current market value.',
+      answeredBy: 'Super Admin',
+      answeredAt: DateTime.now().subtract(const Duration(hours: 5)),
+      createdAt: DateTime.now().subtract(const Duration(days: 1)),
+      isPublic: true,
+    ),
+    QuestionModel(
+      id: 'sample_q_3',
+      userId: 'user_sample_3',
+      userName: 'Fatima Zahra',
+      userEmail: 'fatima.z@example.com',
+      category: 'Roza',
+      question: 'Does using a medical inhaler for asthma invalidate the fast during Ramadan?',
+      status: 'Pending',
+      createdAt: DateTime.now().subtract(const Duration(hours: 8)),
+      isPublic: false,
     ),
   ];
 }
