@@ -429,9 +429,6 @@ class AdminService {
         return bTime.compareTo(aTime); // Newest first
       });
       return list;
-    }).handleError((e) {
-      if (kDebugMode) print('AdminService.questionsStream error: $e');
-      return <QuestionModel>[];
     });
   }
 
@@ -440,8 +437,7 @@ class AdminService {
         .collection('user_questions')
         .where('status', isEqualTo: 'Pending')
         .snapshots()
-        .map((snap) => snap.docs.length)
-        .handleError((e) => 0);
+        .map((snap) => snap.docs.length);
   }
 
   /// Answers a question and automatically dispatches a notification to the user.

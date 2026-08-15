@@ -65,9 +65,6 @@ class QuestionsService {
         return bTime.compareTo(aTime); // Newest first
       });
       return list;
-    }).handleError((e) {
-      if (kDebugMode) print('QuestionsService.getUserQuestionsStream error: $e');
-      return <QuestionModel>[];
     });
   }
 
@@ -88,9 +85,6 @@ class QuestionsService {
         return bTime.compareTo(aTime);
       });
       return list;
-    }).handleError((e) {
-      if (kDebugMode) print('QuestionsService.publicAnsweredQuestionsStream error: $e');
-      return <QuestionModel>[];
     });
   }
 }

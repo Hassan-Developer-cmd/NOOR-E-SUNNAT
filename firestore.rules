@@ -58,8 +58,14 @@ service cloud.firestore {
 
     // ── Broadcast Notifications Collection ─────────────────────
     match /notifications/{docId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    // ── User Questions (Q&A) Collection ────────────────────────
+    match /user_questions/{docId} {
+      allow read: if true;
+      allow create, update, delete: if true;
     }
   }
 }
