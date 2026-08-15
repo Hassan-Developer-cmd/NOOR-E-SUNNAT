@@ -4,12 +4,11 @@ import '../models/masail_model.dart';
 import '../models/aqaid_model.dart';
 import '../models/daily_content_model.dart';
 import '../models/event_model.dart';
-import '../models/question_model.dart';
 
 class FirestoreSeeder {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Checks essential Firestore collections (`masail_entries`, `aqaid_entries`, `daily_content`, `events`, `global_counter`, `user_questions`).
+  /// Checks essential Firestore collections (`masail_entries`, `aqaid_entries`, `daily_content`, `events`, `global_counter`).
   ///
   /// If a collection already contains documents (`count > 0`), seeding is skipped for that collection.
   /// If a collection is empty (`count == 0`), default data is safely seeded.
@@ -20,7 +19,6 @@ class FirestoreSeeder {
       'daily_content': {'count': 0, 'seeded': false, 'status': ''},
       'events': {'count': 0, 'seeded': false, 'status': ''},
       'global_counter': {'count': 0, 'seeded': false, 'status': ''},
-      'user_questions': {'count': 0, 'seeded': false, 'status': ''},
     };
 
     try {
@@ -134,24 +132,6 @@ class FirestoreSeeder {
         }, SetOptions(merge: true));
         results['global_counter']['seeded'] = true;
         results['global_counter']['status'] = 'Seeded global counter main doc';
-      }
-
-      // 6. Check & Seed User Questions
-      final questionsSnap = await _firestore.collection('user_questions').get();
-      final questionsCount = questionsSnap.docs.length;
-      results['user_questions']['count'] = questionsCount;
-
-      if (questionsCount > 0 && !force) {
-        results['user_questions']['status'] = 'Skipped (Already has $questionsCount docs)';
-      } else {
-        final batch = _firestore.batch();
-        for (var q in _initialQuestionsSeed) {
-          final docRef = _firestore.collection('user_questions').doc(q.id);
-          batch.set(docRef, q.toMap(), SetOptions(merge: true));
-        }
-        await batch.commit();
-        results['user_questions']['seeded'] = true;
-        results['user_questions']['status'] = 'Seeded ${_initialQuestionsSeed.length} sample inquiries';
       }
 
       return results;
@@ -300,45 +280,6 @@ class FirestoreSeeder {
       status: 'Coming Soon',
       description: 'Preparing our hearts for Ramadan through Durood, Istighfar, and lectures on Fiqh.',
       descriptionUr: 'درود پاک، استغفار اور فتاویٰ و مسائل کے بیانات کے ذریعے رمضان المبارک کے لیے دلوں کی تیاری۔',
-    ),
-  ];
-
-  static final List<QuestionModel> _initialQuestionsSeed = [
-    QuestionModel(
-      id: 'sample_q_1',
-      userId: 'user_sample_1',
-      userName: 'Ahmad Raza',
-      userEmail: 'ahmad.raza@example.com',
-      category: 'Namaz',
-      question: 'What is the ruling on praying Namaz with a watch or leather belt? / گھڑی یا چمڑے کی بیلٹ پہن کر نماز پڑھنے کا کیا حکم ہے؟',
-      status: 'Pending',
-      createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-      isPublic: false,
-    ),
-    QuestionModel(
-      id: 'sample_q_2',
-      userId: 'user_sample_2',
-      userName: 'Muhammad Bilal',
-      userEmail: 'bilal.muhammad@example.com',
-      category: 'Zakat',
-      question: 'How is Zakat calculated on gold jewelry given as a wedding gift?',
-      status: 'Answered',
-      answer: 'Zakat is obligatory on gold if it reaches the Nisab threshold (7.5 Tolas / 87.48 grams) and has been possessed for a full lunar year. The rate is 2.5% of the total current market value.',
-      answeredBy: 'Super Admin',
-      answeredAt: DateTime.now().subtract(const Duration(hours: 5)),
-      createdAt: DateTime.now().subtract(const Duration(days: 1)),
-      isPublic: true,
-    ),
-    QuestionModel(
-      id: 'sample_q_3',
-      userId: 'user_sample_3',
-      userName: 'Fatima Zahra',
-      userEmail: 'fatima.z@example.com',
-      category: 'Roza',
-      question: 'Does using a medical inhaler for asthma invalidate the fast during Ramadan?',
-      status: 'Pending',
-      createdAt: DateTime.now().subtract(const Duration(hours: 8)),
-      isPublic: false,
     ),
   ];
 }

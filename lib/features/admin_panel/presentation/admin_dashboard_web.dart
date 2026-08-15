@@ -1316,27 +1316,6 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: Colors.grey, fontSize: 13),
                     ),
-                    if (allItems.isEmpty) ...[
-                      const SizedBox(height: 20),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryEmerald,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () async {
-                          setState(() => _isSeeding = true);
-                          await FirestoreSeeder.checkAndSeedFirestore(force: true);
-                          if (mounted) {
-                            setState(() => _isSeeding = false);
-                            _snack('Sample Q&A inquiries seeded successfully to Firestore.');
-                          }
-                        },
-                        icon: const Icon(Icons.cloud_download_outlined, size: 18),
-                        label: const Text('Seed Sample Questions for Testing'),
-                      ),
-                    ],
                   ],
                 ),
               )
