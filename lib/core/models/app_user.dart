@@ -42,14 +42,26 @@ class AppUser {
       username: map['username'] as String? ?? 'User',
       photoUrl: map['photo_url'] as String? ?? map['photoUrl'] as String? ?? '',
       isAdmin: map['is_admin'] as bool? ?? false,
-      personalTotalDurood: (map['personal_total_durood'] as num?)?.toInt() ?? 0,
-      personalTodayDurood: (map['personal_today_durood'] as num?)?.toInt() ?? 0,
+      personalTotalDurood: ((map['personal_total_durood'] ??
+              map['total_durood_count'] ??
+              map['personal_durood'] ??
+              map['total_recitations'] ??
+              map['total_count'] ??
+              map['totalDurood']) as num?)
+              ?.toInt() ??
+          0,
+      personalTodayDurood: ((map['personal_today_durood'] ??
+              map['today_durood_count'] ??
+              map['today_count']) as num?)
+              ?.toInt() ??
+          0,
       currentStreak: (map['current_streak'] as num?)?.toInt() ?? 0,
       longestStreak: (map['longest_streak'] as num?)?.toInt() ?? 0,
-      totalDuroodPoints: (map['total_durood_points'] as num?)?.toInt() ?? 0,
+      totalDuroodPoints: ((map['total_durood_points'] ?? map['points']) as num?)?.toInt() ?? 0,
       lastActiveDuroodDate: activeDate,
     );
   }
+
 
   Map<String, dynamic> toMap() => {
         'user_id': userId,

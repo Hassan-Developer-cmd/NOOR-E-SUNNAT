@@ -515,6 +515,31 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   ),
                 ),
                 DataCell(
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.emeraldContainer,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.primaryEmerald.withValues(alpha: 0.2)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.auto_awesome, size: 13, color: AppColors.primaryEmerald),
+                        const SizedBox(width: 5),
+                        Text(
+                          _fmt(u.personalTotalDurood),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.emeraldDeep,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                DataCell(
                   Text(
                     '${_fmt(u.totalDuroodPoints)} pts ⭐',
                     style: const TextStyle(
@@ -530,15 +555,17 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
         }
 
         return _tableCard([
-          const DataColumn(label: Text('Rank', style: TextStyle(fontWeight: FontWeight.bold))),
+          const DataColumn(label: Text('Rank (#)', style: TextStyle(fontWeight: FontWeight.bold))),
           const DataColumn(label: Text('User Name', style: TextStyle(fontWeight: FontWeight.bold))),
           const DataColumn(label: Text('Gmail / Email', style: TextStyle(fontWeight: FontWeight.bold))),
           const DataColumn(label: Text('Current Streak', style: TextStyle(fontWeight: FontWeight.bold))),
+          const DataColumn(label: Text('Total Durood', style: TextStyle(fontWeight: FontWeight.bold))),
           const DataColumn(label: Text('Total Points', style: TextStyle(fontWeight: FontWeight.bold))),
         ], rows);
       },
     );
   }
+
 
   Widget _buildRankBadge(int rank) {
     if (rank == 1) {
