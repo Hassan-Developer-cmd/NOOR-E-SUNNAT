@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/dummy_data/mock_aqaid.dart';
 import '../../../core/models/aqaid_model.dart';
 import '../../../main.dart';
 import '../../../services/content_service.dart';

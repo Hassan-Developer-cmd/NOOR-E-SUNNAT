@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
-import '../../../core/dummy_data/mock_masail.dart';
 import '../../../core/models/masail_model.dart';
 import '../../../main.dart';
 import '../../../services/content_service.dart';

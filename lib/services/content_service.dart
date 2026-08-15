@@ -3,8 +3,6 @@ import 'package:flutter/foundation.dart';
 import '../core/models/masail_model.dart';
 import '../core/models/aqaid_model.dart';
 import '../core/models/daily_content_model.dart';
-import '../core/dummy_data/mock_masail.dart';
-import '../core/dummy_data/mock_aqaid.dart';
 
 class ContentService {
   static final _firestore = FirebaseFirestore.instance;
@@ -74,113 +72,59 @@ class ContentService {
         isTopicOfTheDay: true,
       );
 
-
   // ── Masail ──────────────────────────────────────────────────
 
-  /// Live stream of Masail items. Falls back to mock data if collection empty.
+  /// Live stream of Masail items from Firestore.
   static Stream<List<MasailItemModel>> get masailStream {
     return _firestore
         .collection('masail_entries')
         .orderBy('created_at', descending: false)
         .snapshots()
         .map((snap) {
-      if (snap.docs.isEmpty) return _mockMasailItems;
-      try {
-        return snap.docs
-            .map((doc) => MasailItemModel.fromMap(doc.id, doc.data()))
-            .toList();
-      } catch (e) {
-        if (kDebugMode) print('ContentService.masailStream error: $e');
-        return _mockMasailItems;
-      }
+      return snap.docs
+          .map((doc) => MasailItemModel.fromMap(doc.id, doc.data()))
+          .toList();
     }).handleError((e) {
       if (kDebugMode) print('ContentService masail error: $e');
-      return _mockMasailItems;
+      return <MasailItemModel>[];
     });
   }
 
   // ── Aqaid ───────────────────────────────────────────────────
 
-  /// Live stream of Aqaid items. Falls back to mock data if collection empty.
+  /// Live stream of Aqaid items from Firestore.
   static Stream<List<AqaidItemModel>> get aqaidStream {
     return _firestore
         .collection('aqaid_entries')
         .orderBy('created_at', descending: false)
         .snapshots()
         .map((snap) {
-      if (snap.docs.isEmpty) return _mockAqaidItems;
-      try {
-        return snap.docs
-            .map((doc) => AqaidItemModel.fromMap(doc.id, doc.data()))
-            .toList();
-      } catch (e) {
-        if (kDebugMode) print('ContentService.aqaidStream error: $e');
-        return _mockAqaidItems;
-      }
+      return snap.docs
+          .map((doc) => AqaidItemModel.fromMap(doc.id, doc.data()))
+          .toList();
     }).handleError((e) {
       if (kDebugMode) print('ContentService aqaid error: $e');
-      return _mockAqaidItems;
+      return <AqaidItemModel>[];
     });
   }
 
-  // ── Fallback helpers & Category filtering ──────────────────────
+  // ── Category Definitions & Filtering ──────────────────────────
 
-  /// Always returns standard fixed category list from MockMasailData
+  /// Returns standard category list for Masail
   static List<MasailCategory> getCategories() {
-    return MockMasailData.categories;
+    return MasailCategory.defaultCategories;
   }
 
-  /// Always returns standard Aqaid categories from MockAqaidData
+  /// Returns standard category list for Aqaid
   static List<AqaidCategory> getAqaidCategories() {
-    return MockAqaidData.categories;
+    return AqaidCategory.defaultCategories;
   }
 
   static List<MasailItemModel> getMasailByCategory(List<MasailItemModel> firestoreList, String categoryId) {
-    final filtered = firestoreList.where((m) => m.categoryId == categoryId).toList();
-    if (filtered.isNotEmpty) return filtered;
-    final mockFiltered = _mockMasailItems.where((m) => m.categoryId == categoryId).toList();
-    if (mockFiltered.isNotEmpty) return mockFiltered;
-    return _mockMasailItems;
+    return firestoreList.where((m) => m.categoryId == categoryId).toList();
   }
 
   static List<AqaidItemModel> getAqaidByCategory(List<AqaidItemModel> firestoreList, String categoryId) {
-    final filtered = firestoreList.where((a) => a.categoryId == categoryId).toList();
-    if (filtered.isNotEmpty) return filtered;
-    final mockFiltered = _mockAqaidItems.where((a) => a.categoryId == categoryId).toList();
-    if (mockFiltered.isNotEmpty) return mockFiltered;
-    return _mockAqaidItems;
-  }
-
-  static List<MasailItemModel> get _mockMasailItems {
-    return MockMasailData.items
-        .map((m) => MasailItemModel(
-              id: m.id,
-              categoryId: m.categoryId,
-              question: m.question,
-              questionUr: m.questionUr,
-              answer: m.answer,
-              answerUr: m.answerUr,
-              book: m.book,
-              bookUr: m.bookUr,
-            ))
-        .toList();
-  }
-
-  static List<AqaidItemModel> get _mockAqaidItems {
-    return MockAqaidData.items
-        .map((a) => AqaidItemModel(
-              id: a.id,
-              categoryId: a.categoryId,
-              title: a.title,
-              titleUr: a.titleUr,
-              arabicText: a.arabicText,
-              explanation: a.explanation,
-              explanationUr: a.explanationUr,
-              book: a.book,
-              bookUr: a.bookUr,
-            ))
-        .toList();
+    return firestoreList.where((a) => a.categoryId == categoryId).toList();
   }
 }
-
-

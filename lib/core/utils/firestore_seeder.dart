@@ -1,8 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import '../dummy_data/mock_masail.dart';
-import '../dummy_data/mock_aqaid.dart';
-import '../dummy_data/mock_events.dart';
 import '../models/masail_model.dart';
 import '../models/aqaid_model.dart';
 import '../models/daily_content_model.dart';
@@ -38,31 +35,15 @@ class FirestoreSeeder {
 
       if (masailCount > 0 && !force) {
         results['masail_entries']['status'] = 'Skipped (Already has $masailCount docs)';
-        if (kDebugMode) {
-          print('[Seeder] Collection masail_entries already has data ($masailCount docs). Skipping.');
-        }
       } else {
         final batch = _firestore.batch();
-        for (var m in MockMasailData.items) {
+        for (var m in _initialMasailSeed) {
           final docRef = _firestore.collection('masail_entries').doc(m.id);
-          final itemModel = MasailItemModel(
-            id: m.id,
-            categoryId: m.categoryId,
-            question: m.question,
-            questionUr: m.questionUr,
-            answer: m.answer,
-            answerUr: m.answerUr,
-            book: m.book,
-            bookUr: m.bookUr,
-          );
-          batch.set(docRef, itemModel.toMap(), SetOptions(merge: true));
+          batch.set(docRef, m.toMap(), SetOptions(merge: true));
         }
         await batch.commit();
         results['masail_entries']['seeded'] = true;
-        results['masail_entries']['status'] = 'Seeded ${MockMasailData.items.length} items';
-        if (kDebugMode) {
-          print('[Seeder] Collection masail_entries seeded successfully (${MockMasailData.items.length} items).');
-        }
+        results['masail_entries']['status'] = 'Seeded ${_initialMasailSeed.length} items';
       }
 
       // 2. Check & Seed Aqaid Entries
@@ -72,32 +53,15 @@ class FirestoreSeeder {
 
       if (aqaidCount > 0 && !force) {
         results['aqaid_entries']['status'] = 'Skipped (Already has $aqaidCount docs)';
-        if (kDebugMode) {
-          print('[Seeder] Collection aqaid_entries already has data ($aqaidCount docs). Skipping.');
-        }
       } else {
         final batch = _firestore.batch();
-        for (var a in MockAqaidData.items) {
+        for (var a in _initialAqaidSeed) {
           final docRef = _firestore.collection('aqaid_entries').doc(a.id);
-          final itemModel = AqaidItemModel(
-            id: a.id,
-            categoryId: a.categoryId,
-            title: a.title,
-            titleUr: a.titleUr,
-            arabicText: a.arabicText,
-            explanation: a.explanation,
-            explanationUr: a.explanationUr,
-            book: a.book,
-            bookUr: a.bookUr,
-          );
-          batch.set(docRef, itemModel.toMap(), SetOptions(merge: true));
+          batch.set(docRef, a.toMap(), SetOptions(merge: true));
         }
         await batch.commit();
         results['aqaid_entries']['seeded'] = true;
-        results['aqaid_entries']['status'] = 'Seeded ${MockAqaidData.items.length} items';
-        if (kDebugMode) {
-          print('[Seeder] Collection aqaid_entries seeded successfully (${MockAqaidData.items.length} items).');
-        }
+        results['aqaid_entries']['status'] = 'Seeded ${_initialAqaidSeed.length} items';
       }
 
       // 3. Check & Seed Daily Content
@@ -107,9 +71,6 @@ class FirestoreSeeder {
 
       if (dailyCount > 0 && !force) {
         results['daily_content']['status'] = 'Skipped (Already has $dailyCount docs)';
-        if (kDebugMode) {
-          print('[Seeder] Collection daily_content already has data ($dailyCount docs). Skipping.');
-        }
       } else {
         const defaultHadith = DailyContentModel(
           id: 'default_hadith',
@@ -124,6 +85,7 @@ class FirestoreSeeder {
           citation: 'Sahih Muslim 408',
           citationUr: 'صحیح مسلم ۴۰۸',
           isActive: true,
+          isTopicOfTheDay: true,
         );
         await _firestore.collection('daily_content').doc(defaultHadith.id).set(
               defaultHadith.toMap(),
@@ -131,9 +93,6 @@ class FirestoreSeeder {
             );
         results['daily_content']['seeded'] = true;
         results['daily_content']['status'] = 'Seeded default Hadith';
-        if (kDebugMode) {
-          print('[Seeder] Collection daily_content seeded successfully.');
-        }
       }
 
       // 4. Check & Seed Events
@@ -143,32 +102,15 @@ class FirestoreSeeder {
 
       if (eventsCount > 0 && !force) {
         results['events']['status'] = 'Skipped (Already has $eventsCount docs)';
-        if (kDebugMode) {
-          print('[Seeder] Collection events already has data ($eventsCount docs). Skipping.');
-        }
       } else {
         final batch = _firestore.batch();
-        for (var e in MockEventsData.events) {
+        for (var e in _initialEventsSeed) {
           final docRef = _firestore.collection('events').doc(e.id);
-          final eventModel = EventModel(
-            id: e.id,
-            title: e.title,
-            titleUr: e.titleUr,
-            dateTime: e.dateTime,
-            location: e.location,
-            locationUr: e.locationUr,
-            status: e.status,
-            description: e.description,
-            descriptionUr: e.descriptionUr,
-          );
-          batch.set(docRef, eventModel.toMap(), SetOptions(merge: true));
+          batch.set(docRef, e.toMap(), SetOptions(merge: true));
         }
         await batch.commit();
         results['events']['seeded'] = true;
-        results['events']['status'] = 'Seeded ${MockEventsData.events.length} events';
-        if (kDebugMode) {
-          print('[Seeder] Collection events seeded successfully (${MockEventsData.events.length} items).');
-        }
+        results['events']['status'] = 'Seeded ${_initialEventsSeed.length} events';
       }
 
       // 5. Check & Seed Global Counter
@@ -178,9 +120,6 @@ class FirestoreSeeder {
 
       if (counterSnap.exists && !force) {
         results['global_counter']['status'] = 'Skipped (Already exists)';
-        if (kDebugMode) {
-          print('[Seeder] Collection global_counter already has main doc. Skipping.');
-        }
       } else {
         final todayStr = DateTime.now().toIso8601String().split('T').first;
         await counterRef.set({
@@ -191,22 +130,11 @@ class FirestoreSeeder {
         }, SetOptions(merge: true));
         results['global_counter']['seeded'] = true;
         results['global_counter']['status'] = 'Seeded global counter main doc';
-        if (kDebugMode) {
-          print('[Seeder] Collection global_counter main doc seeded successfully.');
-        }
-      }
-
-      if (kDebugMode) {
-        print('===========================================================');
-        print('[Seeder] Firestore Inspection & Seeding Complete');
-        print('===========================================================');
       }
 
       return results;
     } catch (e) {
-      if (kDebugMode) {
-        print('[Seeder] Firestore inspection error: $e');
-      }
+      if (kDebugMode) print('[Seeder] Firestore inspection error: $e');
       return {'error': e.toString()};
     }
   }
@@ -224,9 +152,6 @@ class FirestoreSeeder {
         'last_reset_date': todayStr,
         'created_at': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
-      if (kDebugMode) {
-        print('[Seeder] Global counter baseline set to total_count: $totalCount, today_count: $todayCount');
-      }
       return true;
     } catch (e) {
       if (kDebugMode) print('[Seeder] Error updating global counter baseline: $e');
@@ -234,9 +159,135 @@ class FirestoreSeeder {
     }
   }
 
-  /// Legacy helper method for backwards compatibility.
   static Future<bool> seedDefaultDataToFirestore({bool force = false}) async {
     final res = await checkAndSeedFirestore(force: force);
     return !res.containsKey('error');
   }
+
+  // ── Initial Seed Collections ───────────────────────────────────
+
+  static const List<MasailItemModel> _initialMasailSeed = [
+    MasailItemModel(
+      id: 'namaz_1',
+      categoryId: 'namaz',
+      question: 'What should one do if Sajda Sahw is forgotten in Salah?',
+      questionUr: 'اگر نماز میں سجدہ سہو بھول جائے تو کیا حکم ہے؟',
+      answer: 'If the person turned their chest away from the Qibla or spoke after the initial Salam, they must repeat the entire prayer. If they remembered immediately while facing the Qibla, they can perform two Sajdahs, recite Tashahhud, and conclude with Salam.',
+      answerUr: 'اگر قبلہ سے سینہ پھر گیا یا کلام کر لیا تو نماز کا اعادہ واجب ہے۔ اگر سلام پھیرنے کے بعد یاد آ جائے اور کوئی منافی عمل نہ کیا ہو تو فورا سجدہ سہو کر کے تشہد پڑھ کر سلام پھیر دے۔',
+      book: 'Bahar-e-Shariat, Vol. 1, Page 710',
+      bookUr: 'بہارِ شریعت، حصہ ۴، صفحہ ۷۱۰',
+    ),
+    MasailItemModel(
+      id: 'namaz_2',
+      categoryId: 'namaz',
+      question: 'Is it permissible to perform Salah while wearing socks with moisture or perfume?',
+      questionUr: 'کیا عطر یا خوشبو لگی جرابوں پر نماز ادا کی جا سکتی ہے؟',
+      answer: 'Yes, as long as the perfume does not contain impure alcohol and the socks are clean (paak). Salah is completely valid.',
+      answerUr: 'جی ہاں، اگر عطر یا خوشبو ناپاک الکحل سے پاک ہو اور جرابیں طاہر و پاک ہوں تو نماز بالکل جائز اور درست ہے۔',
+      book: 'Fatawa Razawiyyah, Vol. 6, Page 120',
+      bookUr: 'فتاویٰ رضویہ، جلد ۶، صفحہ ۱۲۰',
+    ),
+    MasailItemModel(
+      id: 'wuzu_1',
+      categoryId: 'wuzu',
+      question: 'What are the 4 Fard (obligatory) acts of Wuzu?',
+      questionUr: 'وضو کے چار فرائض کون کون سے ہیں؟',
+      answer: '1. Washing the face from hairline to below chin and ear to ear.\n2. Washing both arms including elbows.\n3. Masah (wiping) of one-fourth of the head.\n4. Washing both feet including ankles.',
+      answerUr: '۱. پیشانی کے بالوں سے ٹھوڑی کے نیچے تک اور ایک کان کی لو سے دوسرے کان تک چہرہ دھونا۔\n۲. دونوں ہاتھوں کو کہنیوں سمیت دھونا۔\n۳. چوتھائی سر کا مسح کرنا۔\n۴. دونوں پاؤں ٹخنوں سمیت دھونا۔',
+      book: 'Bahar-e-Shariat, Vol. 1, Page 288',
+      bookUr: 'بہارِ شریعت، حصہ ۲، صفحہ ۲۸۸',
+    ),
+    MasailItemModel(
+      id: 'roza_1',
+      categoryId: 'roza',
+      question: 'Does using an inhaler for asthma invalidate the fast (Sawm)?',
+      questionUr: 'کیا دمہ کے مریض کا انہیلر استعمال کرنے سے روزہ ٹوٹ جاتا ہے؟',
+      answer: 'Yes, using a medicinal inhaler breaks the fast because medication reaches the stomach/lungs. A Qada fast is required later when health permits.',
+      answerUr: 'جی ہاں، انہیلر کے ذریعے دوا کے ذرات پھیپھڑوں اور حلق کے راستے معدے تک پہنچتے ہیں، اس لیے روزہ فاسد ہو جاتا ہے اور بعد میں قضا لازم ہے۔',
+      book: 'Fatawa Razawiyyah, Vol. 10, Page 512',
+      bookUr: 'فتاویٰ رضویہ، جلد ۱۰، صفحہ ۵۱۲',
+    ),
+    MasailItemModel(
+      id: 'zakat_1',
+      categoryId: 'zakat',
+      question: 'What is the Nisab of Zakat for Gold and Silver?',
+      questionUr: 'سونے اور چاندی پر زکوٰۃ کا نصاب کیا ہے؟',
+      answer: 'The Nisab for Gold is 7.5 Tolas (87.48 grams) and for Silver is 52.5 Tolas (612.36 grams). 2.5% of total wealth held for a lunar year is given as Zakat.',
+      answerUr: 'سونے کا نصاب ساڑھے سات تولے (۸۷.۴۸ گرام) اور چاندی کا نصاب ساڑھے باون تولے (۶۱۲.۳۶ گرام) ہے۔ مکمل سال گزرنے پر کل مالیت کا ۲.۵ فیصد زکوٰۃ ادا کرنا فرض ہے۔',
+      book: 'Bahar-e-Shariat, Vol. 1, Page 875',
+      bookUr: 'بہارِ شریعت، حصہ ۵، صفحہ ۸۷۵',
+    ),
+  ];
+
+  static const List<AqaidItemModel> _initialAqaidSeed = [
+    AqaidItemModel(
+      id: 'tawheed_1',
+      categoryId: 'tawheed',
+      title: 'Tawheed: The Oneness of Allah Almighty',
+      titleUr: 'عقیدہ توحید: اللہ تعالیٰ کی یکتائی اور وحدانیت',
+      arabicText: 'قُلْ هُوَ اللَّهُ أَحَدٌ ۝ اللَّهُ الصَّمَدُ ۝ لَمْ يَلِدْ وَلَمْ يُولَدْ ۝ وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ',
+      explanation: 'Allah is One in His Essence, Attributes, and Actions. He has no partner, no equal, no parents, and no children. He is Eternal and Self-Sufficient.',
+      explanationUr: 'اللہ تعالیٰ اپنی ذات، صفات اور افعال میں یکتا ہے۔ اس کا کوئی شریک یا ہمسر نہیں، نہ اس کے کوئی والدین ہیں اور نہ اولاد۔ وہ سدا قائم رہنے والا اور بے نیاز ہے۔',
+      book: 'Surah Al-Ikhlas (112:1-4) & Kitab al-Aqaid',
+      bookUr: 'سورۃ الاخلاص (۱۱۲:۱-۴) و کتاب العقائد',
+    ),
+    AqaidItemModel(
+      id: 'risalat_1',
+      categoryId: 'risalat',
+      title: 'Khatm-e-Nubuwwat: Finality of Prophethood',
+      titleUr: 'عقیدہ ختمِ نبوت: حضور ﷺ آخری نبی ہیں',
+      arabicText: 'مَّا كَانَ مُحَمَّدٌ أَبَا أَحَدٍ مِّن رِّجَالِكُمْ وَلَكِن رَّسُولَ اللَّهِ وَخَاتَمَ النَّبِيِّينَ',
+      explanation: 'Prophet Muhammad (ﷺ) is the Last and Final Messenger of Allah. No new prophet will ever come after him. Denying this fundamental belief takes one outside Islam.',
+      explanationUr: 'حضرت محمد مصطفیٰ صلی اللہ علیہ وآلہ وسلم اللہ کے آخری نبی اور رسول ہیں۔ آپ کے بعد قیامت تک کوئی نیا نبی نہیں آ سکتا۔ اس عقیدے کا انکار دائرہ اسلام سے خارج کر دیتا ہے۔',
+      book: 'Surah Al-Ahzab (33:40) & Sahih Muslim 523',
+      bookUr: 'سورۃ الاحزاب (۳۳:۴۰) و صحیح مسلم ۵۲۳',
+    ),
+    AqaidItemModel(
+      id: 'ishq_1',
+      categoryId: 'ishq_rasool',
+      title: 'Love of the Holy Prophet (ﷺ)',
+      titleUr: 'عشقِ رسول ﷺ: ایمان کی اصل اور روح',
+      arabicText: 'لَا يُؤْمِنُ أَحَدُكُمْ حَتَّى أَكُونَ أَحَبَّ إِلَيْهِ مِنْ وَالِدِهِ وَوَلَدِهِ وَالنَّاسِ أَجْمَعِينَ',
+      explanation: 'None of you truly believes until I am more beloved to him than his father, his child, and all of mankind.',
+      explanationUr: 'تم میں سے کوئی شخص اس وقت تک سچا مومن نہیں ہو سکتا جب تک کہ میں اس کے نزدیک اس کے والدین، اس کی اولاد اور تمام انسانوں سے زیادہ محبوب نہ ہو جاؤں۔',
+      book: 'Sahih al-Bukhari 15 & Sahih Muslim 44',
+      bookUr: 'صحیح البخاری ۱۵ و صحیح مسلم ۴۴',
+    ),
+  ];
+
+  static const List<EventModel> _initialEventsSeed = [
+    EventModel(
+      id: '1',
+      title: 'Global Milad Gathering 2026',
+      titleUr: 'عالمی اجتماعِ میلاد النبی ۲۰۲۶ء',
+      dateTime: 'Dec 24, 8:00 PM',
+      location: 'Jamia Masjid Al-Aksa, Main Hall',
+      locationUr: 'جامع مسجد الاقصیٰ، مرکزی ہال',
+      status: 'Featured',
+      description: 'Join millions globally in a collective recitation of Durood Shareef leading up to the blessed month of Rabi al-Awwal.',
+      descriptionUr: 'ربیع الاول کے مبارک مہینے کی آمد کی خوشی میں دنیا بھر کے لاکھوں مسلمانوں کے ساتھ اجتماعی درود پاک پڑھنے کی محفل میں شرکت فرمائیں۔',
+    ),
+    EventModel(
+      id: '2',
+      title: 'Weekly Jumu\'ah Durood Majlis',
+      titleUr: 'ہفتہ وار جمعۃ المبارک درود مجلس',
+      dateTime: 'Every Friday after Asr',
+      location: 'Live Stream & Central Masjid',
+      locationUr: 'لائیو اسٹریم و مرکزی جامع مسجد',
+      status: 'Ongoing',
+      description: 'Sending special Salawat upon Prophet Muhammad (ﷺ) on the blessed day of Friday.',
+      descriptionUr: 'جمعۃ المبارک کے بابرکت دن نمازِ عصر کے بعد نبی کریم صلی اللہ علیہ وآلہ وسلم کی بارگاہ میں خصوصی درود و سلام نذر کرنا۔',
+    ),
+    EventModel(
+      id: '3',
+      title: 'Ramadan Preparation & Durood Drive',
+      titleUr: 'استقبالِ رمضان و درود شریف مہم',
+      dateTime: 'Mar 15, 6:30 PM',
+      location: 'Islamic Cultural Center Auditorium',
+      locationUr: 'اسلامک کلچرل سینٹر آڈیٹوریم',
+      status: 'Coming Soon',
+      description: 'Preparing our hearts for Ramadan through Durood, Istighfar, and lectures on Fiqh.',
+      descriptionUr: 'درود پاک، استغفار اور فتاویٰ و مسائل کے بیانات کے ذریعے رمضان المبارک کے لیے دلوں کی تیاری۔',
+    ),
+  ];
 }

@@ -1,20 +1,93 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-class AqaidCategoryModel {
+class AqaidCategory {
   final String id;
   final String title;
+  final String titleUr;
   final String arabicTitle;
   final String subtitle;
   final IconData icon;
+  final String bgAsset;
+  final bool isFullWidth;
 
-  const AqaidCategoryModel({
+  const AqaidCategory({
     required this.id,
     required this.title,
+    required this.titleUr,
     required this.arabicTitle,
     required this.subtitle,
     required this.icon,
+    this.bgAsset = '',
+    this.isFullWidth = false,
   });
+
+  static const List<AqaidCategory> defaultCategories = [
+    AqaidCategory(
+      id: 'tawheed',
+      title: 'Tawheed',
+      titleUr: 'توحید',
+      arabicTitle: 'توحيد',
+      subtitle: 'Oneness of Allah (SWT)',
+      icon: Icons.auto_awesome,
+      bgAsset: 'assets/images/tauheed.png',
+    ),
+    AqaidCategory(
+      id: 'risalat',
+      title: 'Risalat',
+      titleUr: 'رسالت',
+      arabicTitle: 'رسالت',
+      subtitle: 'Prophethood of Muhammad (ﷺ)',
+      icon: Icons.star,
+      bgAsset: 'assets/images/risalat.png',
+    ),
+    AqaidCategory(
+      id: 'ahle_sunnat',
+      title: 'Ahle Sunnat',
+      titleUr: 'اہلِ سنت',
+      arabicTitle: 'اہلِ سنت',
+      subtitle: 'Creed of Ahle Sunnat Wal Jama\'at',
+      icon: Icons.shield_rounded,
+      bgAsset: 'assets/images/sahaba.png',
+    ),
+    AqaidCategory(
+      id: 'quran',
+      title: 'Quran',
+      titleUr: 'قرآن پاک',
+      arabicTitle: 'القرآن',
+      subtitle: 'The Holy Quran & Divine Revelations',
+      icon: Icons.menu_book_rounded,
+      bgAsset: 'assets/images/ishq_rasool.png',
+    ),
+    AqaidCategory(
+      id: 'sahaba_ahlebait',
+      title: 'Sahaba o Ahlebait',
+      titleUr: 'صحابہ و اہل بیت',
+      arabicTitle: 'صحابہ و اہل بیت',
+      subtitle: 'Companions & Blessed Household',
+      icon: Icons.people_alt_rounded,
+      bgAsset: 'assets/images/sahaba.png',
+      isFullWidth: true,
+    ),
+    AqaidCategory(
+      id: 'ishq_rasool',
+      title: 'Ishq-e-Rasool',
+      titleUr: 'عشقِ رسول',
+      arabicTitle: 'عشقِ رسول',
+      subtitle: 'Love & Devotion to Prophet (ﷺ)',
+      icon: Icons.favorite,
+      bgAsset: 'assets/images/ishq_rasool.png',
+    ),
+    AqaidCategory(
+      id: 'wilayat',
+      title: 'Wilayat',
+      titleUr: 'ولایت',
+      arabicTitle: 'ولایت',
+      subtitle: 'Sainthood & Spiritual Path',
+      icon: Icons.brightness_7,
+      bgAsset: 'assets/images/wilayat.png',
+    ),
+  ];
 }
 
 class AqaidItemModel {
