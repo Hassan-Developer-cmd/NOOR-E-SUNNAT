@@ -1,0 +1,62 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "islamic-app-ed1ed",
+          "appId": "1:201540801531:android:026fe54d65a05a889bb15e",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "islamic-app-ed1ed",
+          "configurations": {
+            "android": "1:201540801531:android:026fe54d65a05a889bb15e",
+            "ios": "1:201540801531:ios:c5966a11536f5d169bb15e",
+            "macos": "1:201540801531:ios:c5966a11536f5d169bb15e",
+            "web": "1:201540801531:web:bb89a0219845ed289bb15e",
+            "windows": "1:201540801531:web:28cf4f841f916a509bb15e"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "headers": [
+      {
+        "source": "@(index.html|flutter_bootstrap.js|version.json|manifest.json)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate, max-age=0"
+          }
+        ]
+      },
+      {
+        "source": "**/*.@(js|wasm|css|png|jpg|jpeg|gif|svg|webp|ico|ttf|woff|woff2|mp3|wav|json)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  }
+}

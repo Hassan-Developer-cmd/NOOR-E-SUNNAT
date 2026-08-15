@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "201540801531",
+    "project_id": "islamic-app-ed1ed",
+    "storage_bucket": "islamic-app-ed1ed.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:201540801531:android:026fe54d65a05a889bb15e",
+        "android_client_info": {
+          "package_name": "com.example.islamic_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "201540801531-ok8k3odn48vk5kdp237549mcmt0jsdoh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.islamic_app",
+            "certificate_hash": "9474ef4b30bea96af9f05a6404882be5aa3be337"
+          }
+        },
+        {
+          "client_id": "201540801531-s3m70kjb4tb3t17sba5pf0tvdcj7op9q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB_hHQB35pKOLA1ZwzaXC-UX-c6hurTSWM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "201540801531-s3m70kjb4tb3t17sba5pf0tvdcj7op9q.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "201540801531-m3ddi1dnntb75qcqrtea4sgvtb9fpi5t.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.islamicApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
