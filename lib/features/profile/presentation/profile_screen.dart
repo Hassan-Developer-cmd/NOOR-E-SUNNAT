@@ -6,6 +6,7 @@ import '../../../services/admin_service.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/counter_service.dart';
 import '../../auth/presentation/login_screen.dart';
+import '../../knowledge_hub/presentation/my_questions_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final CounterService counterService;
@@ -180,6 +181,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 child: Column(
                   children: [
+                    // My Questions
+                    ListTile(
+                      leading: const Icon(Icons.question_answer_rounded, color: AppColors.primaryEmerald),
+                      title: Text(
+                        lp.isUrdu ? 'میرے سوالات و استفسارات' : 'My Questions & Q&A',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                        lp.isUrdu ? 'پوچھے گئے سوالات اور جوابات دیکھیں' : 'View submitted queries & admin replies',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const MyQuestionsScreen()),
+                        );
+                      },
+                    ),
+                    const Divider(height: 1),
+
                     // Language Setting
                     ListTile(
                       leading: const Icon(Icons.language_rounded, color: AppColors.primaryEmerald),

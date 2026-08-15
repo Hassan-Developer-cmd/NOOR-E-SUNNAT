@@ -4,6 +4,8 @@ import '../../../core/constants/app_typography.dart';
 import '../../../core/models/masail_model.dart';
 import '../../../main.dart';
 import '../../../services/content_service.dart';
+import 'ask_question_sheet.dart';
+import 'my_questions_screen.dart';
 
 class MasailGridScreen extends StatefulWidget {
   const MasailGridScreen({super.key});
@@ -51,6 +53,16 @@ class _MasailGridScreenState extends State<MasailGridScreen> {
               style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
             ),
             actions: [
+              IconButton(
+                icon: const Icon(Icons.forum_outlined, color: Colors.white),
+                tooltip: lp.isUrdu ? 'میرے سوالات' : 'My Questions',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const MyQuestionsScreen()),
+                  );
+                },
+              ),
               GestureDetector(
                 onTap: () => lp.toggleLanguage(),
                 child: Container(
@@ -73,6 +85,13 @@ class _MasailGridScreenState extends State<MasailGridScreen> {
               ),
             ],
           ),
+          floatingActionButton: FloatingActionButton.extended(
+            backgroundColor: AppColors.primaryEmerald,
+            foregroundColor: Colors.white,
+            onPressed: () => AskQuestionSheet.show(context),
+            icon: const Icon(Icons.add_comment_rounded),
+            label: Text(lp.isUrdu ? 'سوال پوچھیں' : 'Ask Question'),
+          ),
           body: StreamBuilder<List<MasailItemModel>>(
             stream: ContentService.masailStream,
             builder: (context, snapshot) {
@@ -82,6 +101,82 @@ class _MasailGridScreenState extends State<MasailGridScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Ask a Question Quick Action Banner
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF064E3B), AppColors.primaryEmerald],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primaryEmerald.withValues(alpha: 0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(
+                              Icons.live_help_rounded,
+                              color: AppColors.goldBright,
+                              size: 28,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  lp.isUrdu ? 'کوئی شرعی مسئلہ درپیش ہے؟' : 'Have an Islamic Question?',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  lp.isUrdu
+                                      ? 'مفتی / ایڈمن سے پوچھیں، 24 گھنٹے میں جواب حاصل کریں۔'
+                                      : 'Ask admin team & get a verified reply within 24h.',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.85),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.goldBright,
+                              foregroundColor: AppColors.emeraldDeep,
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () => AskQuestionSheet.show(context),
+                            child: Text(
+                              lp.isUrdu ? 'پوچھیں' : 'Ask Now',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     // Floating Search Container
                     Container(
                       decoration: BoxDecoration(

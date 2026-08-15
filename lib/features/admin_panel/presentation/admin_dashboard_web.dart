@@ -6,6 +6,7 @@ import '../../../core/models/event_model.dart';
 import '../../../core/models/masail_model.dart';
 import '../../../core/models/aqaid_model.dart';
 import '../../../core/models/daily_content_model.dart';
+import '../../../core/models/question_model.dart';
 import '../../../core/models/app_user.dart';
 import '../../../core/utils/firestore_seeder.dart';
 import '../../../services/admin_service.dart';
@@ -26,6 +27,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
   String _selectedMasailCategory = 'all';
   String _selectedAqaidCategory = 'all';
   String _selectedEventStatus = 'all';
+  String _selectedQuestionStatus = 'all';
   final TextEditingController _searchController = TextEditingController();
 
   void _switchTab(int index) {
@@ -36,6 +38,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
       _selectedMasailCategory = 'all';
       _selectedAqaidCategory = 'all';
       _selectedEventStatus = 'all';
+      _selectedQuestionStatus = 'all';
     });
   }
 
@@ -55,16 +58,18 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     'Aqaid Content',
     'Daily Hadith/Ayat',
     'Push Notifications',
+    'Questions Management',
     'User Management',
   ];
 
   final List<IconData> _navIcons = [
     Icons.dashboard_rounded,
     Icons.event_note_rounded,
-    Icons.question_answer_rounded,
+    Icons.menu_book_rounded,
     Icons.auto_stories_rounded,
     Icons.format_quote_rounded,
     Icons.notifications_active_rounded,
+    Icons.question_answer_rounded,
     Icons.people_alt_rounded,
   ];
 
@@ -230,6 +235,32 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                         fontSize: 14,
                       ),
                     ),
+                    trailing: index == 6
+                        ? StreamBuilder<int>(
+                            stream: AdminService.pendingQuestionsCountStream,
+                            builder: (context, snap) {
+                              final pending = snap.data ?? 0;
+                              if (pending > 0) {
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.amber.shade700,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    '$pending',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
+                          )
+                        : null,
                     onTap: () {
                       _switchTab(index);
                       if (isDrawer) {
@@ -310,7 +341,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 side: const BorderSide(color: AppColors.primaryEmerald),
               ),
             ),
-            if (_selectedNavIndex != 0 && _selectedNavIndex != 6) ...[
+            if (_selectedNavIndex != 0 && _selectedNavIndex != 6 && _selectedNavIndex != 7) ...[
               const SizedBox(width: 12),
               ElevatedButton.icon(
                 onPressed: () => _showAddModal(context),
@@ -383,7 +414,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     if (_selectedNavIndex == 3) return _buildAqaidTable();
     if (_selectedNavIndex == 4) return _buildDailyContentTable();
     if (_selectedNavIndex == 5) return _buildNotificationsSection();
-    if (_selectedNavIndex == 6) return _buildUserManagementTable();
+    if (_selectedNavIndex == 6) return _buildQuestionsTable();
+    if (_selectedNavIndex == 7) return _buildUserManagementTable();
     return _buildLeaderboardTable();
   }
 
@@ -1144,6 +1176,165 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
   }
 
 
+  // ── Questions Management Table (Q&A) ──────────────────────────
+
+  Widget _buildQuestionsTable() {
+    return StreamBuilder<List<QuestionModel>>(
+      stream: AdminService.questionsStream,
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final allItems = snap.data ?? [];
+        final statusFilters = [
+          {'id': 'all', 'label': 'All Questions'},
+          {'id': 'pending', 'label': 'Pending (Turnaround < 24h)'},
+          {'id': 'answered', 'label': 'Answered'},
+        ];
+
+        final filtered = allItems.where((q) {
+          final matchesStatus = _selectedQuestionStatus == 'all' ||
+              (_selectedQuestionStatus == 'pending' && q.isPending) ||
+              (_selectedQuestionStatus == 'answered' && q.isAnswered);
+          final matchesSearch = _searchQuery.isEmpty ||
+              q.question.toLowerCase().contains(_searchQuery) ||
+              q.userName.toLowerCase().contains(_searchQuery) ||
+              q.userEmail.toLowerCase().contains(_searchQuery) ||
+              q.category.toLowerCase().contains(_searchQuery) ||
+              (q.answer != null && q.answer!.toLowerCase().contains(_searchQuery));
+          return matchesStatus && matchesSearch;
+        }).toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Status Filter Chips
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.borderLight),
+              ),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: statusFilters.map((st) {
+                    final stId = st['id']!;
+                    final isSelected = _selectedQuestionStatus == stId;
+                    final count = stId == 'all'
+                        ? allItems.length
+                        : (stId == 'pending'
+                            ? allItems.where((q) => q.isPending).length
+                            : allItems.where((q) => q.isAnswered).length);
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilterChip(
+                        selected: isSelected,
+                        selectedColor: AppColors.primaryEmerald,
+                        backgroundColor: AppColors.bgOffWhite,
+                        label: Text(
+                          '${st['label']} ($count)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                            color: isSelected ? Colors.white : AppColors.textPrimary,
+                          ),
+                        ),
+                        onSelected: (selected) {
+                          setState(() {
+                            _selectedQuestionStatus = selected ? stId : 'all';
+                          });
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+            _tableCard([
+              const DataColumn(label: Text('User / Email', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Category', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Question', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Public', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Submitted', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
+            ], filtered.map((q) {
+              final isPending = q.isPending;
+              return DataRow(cells: [
+                DataCell(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(q.userName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Text(q.userEmail, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                    ],
+                  ),
+                ),
+                DataCell(_statusChip(q.category.toUpperCase(), AppColors.emeraldContainer, AppColors.primaryEmerald)),
+                DataCell(
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 240),
+                    child: Text(
+                      q.question,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                ),
+                DataCell(
+                  _statusChip(
+                    isPending ? 'PENDING (24h SLA)' : 'ANSWERED',
+                    isPending ? AppColors.goldLight : AppColors.emeraldContainer,
+                    isPending ? AppColors.goldDark : AppColors.primaryEmerald,
+                  ),
+                ),
+                DataCell(
+                  _statusChip(
+                    q.isPublic ? 'PUBLIC' : 'PRIVATE',
+                    q.isPublic ? const Color(0xFFE0F2FE) : Colors.grey.shade200,
+                    q.isPublic ? const Color(0xFF0369A1) : Colors.grey.shade700,
+                  ),
+                ),
+                DataCell(
+                  Text(
+                    q.createdAt != null ? '${q.createdAt!.day}/${q.createdAt!.month}/${q.createdAt!.year}' : '',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+                DataCell(
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          isPending ? Icons.rate_review_rounded : Icons.edit_note_rounded,
+                          size: 20,
+                          color: isPending ? AppColors.accentGold : AppColors.primaryEmerald,
+                        ),
+                        tooltip: isPending ? 'Answer Question' : 'Edit Answer',
+                        onPressed: () => _showAnswerQuestionModal(context, q),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                        tooltip: 'Delete Question',
+                        onPressed: () => _confirmDelete(context, () => AdminService.deleteQuestion(q.id)),
+                      ),
+                    ],
+                  ),
+                ),
+              ]);
+            }).toList()),
+          ],
+        );
+      },
+    );
+  }
+
+
   // ── User Management Table ──────────────────────────────────────
 
   Widget _buildUserManagementTable() {
@@ -1859,6 +2050,142 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 if (ctx.mounted) {
                   Navigator.pop(ctx);
                   _snack('Notification sent successfully!');
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAnswerQuestionModal(BuildContext context, QuestionModel q) {
+    final answerC = TextEditingController(text: q.answer ?? '');
+    bool isPublic = q.isPublic;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModal) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              const Icon(Icons.question_answer_rounded, color: AppColors.primaryEmerald),
+              const SizedBox(width: 10),
+              Text(q.isAnswered ? 'Edit Answer / Q&A' : 'Answer Question', style: AppTypography.titleMedium),
+            ],
+          ),
+          content: SizedBox(
+            width: _dialogWidth(context),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // User Info Box
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.bgOffWhite,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.borderLight),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'From: ${q.userName}',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                            _statusChip(q.category.toUpperCase(), AppColors.emeraldContainer, AppColors.primaryEmerald),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          q.userEmail,
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        ),
+                        if (q.createdAt != null)
+                          Text(
+                            'Submitted: ${q.createdAt!.day}/${q.createdAt!.month}/${q.createdAt!.year}',
+                            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Question Box
+                  const Text('Question / سوال:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 4),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEFCE8),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.amber.shade200),
+                    ),
+                    child: Text(
+                      q.question,
+                      style: const TextStyle(fontSize: 14, height: 1.4, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Answer Input
+                  const Text('Admin Response / شرعی جواب:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: answerC,
+                    maxLines: 5,
+                    decoration: const InputDecoration(
+                      hintText: 'Enter verified Islamic answer / reference...',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Public Checkbox
+                  SwitchListTile(
+                    title: const Text('Make Public for all users in Knowledge Hub', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                    subtitle: const Text('Allows other users to benefit from this Q&A entry.', style: TextStyle(fontSize: 11)),
+                    value: isPublic,
+                    activeThumbColor: AppColors.primaryEmerald,
+                    onChanged: (val) => setModal(() => isPublic = val),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.send_rounded, size: 16),
+              label: const Text('Save & Send Answer'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryEmerald,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                if (answerC.text.trim().isEmpty) {
+                  _snack('Please write an answer before submitting.');
+                  return;
+                }
+                await AdminService.answerQuestion(
+                  questionId: q.id,
+                  answer: answerC.text.trim(),
+                  isPublic: isPublic,
+                  answeredBy: 'Super Admin',
+                );
+                if (ctx.mounted) {
+                  Navigator.pop(ctx);
+                  _snack('Answer saved and notification sent to ${q.userName}!');
                 }
               },
             ),

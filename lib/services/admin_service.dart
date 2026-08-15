@@ -4,6 +4,7 @@ import '../core/models/event_model.dart';
 import '../core/models/masail_model.dart';
 import '../core/models/aqaid_model.dart';
 import '../core/models/daily_content_model.dart';
+import '../core/models/question_model.dart';
 import '../core/models/app_user.dart';
 import '../core/utils/firestore_seeder.dart';
 import 'auth_service.dart';
@@ -380,7 +381,6 @@ class AdminService {
         .snapshots()
         .map((snap) => snap.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList())
         .handleError((e) {
-      // Fallback if index building
       return _firestore
           .collection('notifications')
           .snapshots()
@@ -413,7 +413,80 @@ class AdminService {
     await _firestore.collection('notifications').doc(id).delete();
   }
 
+  // ── Questions & Answers (Q&A) Management ────────────────────
 
+  static Stream<List<QuestionModel>> get questionsStream {
+    return _firestore
+        .collection('user_questions')
+        .snapshots()
+        .map((snap) {
+      final list = snap.docs
+          .map((doc) => QuestionModel.fromMap(doc.id, doc.data()))
+          .toList();
+      list.sort((a, b) {
+        final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bTime = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bTime.compareTo(aTime); // Newest first
+      });
+      return list;
+    }).handleError((e) {
+      if (kDebugMode) print('AdminService.questionsStream error: $e');
+      return <QuestionModel>[];
+    });
+  }
+
+  static Stream<int> get pendingQuestionsCountStream {
+    return _firestore
+        .collection('user_questions')
+        .where('status', isEqualTo: 'Pending')
+        .snapshots()
+        .map((snap) => snap.docs.length)
+        .handleError((e) => 0);
+  }
+
+  /// Answers a question and automatically dispatches a notification to the user.
+  static Future<void> answerQuestion({
+    required String questionId,
+    required String answer,
+    required bool isPublic,
+    required String answeredBy,
+  }) async {
+    final doc = await _firestore.collection('user_questions').doc(questionId).get();
+    if (!doc.exists || doc.data() == null) return;
+
+    final question = QuestionModel.fromMap(doc.id, doc.data()!);
+
+    await _firestore.collection('user_questions').doc(questionId).update({
+      'status': 'Answered',
+      'answer': answer.trim(),
+      'answered_by': answeredBy,
+      'answered_at': FieldValue.serverTimestamp(),
+      'is_public': isPublic,
+      'updated_at': FieldValue.serverTimestamp(),
+    });
+
+    // Automated notification to the user
+    try {
+      if (question.userId.isNotEmpty && question.userId != 'guest') {
+        await _firestore.collection('notifications').add({
+          'title': 'Your Question Has Been Answered! ✍️',
+          'title_ur': 'آپ کے سوال کا جواب دے دیا گیا ہے! ✍️',
+          'body': 'Admin has responded to your question regarding ${question.category}.',
+          'body_ur': 'ایڈمن نے ${QuestionModel.getCategoryUrdu(question.category)} کے متعلق آپ کے سوال کا جواب فراہم کر دیا ہے۔',
+          'target': question.userId,
+          'type': 'question_answered',
+          'question_id': questionId,
+          'sent_at': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) print('AdminService.answerQuestion notification error: $e');
+    }
+  }
+
+  static Future<void> deleteQuestion(String id) async {
+    await _firestore.collection('user_questions').doc(id).delete();
+  }
 
   // ── User Management ─────────────────────────────────────────
 
@@ -471,4 +544,3 @@ class AdminService {
     }
   }
 }
-

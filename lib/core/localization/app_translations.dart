@@ -122,6 +122,24 @@ class AppTranslations {
       'add_new_entry': 'Add New Entry',
       'search_records': 'Search records...',
       'manage_section': 'Manage',
+
+      // Q&A / Ask a Question
+      'ask_question': 'Ask a Question',
+      'ask_question_title': 'Ask a Question to Admin',
+      'ask_question_subtitle': 'Verified answer within 24 hours guaranteed',
+      'my_questions': 'My Questions',
+      'my_questions_title': 'My Questions & Inquiries',
+      'question_category': 'Category',
+      'your_question': 'Your Question',
+      'submit_question': 'Submit Question',
+      'submitting_question': 'Submitting Question...',
+      'question_submitted_title': 'Question Submitted! 📢',
+      'question_submitted_ack_en': 'Question submitted successfully! Our admin team will respond to your query within 24 hours.',
+      'question_submitted_ack_ur': 'سوال کامیابی سے موصول ہو گیا۔ ایڈمن ٹیم 24 گھنٹوں کے اندر آپ کے سوال کا جواب فراہم کر دے گی۔',
+      'status_pending_24h': 'Pending (Within 24h)',
+      'status_answered': 'Answered ✅',
+      'official_answer': 'Official Admin Answer',
+      'questions_management': 'Questions Management',
     },
     'ur': {
       // General & App Name
@@ -245,6 +263,24 @@ class AppTranslations {
       'add_new_entry': 'نیا اندراج شامل کریں',
       'search_records': 'ریکارڈز تلاش کریں...',
       'manage_section': 'انتظام کریں',
+
+      // Q&A / Ask a Question
+      'ask_question': 'سوال پوچھیں',
+      'ask_question_title': 'مفتی / ایڈمن سے سوال پوچھیں',
+      'ask_question_subtitle': '24 گھنٹے میں مستند جواب حاصل کریں',
+      'my_questions': 'میرے سوالات',
+      'my_questions_title': 'میرے سوالات و استفسارات',
+      'question_category': 'کیٹیگری',
+      'your_question': 'آپ کا سوال',
+      'submit_question': 'سوال ارسال کریں',
+      'submitting_question': 'سوال جمع ہو رہا ہے...',
+      'question_submitted_title': 'سوال کامیابی سے موصول ہوا! 📢',
+      'question_submitted_ack_en': 'Question submitted successfully! Our admin team will respond to your query within 24 hours.',
+      'question_submitted_ack_ur': 'سوال کامیابی سے موصول ہو گیا۔ ایڈمن ٹیم 24 گھنٹوں کے اندر آپ کے سوال کا جواب فراہم کر دے گی۔',
+      'status_pending_24h': 'زیرِ غور (24 گھنٹے میں جواب)',
+      'status_answered': 'جواب دیا گیا ✅',
+      'official_answer': 'ایڈمن / مفتی کا تصدیق شدہ جواب',
+      'questions_management': 'سوالات و جوابات مینجمنٹ',
     },
   };
 
