@@ -117,28 +117,33 @@ class _MyQuestionsScreenState extends State<MyQuestionsScreen> {
                     const SizedBox(height: 10),
 
                     // Filter Chips
-                    Row(
-                      children: [
-                        _buildFilterChip(
-                          label: isUrdu ? 'تمام سوالات (${allQuestions.length})' : 'All (${allQuestions.length})',
-                          value: 'all',
-                        ),
-                        const SizedBox(width: 8),
-                        _buildFilterChip(
-                          label: isUrdu
-                              ? 'زیرِ غور (${allQuestions.where((q) => q.isPending).length})'
-                              : 'Pending (${allQuestions.where((q) => q.isPending).length})',
-                          value: 'pending',
-                        ),
-                        const SizedBox(width: 8),
-                        _buildFilterChip(
-                          label: isUrdu
-                              ? 'جواب شدہ (${allQuestions.where((q) => q.isAnswered).length})'
-                              : 'Answered (${allQuestions.where((q) => q.isAnswered).length})',
-                          value: 'answered',
-                        ),
-                      ],
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: [
+                          _buildFilterChip(
+                            label: isUrdu ? 'تمام سوالات (${allQuestions.length})' : 'All (${allQuestions.length})',
+                            value: 'all',
+                          ),
+                          const SizedBox(width: 8),
+                          _buildFilterChip(
+                            label: isUrdu
+                                ? 'زیرِ غور (${allQuestions.where((q) => q.isPending).length})'
+                                : 'Pending (${allQuestions.where((q) => q.isPending).length})',
+                            value: 'pending',
+                          ),
+                          const SizedBox(width: 8),
+                          _buildFilterChip(
+                            label: isUrdu
+                                ? 'جواب شدہ (${allQuestions.where((q) => q.isAnswered).length})'
+                                : 'Answered (${allQuestions.where((q) => q.isAnswered).length})',
+                            value: 'answered',
+                          ),
+                        ],
+                      ),
                     ),
+
                   ],
                 ),
               ),
