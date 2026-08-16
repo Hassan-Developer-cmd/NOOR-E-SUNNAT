@@ -419,11 +419,12 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
 
             // PageView Carousel with Full-Width Isolated Event Cards
             SizedBox(
-              height: 168,
+              height: 155,
               child: PageView.builder(
                 controller: _pageController,
                 physics: const BouncingScrollPhysics(),
                 pageSnapping: true,
+                allowImplicitScrolling: false,
                 itemCount: events.length,
                 onPageChanged: (index) {
                   setState(() => _currentPage = index);
@@ -444,6 +445,7 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
                 },
               ),
             ),
+
 
 
             const SizedBox(height: 10),
