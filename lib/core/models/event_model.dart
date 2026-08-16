@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-
 class EventModel {
   static const List<String> supportedStatuses = [
     'Coming Soon',
@@ -20,6 +19,7 @@ class EventModel {
   final String status;
   final String description;
   final String descriptionUr;
+  final int order;
   final List<Map<String, dynamic>> statusHistory;
   final String? lastNotifiedStatus;
   final dynamic lastNotificationSentAt;
@@ -36,6 +36,7 @@ class EventModel {
     required this.status,
     required this.description,
     this.descriptionUr = '',
+    this.order = 0,
     this.statusHistory = const [],
     this.lastNotifiedStatus,
     this.lastNotificationSentAt,
@@ -46,6 +47,42 @@ class EventModel {
   String getTitle(bool isUrdu) => isUrdu && titleUr.isNotEmpty ? titleUr : title;
   String getLocation(bool isUrdu) => isUrdu && locationUr.isNotEmpty ? locationUr : location;
   String getDescription(bool isUrdu) => isUrdu && descriptionUr.isNotEmpty ? descriptionUr : description;
+
+  EventModel copyWith({
+    String? id,
+    String? title,
+    String? titleUr,
+    String? dateTime,
+    String? location,
+    String? locationUr,
+    String? status,
+    String? description,
+    String? descriptionUr,
+    int? order,
+    List<Map<String, dynamic>>? statusHistory,
+    String? lastNotifiedStatus,
+    dynamic lastNotificationSentAt,
+    dynamic createdAt,
+    dynamic updatedAt,
+  }) {
+    return EventModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      titleUr: titleUr ?? this.titleUr,
+      dateTime: dateTime ?? this.dateTime,
+      location: location ?? this.location,
+      locationUr: locationUr ?? this.locationUr,
+      status: status ?? this.status,
+      description: description ?? this.description,
+      descriptionUr: descriptionUr ?? this.descriptionUr,
+      order: order ?? this.order,
+      statusHistory: statusHistory ?? this.statusHistory,
+      lastNotifiedStatus: lastNotifiedStatus ?? this.lastNotifiedStatus,
+      lastNotificationSentAt: lastNotificationSentAt ?? this.lastNotificationSentAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 
   // Gradient computed from status for display
   List<Color> get gradientColors {
@@ -118,6 +155,7 @@ class EventModel {
       status: map['status'] as String? ?? 'Coming Soon',
       description: map['description'] as String? ?? '',
       descriptionUr: map['description_ur'] as String? ?? '',
+      order: (map['order'] as num?)?.toInt() ?? (map['arrangement_index'] as num?)?.toInt() ?? 0,
       statusHistory: history,
       lastNotifiedStatus: map['last_notified_status'] as String?,
       lastNotificationSentAt: map['last_notification_sent_at'],
@@ -135,6 +173,7 @@ class EventModel {
         'status': status,
         'description': description,
         'description_ur': descriptionUr,
+        'order': order,
         'status_history': statusHistory,
         'last_notified_status': lastNotifiedStatus ?? status,
         'last_notification_sent_at': lastNotificationSentAt ?? FieldValue.serverTimestamp(),

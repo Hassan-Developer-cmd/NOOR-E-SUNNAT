@@ -9,14 +9,17 @@ import 'core/constants/app_theme.dart';
 import 'core/providers/language_provider.dart';
 import 'features/home/presentation/home_screen.dart';
 import 'features/counter/presentation/counter_screen.dart';
+import 'features/knowledge_hub/presentation/qa_screen.dart';
 import 'features/knowledge_hub/presentation/masail_grid.dart';
 import 'features/knowledge_hub/presentation/aqaid_grid.dart';
 import 'features/profile/presentation/profile_screen.dart';
+
 import 'features/admin_panel/presentation/admin_dashboard_web.dart';
 import 'features/admin_panel/presentation/admin_login_screen.dart';
 import 'features/splash/presentation/splash_screen.dart';
 import 'services/counter_service.dart';
 import 'services/firebase_init_service.dart';
+import 'services/notification_service.dart';
 
 final LanguageProvider globalLanguageProvider = LanguageProvider();
 
@@ -25,8 +28,10 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await globalLanguageProvider.init();
   await FirebaseInitService.seedInitialDatabase();
+  await NotificationService.initialize();
   runApp(const FaizanEDuroodApp());
 }
+
 
 class FaizanEDuroodApp extends StatelessWidget {
   const FaizanEDuroodApp({super.key});
@@ -39,8 +44,9 @@ class FaizanEDuroodApp extends StatelessWidget {
         return MaterialApp(
           title: globalLanguageProvider.tr('app_title'),
           debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme,
+          theme: AppTheme.getTheme(globalLanguageProvider.isUrdu),
           locale: globalLanguageProvider.locale,
+
           supportedLocales: const [Locale('en'), Locale('ur')],
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
@@ -161,9 +167,16 @@ class _MainShellState extends State<MainShell> {
         final pages = [
           HomeScreen(
             counterService: _counterService,
-            onNavigateToCounter: () => setState(() => _currentTabIndex = 1),
+            onNavigateToCounter: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CounterScreen(counterService: _counterService),
+                ),
+              );
+            },
           ),
-          CounterScreen(counterService: _counterService),
+          const QAScreen(),
           const AqaidGridScreen(),
           const MasailGridScreen(),
           ProfileScreen(counterService: _counterService),
@@ -218,9 +231,9 @@ class _MainShellState extends State<MainShell> {
                         label: lp.tr('nav_home'),
                       ),
                       BottomNavigationBarItem(
-                        icon: const Icon(Icons.touch_app_outlined),
-                        activeIcon: const Icon(Icons.touch_app_rounded),
-                        label: lp.tr('nav_counter'),
+                        icon: const Icon(Icons.question_answer_outlined),
+                        activeIcon: const Icon(Icons.question_answer_rounded),
+                        label: lp.tr('nav_qa'),
                       ),
                       BottomNavigationBarItem(
                         icon: const Icon(Icons.auto_awesome_outlined),
@@ -243,6 +256,7 @@ class _MainShellState extends State<MainShell> {
               ),
             ),
           ),
+
         );
       },
     );

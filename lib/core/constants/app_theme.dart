@@ -1,35 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'app_colors.dart';
+import 'app_typography.dart';
 
 class AppTheme {
-  static ThemeData get lightTheme {
+  static ThemeData get lightTheme => getTheme(false);
+
+  static ThemeData getTheme(bool isUrdu) {
+    final textTheme = AppTypography.buildTextTheme(isUrdu);
+    final baseFontFamily = isUrdu ? AppTypography.urduFontFamily : AppTypography.englishFontFamily;
+
     return ThemeData(
       useMaterial3: true,
       scaffoldBackgroundColor: AppColors.bgPrimary,
+      fontFamily: baseFontFamily,
+      textTheme: textTheme,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primaryEmerald,
         primary: AppColors.primaryEmerald,
         secondary: AppColors.accentGold,
         surface: AppColors.cardWhite,
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: AppColors.primaryEmerald,
         foregroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
-        systemOverlayStyle: SystemUiOverlayStyle(
+        systemOverlayStyle: const SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
           statusBarIconBrightness: Brightness.light,
         ),
         titleTextStyle: TextStyle(
+          fontFamily: baseFontFamily,
           fontSize: 17,
           fontWeight: FontWeight.w700,
           color: Colors.white,
-          letterSpacing: 0.1,
+          letterSpacing: isUrdu ? 0.0 : 0.1,
         ),
-        iconTheme: IconThemeData(color: Colors.white, size: 22),
+        iconTheme: const IconThemeData(color: Colors.white, size: 22),
       ),
       cardTheme: CardThemeData(
         color: AppColors.cardWhite,
@@ -50,10 +59,11 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(
+          textStyle: TextStyle(
+            fontFamily: baseFontFamily,
             fontSize: 15,
             fontWeight: FontWeight.w700,
-            letterSpacing: 0.1,
+            letterSpacing: isUrdu ? 0.0 : 0.1,
           ),
         ),
       ),
@@ -65,7 +75,8 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(
+          textStyle: TextStyle(
+            fontFamily: baseFontFamily,
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
@@ -95,7 +106,8 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Color(0xFFDC2626), width: 2),
         ),
-        hintStyle: const TextStyle(
+        hintStyle: TextStyle(
+          fontFamily: baseFontFamily,
           color: AppColors.textMuted,
           fontSize: 14,
           fontWeight: FontWeight.w400,
@@ -106,7 +118,8 @@ class AppTheme {
         selectedColor: AppColors.primaryEmerald,
         side: const BorderSide(color: AppColors.borderLight),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        labelStyle: const TextStyle(
+        labelStyle: TextStyle(
+          fontFamily: baseFontFamily,
           color: AppColors.textSecondary,
           fontWeight: FontWeight.w600,
           fontSize: 13,
@@ -118,14 +131,14 @@ class AppTheme {
         thickness: 1,
         space: 1,
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: Colors.white,
         selectedItemColor: AppColors.primaryEmerald,
         unselectedItemColor: AppColors.textMuted,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
-        selectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-        unselectedLabelStyle: TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+        selectedLabelStyle: TextStyle(fontFamily: baseFontFamily, fontSize: 11, fontWeight: FontWeight.w700),
+        unselectedLabelStyle: TextStyle(fontFamily: baseFontFamily, fontSize: 11, fontWeight: FontWeight.w500),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,

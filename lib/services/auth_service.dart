@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import '../core/models/app_user.dart';
 
@@ -9,11 +10,45 @@ class AuthService {
   static final _firestore = FirebaseFirestore.instance;
   static final _googleSignIn = GoogleSignIn();
 
+  static const String _keySessionActive = 'auth_session_active';
+  static const String _keyUserUid = 'auth_session_uid';
+  static const String _keyUserEmail = 'auth_session_email';
+
   static User? get currentUser => _auth.currentUser;
   static bool get isLoggedIn => _auth.currentUser != null;
 
   /// Auth state stream — use this to reactively route between login/home.
   static Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  /// Resolves the current authenticated user safely on startup,
+  /// awaiting token hydration from local storage if needed.
+  static Future<User?> resolveCurrentUser({Duration timeout = const Duration(milliseconds: 2000)}) async {
+    if (_auth.currentUser != null) {
+      await _saveSessionLocally(_auth.currentUser!);
+      return _auth.currentUser;
+    }
+
+    try {
+      final user = await _auth.authStateChanges().first.timeout(timeout);
+      if (user != null) {
+        await _saveSessionLocally(user);
+      }
+      return user ?? _auth.currentUser;
+    } catch (_) {
+      return _auth.currentUser;
+    }
+  }
+
+  /// Checks if a valid persistent session flag exists in local preferences.
+  static Future<bool> isSessionPersisted() async {
+    if (_auth.currentUser != null) return true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_keySessionActive) ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
 
   /// Fetches the AppUser doc for the given uid from Firestore.
   static Future<AppUser?> getAppUser(String uid) async {
@@ -49,7 +84,10 @@ class AuthService {
     );
 
     final result = await _auth.signInWithCredential(credential);
-    await _createUserDocIfNeeded(result.user!);
+    if (result.user != null) {
+      await _saveSessionLocally(result.user!);
+      await _createUserDocIfNeeded(result.user!);
+    }
     return result.user;
   }
 
@@ -60,6 +98,7 @@ class AuthService {
       password: password.trim(),
     );
     if (credential.user != null) {
+      await _saveSessionLocally(credential.user!);
       await _createUserDocIfNeeded(credential.user!);
     }
     return credential.user;
@@ -76,6 +115,7 @@ class AuthService {
       password: password.trim(),
     );
     if (credential.user != null) {
+      await _saveSessionLocally(credential.user!);
       if (username != null && username.trim().isNotEmpty) {
         await credential.user!.updateDisplayName(username.trim());
       }
@@ -87,6 +127,9 @@ class AuthService {
   /// Sign in anonymously for guest users.
   static Future<User?> signInAnonymously() async {
     final result = await _auth.signInAnonymously();
+    if (result.user != null) {
+      await _saveSessionLocally(result.user!);
+    }
     return result.user;
   }
 
@@ -143,7 +186,33 @@ class AuthService {
     }
   }
 
+  static Future<void> _saveSessionLocally(User user) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_keySessionActive, true);
+      await prefs.setString(_keyUserUid, user.uid);
+      if (user.email != null) {
+        await prefs.setString(_keyUserEmail, user.email!);
+      }
+    } catch (e) {
+      if (kDebugMode) print('AuthService._saveSessionLocally error: $e');
+    }
+  }
+
+  static Future<void> _clearLocalSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_keySessionActive, false);
+      await prefs.remove(_keyUserUid);
+      await prefs.remove(_keyUserEmail);
+    } catch (e) {
+      if (kDebugMode) print('AuthService._clearLocalSession error: $e');
+    }
+  }
+
+  /// Explicitly signs out of Firebase Auth and clears local session persistence.
   static Future<void> signOut() async {
+    await _clearLocalSession();
     await Future.wait([_auth.signOut(), _googleSignIn.signOut()]);
   }
 }

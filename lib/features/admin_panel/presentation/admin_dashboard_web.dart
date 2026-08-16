@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
@@ -10,6 +11,10 @@ import '../../../core/models/question_model.dart';
 import '../../../core/models/app_user.dart';
 import '../../../core/utils/firestore_seeder.dart';
 import '../../../services/admin_service.dart';
+import '../../../core/providers/language_provider.dart';
+import '../../../main.dart';
+
+
 
 class AdminDashboardWeb extends StatefulWidget {
   final VoidCallback onSwitchToApp;
@@ -28,6 +33,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
   String _selectedAqaidCategory = 'all';
   String _selectedEventStatus = 'all';
   String _selectedQuestionStatus = 'all';
+  String _selectedDailyContentType = 'all';
   final TextEditingController _searchController = TextEditingController();
 
   void _switchTab(int index) {
@@ -39,8 +45,10 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
       _selectedAqaidCategory = 'all';
       _selectedEventStatus = 'all';
       _selectedQuestionStatus = 'all';
+      _selectedDailyContentType = 'all';
     });
   }
+
 
   @override
   void dispose() {
@@ -73,116 +81,165 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     Icons.people_alt_rounded,
   ];
 
+  List<String> _getNavItems(LanguageProvider lp) {
+    return [
+      lp.tr('dashboard_overview'),
+      lp.tr('event_management'),
+      lp.tr('masail_content'),
+      lp.tr('aqaid_content'),
+      lp.tr('daily_content_mgmt'),
+      lp.tr('notifications_mgmt'),
+      lp.tr('questions_management'),
+      lp.tr('admins_mgmt'),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth > 900;
+    return ListenableBuilder(
+      listenable: globalLanguageProvider,
+      builder: (context, _) {
+        final lp = globalLanguageProvider;
+        final navItems = _getNavItems(lp);
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isDesktop = screenWidth > 900;
 
-    return ScrollConfiguration(
-      behavior: ScrollConfiguration.of(context).copyWith(
-        dragDevices: {
-          PointerDeviceKind.touch,
-          PointerDeviceKind.mouse,
-          PointerDeviceKind.trackpad,
-          PointerDeviceKind.stylus,
-        },
-      ),
-      child: Scaffold(
-        backgroundColor: AppColors.bgOffWhite,
-        drawer: !isDesktop ? Drawer(child: _buildSidebar(isDrawer: true)) : null,
-        body: Row(
-          children: [
-            // Persistent Sidebar for Desktop
-            if (isDesktop) _buildSidebar(isDrawer: false),
-            // Main Content
-            Expanded(
-              child: Column(
-                children: [
-                  // Top Bar
-                  Container(
-                    height: 64,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      border: Border(bottom: BorderSide(color: AppColors.borderLight)),
-                    ),
-                    child: Row(
-                      children: [
-                        if (!isDesktop)
-                          Builder(
-                            builder: (ctx) => IconButton(
-                              icon: const Icon(Icons.menu, color: AppColors.primaryEmerald),
-                              onPressed: () => Scaffold.of(ctx).openDrawer(),
-                            ),
-                          ),
-                        Expanded(
-                          child: Text(
-                            _navItems[_selectedNavIndex],
-                            style: AppTypography.headingMedium.copyWith(
-                              fontSize: screenWidth < 600 ? 16 : 20,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+        return ScrollConfiguration(
+          behavior: ScrollConfiguration.of(context).copyWith(
+            dragDevices: {
+              PointerDeviceKind.touch,
+              PointerDeviceKind.mouse,
+              PointerDeviceKind.trackpad,
+              PointerDeviceKind.stylus,
+            },
+          ),
+          child: Scaffold(
+            backgroundColor: AppColors.bgOffWhite,
+            drawer: !isDesktop ? Drawer(child: _buildSidebar(isDrawer: true, lp: lp, navItems: navItems)) : null,
+            body: Row(
+              children: [
+                // Persistent Sidebar for Desktop
+                if (isDesktop) _buildSidebar(isDrawer: false, lp: lp, navItems: navItems),
+                // Main Content
+                Expanded(
+                  child: Column(
+                    children: [
+                      // Top Bar
+                      Container(
+                        height: 64,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          border: Border(bottom: BorderSide(color: AppColors.borderLight)),
                         ),
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          width: screenWidth < 600 ? 140 : 220,
-                          height: 38,
-                          child: TextField(
-                            controller: _searchController,
-                            onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
-                            decoration: InputDecoration(
-                              hintText: screenWidth < 600 ? 'Search...' : 'Search records...',
-                              prefixIcon: const Icon(Icons.search, size: 18),
-                              suffixIcon: _searchQuery.isNotEmpty
-                                  ? IconButton(
-                                      icon: const Icon(Icons.clear, size: 16),
-                                      onPressed: () {
-                                        _searchController.clear();
-                                        setState(() => _searchQuery = '');
-                                      },
-                                    )
-                                  : null,
-                              contentPadding: EdgeInsets.zero,
-                              filled: true,
-                              fillColor: AppColors.bgOffWhite,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                borderSide: BorderSide.none,
+                        child: Row(
+                          children: [
+                            if (!isDesktop)
+                              Builder(
+                                builder: (ctx) => IconButton(
+                                  icon: const Icon(Icons.menu, color: AppColors.primaryEmerald),
+                                  onPressed: () => Scaffold.of(ctx).openDrawer(),
+                                ),
+                              ),
+                            Expanded(
+                              child: Text(
+                                navItems[_selectedNavIndex],
+                                style: AppTypography.headingMedium.copyWith(
+                                  fontSize: screenWidth < 600 ? 16 : 20,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                          ),
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: screenWidth < 600 ? 120 : 200,
+                              height: 38,
+                              child: TextField(
+                                controller: _searchController,
+                                onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
+                                decoration: InputDecoration(
+                                  hintText: lp.tr('search_records'),
+                                  prefixIcon: const Icon(Icons.search, size: 18),
+                                  suffixIcon: _searchQuery.isNotEmpty
+                                      ? IconButton(
+                                          icon: const Icon(Icons.clear, size: 16),
+                                          onPressed: () {
+                                            _searchController.clear();
+                                            setState(() => _searchQuery = '');
+                                          },
+                                        )
+                                      : null,
+                                  contentPadding: EdgeInsets.zero,
+                                  filled: true,
+                                  fillColor: AppColors.bgOffWhite,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
 
+                            // Language Switcher
+                            GestureDetector(
+                              onTap: () => lp.toggleLanguage(),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryEmerald.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: AppColors.primaryEmerald.withValues(alpha: 0.3)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.language_rounded, size: 14, color: AppColors.primaryEmerald),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      lp.isUrdu ? 'EN' : 'اردو',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.primaryEmerald,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+
+                            const CircleAvatar(
+                              radius: 18,
+                              backgroundColor: AppColors.primaryEmerald,
+                              child: Text(
+                                'A',
+                                style: TextStyle(color: AppColors.accentGold, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 12),
-                        const CircleAvatar(
-                          radius: 18,
-                          backgroundColor: AppColors.primaryEmerald,
-                          child: Text(
-                            'A',
-                            style: TextStyle(color: AppColors.accentGold, fontWeight: FontWeight.bold),
-                          ),
+                      ),
+                      // Body
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: EdgeInsets.all(screenWidth < 600 ? 12 : 24),
+                          child: _buildContent(),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  // Body
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.all(screenWidth < 600 ? 12 : 24),
-                      child: _buildContent(),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildSidebar({required bool isDrawer}) {
+  Widget _buildSidebar({required bool isDrawer, required LanguageProvider lp, required List<String> navItems}) {
     return Container(
       width: 260,
       color: AppColors.emeraldDark,
@@ -195,14 +252,14 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
               children: [
                 const Icon(Icons.shield_moon_rounded, color: AppColors.accentGold, size: 28),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Faizan e Durood',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                      Text('Web Admin Portal',
-                          style: TextStyle(fontSize: 11, color: AppColors.accentGold)),
+                      Text(lp.tr('app_title'),
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                      Text(lp.tr('admin_portal'),
+                          style: const TextStyle(fontSize: 11, color: AppColors.accentGold)),
                     ],
                   ),
                 ),
@@ -217,7 +274,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
           const SizedBox(height: 12),
           Expanded(
             child: ListView.builder(
-              itemCount: _navItems.length,
+              itemCount: navItems.length,
               itemBuilder: (context, index) {
                 final isSelected = _selectedNavIndex == index;
                 return Material(
@@ -228,7 +285,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                     leading: Icon(_navIcons[index],
                         color: isSelected ? AppColors.accentGold : Colors.white70),
                     title: Text(
-                      _navItems[index],
+                      navItems[index],
                       style: TextStyle(
                         color: isSelected ? Colors.white : Colors.white70,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -267,7 +324,6 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                         Navigator.pop(context);
                       }
                     },
-
                   ),
                 );
               },
@@ -278,8 +334,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
             color: Colors.transparent,
             child: ListTile(
               leading: const Icon(Icons.phone_iphone_rounded, color: AppColors.accentGold),
-              title: const Text('Switch to Mobile View',
-                  style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+              title: Text(lp.tr('switch_to_mobile'),
+                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
               onTap: () {
                 if (isDrawer) Navigator.pop(context);
                 widget.onSwitchToApp();
@@ -291,6 +347,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
       ),
     );
   }
+
 
   Widget _buildContent() {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -714,14 +771,19 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     }
   }
 
-  // ── Events Table (Dynamic Status & Filters) ───────────────────
+  // ── Events Table (Drag-and-Drop Arrangement & Status Management) ──
 
   Widget _buildEventsTable() {
     return StreamBuilder<List<EventModel>>(
       stream: AdminService.eventsStream,
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(40),
+              child: CircularProgressIndicator(),
+            ),
+          );
         }
         final allEvents = snap.data ?? [];
         final statusFilters = [
@@ -748,7 +810,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
           children: [
             // Status Filter Chips
             Container(
-              margin: const EdgeInsets.only(bottom: 16),
+              margin: const EdgeInsets.only(bottom: 14),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -789,80 +851,515 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 ),
               ),
             ),
-            _tableCard([
-              const DataColumn(label: Text('Title', style: TextStyle(fontWeight: FontWeight.bold))),
-              const DataColumn(label: Text('Date/Time', style: TextStyle(fontWeight: FontWeight.bold))),
-              const DataColumn(label: Text('Status (Click to Change)', style: TextStyle(fontWeight: FontWeight.bold))),
-              const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
-            ], filtered.map((e) => DataRow(cells: [
-              DataCell(
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
+
+            // Drag & Drop Arrangement Guidance Banner
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0FDF4),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFBBF7D0)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryEmerald.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.drag_indicator_rounded, color: AppColors.primaryEmerald, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          globalLanguageProvider.tr('drag_drop_banner_title'),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: Color(0xFF14532D),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          globalLanguageProvider.tr('drag_drop_banner_sub'),
+                          style: const TextStyle(fontSize: 12, color: Color(0xFF166534)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            if (filtered.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(36),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.borderLight),
+                ),
+                child: Center(
+                  child: Text(
+                    globalLanguageProvider.tr('no_data'),
+                    style: const TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
+                ),
+              )
+            else
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.borderLight),
+                  boxShadow: const [
+                    BoxShadow(color: AppColors.shadowColor, blurRadius: 8, offset: Offset(0, 2)),
+                  ],
+                ),
+                child: Column(
                   children: [
-                    Text(e.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                    if (e.location.isNotEmpty)
-                      Text(e.location, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                    // Table Header Bar
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                        border: Border(bottom: BorderSide(color: AppColors.borderLight)),
+                      ),
+                      child: Row(
+                        children: [
+                          SizedBox(width: 160, child: Text(globalLanguageProvider.tr('col_arrangement'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: Color(0xFF64748B)))),
+                          Expanded(flex: 3, child: Text(globalLanguageProvider.tr('col_title_location'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: Color(0xFF64748B)))),
+                          Expanded(flex: 2, child: Text(globalLanguageProvider.tr('col_datetime'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: Color(0xFF64748B)))),
+                          Expanded(flex: 2, child: Text(globalLanguageProvider.tr('col_status'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: Color(0xFF64748B)))),
+                          SizedBox(width: 90, child: Text(globalLanguageProvider.tr('col_actions'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: Color(0xFF64748B)))),
+                        ],
+                      ),
+                    ),
+
+
+                    // Interactive Reorderable List of Events
+                    ReorderableListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      buildDefaultDragHandles: false,
+                      itemCount: filtered.length,
+                      onReorderItem: (oldIndex, newIndex) => _onEventReordered(allEvents, filtered, oldIndex, newIndex),
+                      itemBuilder: (context, index) {
+
+                        final e = filtered[index];
+                        final overallRank = allEvents.indexOf(e) + 1;
+                        final displayRank = e.order > 0 ? e.order : overallRank;
+
+                        return Container(
+                          key: ValueKey('event_${e.id}'),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: const BoxDecoration(
+                            border: Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
+                          ),
+                          child: Row(
+                            children: [
+                              // Arrangement # and Drag Controls
+                              SizedBox(
+                                width: 160,
+                                child: Row(
+                                  children: [
+                                    // Drag Grab Handle
+                                    ReorderableDragStartListener(
+                                      index: index,
+                                      child: MouseRegion(
+                                        cursor: SystemMouseCursors.grab,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFF1F5F9),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: const Icon(Icons.drag_indicator_rounded, size: 18, color: Color(0xFF64748B)),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+
+                                    // Arrangement Position Badge with Click-to-Edit
+                                    InkWell(
+                                      onTap: () => _showSetArrangementDialog(e, displayRank, allEvents.length, allEvents),
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Tooltip(
+                                        message: 'Click to set specific position number',
+                                        child: _buildEventArrangementBadge(displayRank),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+
+                                    // Quick Up / Down step buttons
+                                    Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        InkWell(
+                                          onTap: index > 0
+                                              ? () => _onEventReordered(allEvents, filtered, index, index - 1)
+                                              : null,
+                                          borderRadius: BorderRadius.circular(4),
+                                          child: Icon(
+                                            Icons.keyboard_arrow_up_rounded,
+                                            size: 16,
+                                            color: index > 0 ? AppColors.primaryEmerald : Colors.grey.shade300,
+                                          ),
+                                        ),
+                                        InkWell(
+                                          onTap: index < filtered.length - 1
+                                              ? () => _onEventReordered(allEvents, filtered, index, index + 1)
+                                              : null,
+                                          borderRadius: BorderRadius.circular(4),
+                                          child: Icon(
+                                            Icons.keyboard_arrow_down_rounded,
+                                            size: 16,
+                                            color: index < filtered.length - 1 ? AppColors.primaryEmerald : Colors.grey.shade300,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+
+                                ),
+                              ),
+
+                              // Event Title and Location
+                              Expanded(
+                                flex: 3,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      e.title,
+                                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                    ),
+                                    if (e.titleUr.isNotEmpty)
+                                      Text(
+                                        e.titleUr,
+                                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                                      ),
+                                    if (e.location.isNotEmpty)
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.location_on_outlined, size: 12, color: Color(0xFF64748B)),
+                                          const SizedBox(width: 4),
+                                          Flexible(
+                                            child: Text(
+                                              e.location,
+                                              style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                  ],
+                                ),
+                              ),
+
+                              // Date & Time
+                              Expanded(
+                                flex: 2,
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.calendar_today_outlined, size: 13, color: Color(0xFF64748B)),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        e.dateTime,
+                                        style: const TextStyle(fontSize: 12, color: Color(0xFF334155)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Status Dropdown
+                              Expanded(
+                                flex: 2,
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: e.statusBgColor,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: e.statusFgColor.withValues(alpha: 0.3)),
+                                    ),
+                                    child: DropdownButtonHideUnderline(
+                                      child: DropdownButton<String>(
+                                        value: EventModel.supportedStatuses.contains(e.status) ? e.status : 'Coming Soon',
+                                        icon: Icon(Icons.arrow_drop_down, color: e.statusFgColor, size: 18),
+                                        isDense: true,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: e.statusFgColor,
+                                        ),
+                                        items: EventModel.supportedStatuses.map((s) {
+                                          return DropdownMenuItem<String>(
+                                            value: s,
+                                            child: Text(
+                                              s.toUpperCase(),
+                                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                            ),
+                                          );
+                                        }).toList(),
+                                        onChanged: (newStatus) async {
+                                          if (newStatus != null && newStatus != e.status) {
+                                            await AdminService.updateEventStatus(e.id, newStatus, currentEvent: e);
+                                            _snack('Event status updated to $newStatus! Notification emitted.');
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              // Edit & Delete Actions
+                              SizedBox(
+                                width: 90,
+                                child: Row(
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit, size: 18, color: AppColors.primaryEmerald),
+                                      tooltip: 'Edit event details & order',
+                                      onPressed: () => _showEditEventModal(context, e),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                      tooltip: 'Delete event',
+                                      onPressed: () => _confirmDelete(context, () => AdminService.deleteEvent(e.id)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
-              DataCell(Text(e.dateTime, style: const TextStyle(fontSize: 12))),
-              DataCell(
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: e.statusBgColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: e.statusFgColor.withValues(alpha: 0.3)),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: EventModel.supportedStatuses.contains(e.status) ? e.status : 'Coming Soon',
-                      icon: Icon(Icons.arrow_drop_down, color: e.statusFgColor, size: 18),
-                      isDense: true,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: e.statusFgColor,
-                      ),
-                      items: EventModel.supportedStatuses.map((s) {
-                        return DropdownMenuItem<String>(
-                          value: s,
-                          child: Text(
-                            s.toUpperCase(),
-                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (newStatus) async {
-                        if (newStatus != null && newStatus != e.status) {
-                          await AdminService.updateEventStatus(e.id, newStatus, currentEvent: e);
-                          _snack('Event status updated to $newStatus! Notification emitted.');
-                        }
-                      },
-                    ),
-                  ),
-                ),
-              ),
-              DataCell(Row(children: [
-                IconButton(
-                  icon: const Icon(Icons.edit, size: 18, color: AppColors.primaryEmerald),
-                  onPressed: () => _showEditEventModal(context, e),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                  onPressed: () => _confirmDelete(context, () => AdminService.deleteEvent(e.id)),
-                ),
-              ])),
-            ])).toList()),
           ],
         );
       },
     );
   }
 
+  Widget _buildEventArrangementBadge(int rank) {
+    if (rank == 1) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFFD700), Color(0xFFFFB300)],
+          ),
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x40FFD700),
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: const Text(
+          '#1 ⭐',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+            fontSize: 12,
+          ),
+        ),
+      );
+    } else if (rank == 2) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFCFD8DC), Color(0xFF90A4AE)],
+          ),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Text(
+          '#2',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+            fontSize: 12,
+          ),
+        ),
+      );
+    } else if (rank == 3) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFD7CCC8), Color(0xFFA1887F)],
+          ),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Text(
+          '#3',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+            fontSize: 12,
+          ),
+        ),
+      );
+    } else {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Text(
+          '#$rank',
+          style: const TextStyle(
+            color: Color(0xFF475569),
+            fontWeight: FontWeight.w700,
+            fontSize: 12,
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _onEventReordered(
+    List<EventModel> allEvents,
+    List<EventModel> filtered,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    if (oldIndex == newIndex || oldIndex < 0 || oldIndex >= filtered.length) return;
+
+    final targetIdx = newIndex.clamp(0, filtered.length - 1);
+    final movedItem = filtered[oldIndex];
+    final targetNeighbor = filtered[targetIdx];
+
+    // Work on the full list to keep global sequential arrangement intact
+    final reorderedList = List<EventModel>.from(allEvents);
+    final originalOldIndex = reorderedList.indexOf(movedItem);
+    final targetInsertIndex = reorderedList.indexOf(targetNeighbor);
+
+    if (originalOldIndex == -1 || targetInsertIndex == -1) return;
+
+    reorderedList.removeAt(originalOldIndex);
+    reorderedList.insert(targetInsertIndex, movedItem);
+
+    // Recompute sequential arrangement numbering (#1, #2, #3, ...)
+    final updatedEvents = <EventModel>[];
+    for (int i = 0; i < reorderedList.length; i++) {
+      updatedEvents.add(reorderedList[i].copyWith(order: i + 1));
+    }
+
+    await AdminService.updateEventsOrder(updatedEvents);
+    _snack('Arrangement saved: "${movedItem.title}" moved to position #${targetInsertIndex + 1}');
+  }
+
+
+  void _showSetArrangementDialog(
+    EventModel event,
+    int currentRank,
+    int totalEvents,
+    List<EventModel> allEvents,
+  ) {
+    final controller = TextEditingController(text: currentRank.toString());
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                color: AppColors.emeraldContainer,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.format_list_numbered_rounded, color: AppColors.primaryEmerald, size: 20),
+            ),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text('Set Event Arrangement #', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Set display sequence number for:\n"${event.title}"',
+              style: const TextStyle(fontSize: 13, color: Color(0xFF334155), fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'Arrangement Position (1 to $totalEvents)',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                prefixIcon: const Icon(Icons.tag_rounded, color: AppColors.primaryEmerald),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newPos = int.tryParse(controller.text.trim());
+              if (newPos == null || newPos < 1 || newPos > totalEvents) {
+                _snack('Please enter a valid position between 1 and $totalEvents.');
+                return;
+              }
+
+              Navigator.pop(ctx);
+              final reordered = List<EventModel>.from(allEvents);
+              final currentIndex = reordered.indexWhere((e) => e.id == event.id);
+              if (currentIndex == -1) return;
+
+              final item = reordered.removeAt(currentIndex);
+              final targetIndex = (newPos - 1).clamp(0, reordered.length);
+              reordered.insert(targetIndex, item);
+
+              final updatedEvents = <EventModel>[];
+              for (int i = 0; i < reordered.length; i++) {
+                updatedEvents.add(reordered[i].copyWith(order: i + 1));
+              }
+
+              await AdminService.updateEventsOrder(updatedEvents);
+              _snack('Arrangement updated: "${item.title}" is now #$newPos');
+            },
+            child: const Text('Apply Position'),
+          ),
+        ],
+      ),
+    );
+  }
 
   // ── Masail Table (Category-Wise) ──────────────────────────────
+
 
   Widget _buildMasailTable() {
     return StreamBuilder<List<MasailItemModel>>(
@@ -1079,60 +1576,129 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        final items = (snap.data ?? [])
+        var items = (snap.data ?? [])
             .where((d) =>
                 d.title.toLowerCase().contains(_searchQuery) ||
+                d.titleUr.toLowerCase().contains(_searchQuery) ||
                 d.content.toLowerCase().contains(_searchQuery) ||
-                d.citation.toLowerCase().contains(_searchQuery))
+                d.contentUr.toLowerCase().contains(_searchQuery) ||
+                d.citation.toLowerCase().contains(_searchQuery) ||
+                d.citationUr.toLowerCase().contains(_searchQuery))
             .toList();
-        return _tableCard([
-          const DataColumn(label: Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
-          const DataColumn(label: Text('Title', style: TextStyle(fontWeight: FontWeight.bold))),
-          const DataColumn(label: Text('Topic of the Day', style: TextStyle(fontWeight: FontWeight.bold))),
-          const DataColumn(label: Text('Book / Reference', style: TextStyle(fontWeight: FontWeight.bold))),
-          const DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
-          const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
-        ], items.map((d) => DataRow(cells: [
-          DataCell(_statusChip(d.type.toUpperCase(), AppColors.emeraldContainer, AppColors.primaryEmerald)),
-          DataCell(Text(d.title, style: const TextStyle(fontWeight: FontWeight.w600))),
-          DataCell(
-            GestureDetector(
-              onTap: () async {
-                await AdminService.setTopicOfTheDay(d.id, !d.isTopicOfTheDay);
-                _snack(d.isTopicOfTheDay ? 'Topic of the day deactivated.' : '"${d.title}" set as active Topic of the Day! ⭐');
-              },
-              child: _statusChip(
-                d.isTopicOfTheDay ? 'TOPIC OF THE DAY ⭐' : 'STANDARD',
-                d.isTopicOfTheDay ? AppColors.goldLight : Colors.grey[200]!,
-                d.isTopicOfTheDay ? AppColors.goldDark : Colors.grey[700]!,
+
+        // Apply type filter
+        if (_selectedDailyContentType == 'hadith') {
+          items = items.where((d) => d.isHadith).toList();
+        } else if (_selectedDailyContentType == 'ayat') {
+          items = items.where((d) => d.isAyat).toList();
+        } else if (_selectedDailyContentType == 'topics') {
+          items = items.where((d) => d.isTopicOfTheDay).toList();
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Filter Bar
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  _filterButton('all', 'All Entries (${(snap.data ?? []).length})'),
+                  const SizedBox(width: 8),
+                  _filterButton('hadith', 'Hadiths (${(snap.data ?? []).where((d) => d.isHadith).length})'),
+                  const SizedBox(width: 8),
+                  _filterButton('ayat', 'Ayats (${(snap.data ?? []).where((d) => d.isAyat).length})'),
+                  const SizedBox(width: 8),
+                  _filterButton('topics', 'Topics of the Day ⭐ (${(snap.data ?? []).where((d) => d.isTopicOfTheDay).length})'),
+                ],
               ),
             ),
-          ),
-          DataCell(Text(d.citation, style: const TextStyle(fontSize: 12))),
-          DataCell(
-            GestureDetector(
-              onTap: () => AdminService.setActiveDailyContent(d.id),
-              child: _statusChip(
-                d.isActive ? 'ACTIVE' : 'INACTIVE',
-                d.isActive ? AppColors.emeraldContainer : Colors.grey[200]!,
-                d.isActive ? AppColors.primaryEmerald : Colors.grey[600]!,
+            _tableCard([
+              const DataColumn(label: Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Title', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Topic of the Day', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Book / Reference', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
+            ], items.map((d) => DataRow(cells: [
+              DataCell(_statusChip(
+                d.type.toUpperCase(),
+                d.isAyat ? const Color(0xFFEDE9FE) : AppColors.emeraldContainer,
+                d.isAyat ? const Color(0xFF6D28D9) : AppColors.primaryEmerald,
+              )),
+              DataCell(Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(d.title.isNotEmpty ? d.title : (d.isAyat ? 'Daily Ayat' : 'Daily Hadith'), style: const TextStyle(fontWeight: FontWeight.w600)),
+                  if (d.titleUr.isNotEmpty)
+                    Text(d.titleUr, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                ],
+              )),
+              DataCell(
+                GestureDetector(
+                  onTap: () async {
+                    await AdminService.setTopicOfTheDay(d.id, !d.isTopicOfTheDay, type: d.type);
+                    final typeLabel = d.isAyat ? 'Ayat Topic of the Day' : 'Hadith Topic of the Day';
+                    _snack(d.isTopicOfTheDay ? '$typeLabel deactivated.' : '"${d.title.isNotEmpty ? d.title : typeLabel}" set as active $typeLabel! ⭐');
+                  },
+                  child: _statusChip(
+                    d.isTopicOfTheDay
+                        ? (d.isAyat ? '⭐ AYAT TOPIC' : '⭐ HADITH TOPIC')
+                        : 'STANDARD',
+                    d.isTopicOfTheDay ? AppColors.goldLight : Colors.grey[200]!,
+                    d.isTopicOfTheDay ? AppColors.goldDark : Colors.grey[700]!,
+                  ),
+                ),
               ),
-            ),
-          ),
-          DataCell(Row(children: [
-            IconButton(
-              icon: const Icon(Icons.edit, size: 18, color: AppColors.primaryEmerald),
-              onPressed: () => _showEditDailyContentModal(context, d),
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-              onPressed: () => _confirmDelete(context, () => AdminService.deleteDailyContent(d.id)),
-            ),
-          ])),
-        ])).toList());
+              DataCell(Text(d.citation.isNotEmpty ? d.citation : d.citationUr, style: const TextStyle(fontSize: 12))),
+              DataCell(
+                GestureDetector(
+                  onTap: () async {
+                    await AdminService.toggleDailyContentActive(d.id, !d.isActive);
+                    _snack(d.isActive ? 'Entry marked inactive.' : 'Entry activated!');
+                  },
+                  child: _statusChip(
+                    d.isActive ? 'ACTIVE' : 'INACTIVE',
+                    d.isActive ? AppColors.emeraldContainer : Colors.grey[200]!,
+                    d.isActive ? AppColors.primaryEmerald : Colors.grey[600]!,
+                  ),
+                ),
+              ),
+              DataCell(Row(children: [
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 18, color: AppColors.primaryEmerald),
+                  onPressed: () => _showEditDailyContentModal(context, d),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                  onPressed: () => _confirmDelete(context, () => AdminService.deleteDailyContent(d.id)),
+                ),
+              ])),
+            ])).toList()),
+          ],
+        );
       },
     );
   }
+
+  Widget _filterButton(String filterKey, String label) {
+    final isSelected = _selectedDailyContentType == filterKey;
+    return ElevatedButton(
+      onPressed: () => setState(() => _selectedDailyContentType = filterKey),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isSelected ? AppColors.primaryEmerald : Colors.white,
+        foregroundColor: isSelected ? Colors.white : AppColors.textPrimary,
+        elevation: 0,
+        side: BorderSide(color: isSelected ? AppColors.primaryEmerald : AppColors.borderLight),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+      child: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+    );
+  }
+
 
   // ── Push Notifications Section ────────────────────────────────
 
@@ -1141,41 +1707,134 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
       stream: AdminService.notificationsStream,
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator(color: AppColors.primaryEmerald));
         }
-        final list = (snap.data ?? [])
+        final allDocs = snap.data ?? [];
+        final list = allDocs
             .where((n) =>
                 (n['title'] as String? ?? '').toLowerCase().contains(_searchQuery) ||
-                (n['body'] as String? ?? '').toLowerCase().contains(_searchQuery))
+                (n['title_ur'] as String? ?? '').toLowerCase().contains(_searchQuery) ||
+                (n['body'] as String? ?? '').toLowerCase().contains(_searchQuery) ||
+                (n['body_ur'] as String? ?? '').toLowerCase().contains(_searchQuery))
             .toList();
-        return _tableCard([
-          const DataColumn(label: Text('Title', style: TextStyle(fontWeight: FontWeight.bold))),
-          const DataColumn(label: Text('Message Body', style: TextStyle(fontWeight: FontWeight.bold))),
-          const DataColumn(label: Text('Target Audience', style: TextStyle(fontWeight: FontWeight.bold))),
-          const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
-        ], list.map((n) {
-          final id = n['id'] as String? ?? '';
-          return DataRow(cells: [
-            DataCell(Text(n['title'] as String? ?? 'Notice', style: const TextStyle(fontWeight: FontWeight.w600))),
-            DataCell(Text(n['body'] as String? ?? '')),
-            DataCell(_statusChip(n['target'] as String? ?? 'all_users', AppColors.goldLight, AppColors.goldDark)),
-            DataCell(
-              IconButton(
-                icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                tooltip: 'Delete Notification',
-                onPressed: () => _confirmDelete(context, () async {
-                  if (id.isNotEmpty) {
-                    await AdminService.deleteNotification(id);
-                    _snack('Notification deleted successfully!');
-                  }
-                }),
-              ),
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Controls Bar
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Total Broadcast Notifications (${allDocs.length})',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
+                ),
+                if (allDocs.isNotEmpty) ...[
+                  OutlinedButton.icon(
+                    onPressed: () => _confirmDelete(
+                      context,
+                      () async {
+                        await AdminService.clearAllNotifications();
+                        _snack('All notifications cleared from the database.');
+                      },
+                      customTitle: 'Clear All Notifications',
+                      customMessage: 'Are you sure you want to permanently delete ALL notifications? This cannot be undone.',
+                    ),
+                    icon: const Icon(Icons.delete_sweep_rounded, size: 16, color: Colors.red),
+                    label: const Text('Clear All Notifications', style: TextStyle(color: Colors.red, fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.red),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                  ),
+                ],
+              ],
             ),
-          ]);
-        }).toList());
+            const SizedBox(height: 12),
+            _tableCard([
+              const DataColumn(label: Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Title', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Message Body', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Target Audience', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Date / Time Sent', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
+            ], list.map((n) {
+              final id = n['id'] as String? ?? '';
+              final title = n['title'] as String? ?? 'Broadcast';
+              final titleUr = n['title_ur'] as String? ?? '';
+              final body = n['body'] as String? ?? '';
+              final bodyUr = n['body_ur'] as String? ?? '';
+              final target = n['target'] as String? ?? 'all_users';
+              final type = n['type'] as String? ?? 'broadcast';
+              final rawSent = n['sent_at'];
+              String sentTimeStr = 'Just now';
+              if (rawSent is Timestamp) {
+                final dt = rawSent.toDate();
+                sentTimeStr = '${dt.day}/${dt.month}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+              }
+
+              return DataRow(cells: [
+                DataCell(_statusChip(
+                  type.replaceAll('_', ' ').toUpperCase(),
+                  type == 'event_announcement'
+                      ? const Color(0xFFE0F2FE)
+                      : (type == 'important' ? const Color(0xFFFEE2E2) : AppColors.emeraldContainer),
+                  type == 'event_announcement'
+                      ? const Color(0xFF0284C7)
+                      : (type == 'important' ? Colors.red : AppColors.primaryEmerald),
+                )),
+                DataCell(Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    if (titleUr.isNotEmpty && titleUr != title)
+                      Text(titleUr, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                  ],
+                )),
+                DataCell(SizedBox(
+                  width: 260,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(body, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
+                      if (bodyUr.isNotEmpty && bodyUr != body)
+                        Text(bodyUr, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                    ],
+                  ),
+                )),
+                DataCell(_statusChip(
+                  target == 'all_users' ? 'ALL USERS' : 'ACTIVE TODAY',
+                  AppColors.goldLight,
+                  AppColors.goldDark,
+                )),
+                DataCell(Text(sentTimeStr, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary))),
+                DataCell(
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red),
+                    tooltip: 'Delete Notification',
+                    onPressed: () => _confirmDelete(
+                      context,
+                      () async {
+                        if (id.isNotEmpty) {
+                          await AdminService.deleteNotification(id);
+                          _snack('Notification deleted successfully!');
+                        }
+                      },
+                      customTitle: 'Delete Notification',
+                      customMessage: 'Are you sure you want to delete "$title"? It will be removed immediately from all users\' notification centers.',
+                    ),
+                  ),
+                ),
+              ]);
+            }).toList()),
+          ],
+        );
       },
     );
   }
+
 
 
   // ── Questions Management Table (Q&A) ──────────────────────────
@@ -1474,6 +2133,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     final locUrC = TextEditingController();
     final descC = TextEditingController();
     final descUrC = TextEditingController();
+    final orderC = TextEditingController();
     String status = 'Coming Soon';
 
     showDialog(
@@ -1500,6 +2160,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 const SizedBox(height: 12),
                 _field(descUrC, 'Description (Urdu / اردو)', maxLines: 2),
                 const SizedBox(height: 12),
+                _field(orderC, 'Arrangement Order # (Optional)', hintText: 'e.g. 1 for top priority, or leave blank to append at end'),
+                const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: status,
                   decoration: const InputDecoration(labelText: 'Event Status', border: OutlineInputBorder()),
@@ -1519,6 +2181,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   _snack('Please enter Event Title and Date/Time.');
                   return;
                 }
+                final assignedOrder = int.tryParse(orderC.text.trim()) ?? 0;
                 await AdminService.addEvent(EventModel(
                   id: '',
                   title: titleC.text.trim(),
@@ -1529,6 +2192,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   status: status,
                   description: descC.text.trim(),
                   descriptionUr: descUrC.text.trim().isEmpty ? descC.text.trim() : descUrC.text.trim(),
+                  order: assignedOrder,
                 ));
                 if (ctx.mounted) {
                   Navigator.pop(ctx);
@@ -1551,6 +2215,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     final locUrC = TextEditingController(text: event.locationUr);
     final descC = TextEditingController(text: event.description);
     final descUrC = TextEditingController(text: event.descriptionUr);
+    final orderC = TextEditingController(text: event.order > 0 ? event.order.toString() : '');
     String status = EventModel.supportedStatuses.contains(event.status) ? event.status : 'Coming Soon';
 
     showDialog(
@@ -1577,6 +2242,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 const SizedBox(height: 12),
                 _field(descUrC, 'Description (Urdu / اردو)', maxLines: 2),
                 const SizedBox(height: 12),
+                _field(orderC, 'Arrangement Order # (Position in app)', hintText: 'e.g., 1 for Top, 2 for Second...'),
+                const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: status,
                   decoration: const InputDecoration(labelText: 'Event Status', border: OutlineInputBorder()),
@@ -1592,7 +2259,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
             ElevatedButton(
               onPressed: () async {
-                await AdminService.updateEvent(event.id, {
+                final Map<String, dynamic> updateMap = {
                   'title': titleC.text,
                   'title_ur': titleUrC.text,
                   'date_time': dateC.text,
@@ -1601,7 +2268,12 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   'description': descC.text,
                   'description_ur': descUrC.text,
                   'status': status,
-                });
+                };
+                final parsedOrder = int.tryParse(orderC.text.trim());
+                if (parsedOrder != null && parsedOrder > 0) {
+                  updateMap['order'] = parsedOrder;
+                }
+                await AdminService.updateEvent(event.id, updateMap);
                 if (ctx.mounted) {
                   Navigator.pop(ctx);
                   _snack('Event updated!');
@@ -1614,6 +2286,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
       ),
     );
   }
+
 
 
   void _showAddMasailModal(BuildContext context) {
@@ -1910,6 +2583,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     final citUrC = TextEditingController();
     final imgC = TextEditingController();
     String type = 'hadith';
+    bool isActive = true;
     bool isTopicOfTheDay = false;
 
     showDialog(
@@ -1924,36 +2598,50 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 DropdownButtonFormField<String>(
                   initialValue: type,
-                  decoration: const InputDecoration(labelText: 'Type', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: 'Content Type', border: OutlineInputBorder()),
                   items: const [
-                    DropdownMenuItem(value: 'hadith', child: Text('Hadith')),
-                    DropdownMenuItem(value: 'ayat', child: Text('Ayat')),
+                    DropdownMenuItem(value: 'hadith', child: Text('Hadith (حدیثِ مبارکہ)')),
+                    DropdownMenuItem(value: 'ayat', child: Text('Ayat (آیتِ مبارکہ)')),
                   ],
                   onChanged: (v) => setModal(() => type = v ?? 'hadith'),
                 ),
                 const SizedBox(height: 12),
                 SwitchListTile(
-                  title: const Text('Set as Active Topic of the Day ⭐', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  subtitle: const Text('Highlights this entry at the top of the mobile app home screen.', style: TextStyle(fontSize: 11)),
+                  title: Text(
+                    'Set as Active ${type == 'ayat' ? 'Ayat' : 'Hadith'} Topic of the Day ⭐',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  subtitle: Text(
+                    'Highlights this ${type == 'ayat' ? 'Ayat' : 'Hadith'} in the "Topic of the Day" section on the mobile app.',
+                    style: const TextStyle(fontSize: 11),
+                  ),
                   value: isTopicOfTheDay,
                   activeThumbColor: AppColors.primaryEmerald,
                   onChanged: (val) => setModal(() => isTopicOfTheDay = val),
                   contentPadding: EdgeInsets.zero,
                 ),
+                SwitchListTile(
+                  title: const Text('Active Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  subtitle: const Text('Active entries are available in the daily rotation and home card.', style: TextStyle(fontSize: 11)),
+                  value: isActive,
+                  activeThumbColor: AppColors.primaryEmerald,
+                  onChanged: (val) => setModal(() => isActive = val),
+                  contentPadding: EdgeInsets.zero,
+                ),
                 const SizedBox(height: 12),
-                _field(titleC, 'Title (English)'),
+                _field(titleC, 'Title (English)', hintText: type == 'ayat' ? 'e.g. Virtue of Sending Durood (Quran)' : 'e.g. Ten Blessings upon sending Salawat'),
                 const SizedBox(height: 12),
-                _field(titleUrC, 'Title (Urdu / اردو)'),
+                _field(titleUrC, 'Title (Urdu / اردو)', hintText: type == 'ayat' ? 'مثلاً: درود شریف کی قرآنی فضیلت' : 'مثلاً: ایک بار درود پر دس رحمتیں'),
                 const SizedBox(height: 12),
-                _field(arabicC, 'Arabic Text'),
+                _field(arabicC, 'Arabic Text', maxLines: 2, hintText: 'القرآن الكريم / الحديث الشريف'),
                 const SizedBox(height: 12),
                 _field(contentC, 'Content / Translation (English)', maxLines: 3),
                 const SizedBox(height: 12),
                 _field(contentUrC, 'Content / Translation (Urdu / اردو)', maxLines: 3),
                 const SizedBox(height: 12),
-                _field(citC, 'Book / Reference (English)', hintText: 'e.g., Sahih Muslim 408'),
+                _field(citC, 'Book / Surah Reference (English)', hintText: type == 'ayat' ? 'e.g., Surah Al-Ahzab (33:56)' : 'e.g., Sahih Muslim 408'),
                 const SizedBox(height: 12),
-                _field(citUrC, 'Book / Reference (Urdu / اردو)', hintText: 'e.g., صحیح مسلم ۴۰۸'),
+                _field(citUrC, 'Book / Surah Reference (Urdu / اردو)', hintText: type == 'ayat' ? 'مثلاً: سورۃ الاحزاب (۳۳:۵۶)' : 'مثلاً: صحیح مسلم ۴۰۸'),
                 const SizedBox(height: 12),
                 _field(imgC, 'Image URL (Optional)'),
               ]),
@@ -1974,12 +2662,12 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   citation: citC.text.trim(),
                   citationUr: citUrC.text.trim(),
                   imageUrl: imgC.text.trim(),
-                  isActive: true,
+                  isActive: isActive,
                   isTopicOfTheDay: isTopicOfTheDay,
                 ));
                 if (ctx.mounted) {
                   Navigator.pop(ctx);
-                  _snack('Daily content entry added!');
+                  _snack('Daily ${type == 'ayat' ? 'Ayat' : 'Hadith'} entry saved successfully!');
                 }
               },
               child: const Text('Save Entry'),
@@ -1999,6 +2687,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     final citC = TextEditingController(text: item.citation);
     final citUrC = TextEditingController(text: item.citationUr);
     final imgC = TextEditingController(text: item.imageUrl);
+    String type = item.type;
+    bool isActive = item.isActive;
     bool isTopicOfTheDay = item.isTopicOfTheDay;
 
     showDialog(
@@ -2011,12 +2701,36 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
             width: _dialogWidth(context),
             child: SingleChildScrollView(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
+                DropdownButtonFormField<String>(
+                  initialValue: type,
+                  decoration: const InputDecoration(labelText: 'Content Type', border: OutlineInputBorder()),
+                  items: const [
+                    DropdownMenuItem(value: 'hadith', child: Text('Hadith (حدیثِ مبارکہ)')),
+                    DropdownMenuItem(value: 'ayat', child: Text('Ayat (آیتِ مبارکہ)')),
+                  ],
+                  onChanged: (v) => setModal(() => type = v ?? 'hadith'),
+                ),
+                const SizedBox(height: 12),
                 SwitchListTile(
-                  title: const Text('Set as Active Topic of the Day ⭐', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  subtitle: const Text('Highlights this entry at the top of the mobile app home screen.', style: TextStyle(fontSize: 11)),
+                  title: Text(
+                    'Set as Active ${type == 'ayat' ? 'Ayat' : 'Hadith'} Topic of the Day ⭐',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  subtitle: Text(
+                    'Highlights this ${type == 'ayat' ? 'Ayat' : 'Hadith'} in the "Topic of the Day" section on the mobile app.',
+                    style: const TextStyle(fontSize: 11),
+                  ),
                   value: isTopicOfTheDay,
                   activeThumbColor: AppColors.primaryEmerald,
                   onChanged: (val) => setModal(() => isTopicOfTheDay = val),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                SwitchListTile(
+                  title: const Text('Active Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  subtitle: const Text('Active entries are available in the daily rotation and home card.', style: TextStyle(fontSize: 11)),
+                  value: isActive,
+                  activeThumbColor: AppColors.primaryEmerald,
+                  onChanged: (val) => setModal(() => isActive = val),
                   contentPadding: EdgeInsets.zero,
                 ),
                 const SizedBox(height: 12),
@@ -2030,9 +2744,9 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 const SizedBox(height: 12),
                 _field(contentUrC, 'Content (Urdu / اردو)', maxLines: 3),
                 const SizedBox(height: 12),
-                _field(citC, 'Book / Reference (English)', hintText: 'e.g., Sahih Muslim 408'),
+                _field(citC, 'Book / Surah Reference (English)', hintText: 'e.g., Sahih Muslim 408 / Surah Al-Ahzab 33:56'),
                 const SizedBox(height: 12),
-                _field(citUrC, 'Book / Reference (Urdu / اردو)', hintText: 'e.g., صحیح مسلم ۴۰۸'),
+                _field(citUrC, 'Book / Surah Reference (Urdu / اردو)', hintText: 'e.g., صحیح مسلم ۴۰۸ / سورۃ الاحزاب ۳۳:۵۶'),
                 const SizedBox(height: 12),
                 _field(imgC, 'Image URL'),
               ]),
@@ -2043,6 +2757,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
             ElevatedButton(
               onPressed: () async {
                 await AdminService.updateDailyContent(item.id, {
+                  'type': type,
                   'title': titleC.text.trim(),
                   'title_ur': titleUrC.text.trim(),
                   'arabic_text': arabicC.text.trim(),
@@ -2051,11 +2766,12 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   'citation': citC.text.trim(),
                   'citation_ur': citUrC.text.trim(),
                   'image_url': imgC.text.trim(),
+                  'is_active': isActive,
                   'is_topic_of_the_day': isTopicOfTheDay,
                 });
                 if (ctx.mounted) {
                   Navigator.pop(ctx);
-                  _snack('Daily content updated!');
+                  _snack('Daily content updated successfully!');
                 }
               },
               child: const Text('Update Entry'),
@@ -2068,9 +2784,13 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
 
 
 
+
   void _showSendNotificationModal(BuildContext context) {
     final titleC = TextEditingController();
+    final titleUrC = TextEditingController();
     final bodyC = TextEditingController();
+    final bodyUrC = TextEditingController();
+    String type = 'broadcast';
     String target = 'all_users';
 
     showDialog(
@@ -2078,45 +2798,79 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModal) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Broadcast Push Notification', style: AppTypography.titleMedium),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: AppColors.emeraldContainer, borderRadius: BorderRadius.circular(10)),
+                child: const Icon(Icons.notifications_active_rounded, color: AppColors.primaryEmerald, size: 20),
+              ),
+              const SizedBox(width: 10),
+              const Text('Broadcast Push Notification', style: AppTypography.titleMedium),
+            ],
+          ),
           content: SizedBox(
             width: _dialogWidth(context),
             child: SingleChildScrollView(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              _field(titleC, 'Notification Title'),
-              const SizedBox(height: 12),
-              _field(bodyC, 'Message Body', maxLines: 3),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: target,
-                decoration: const InputDecoration(labelText: 'Target Group', border: OutlineInputBorder()),
-                items: const [
-                  DropdownMenuItem(value: 'all_users', child: Text('All Users')),
-                  DropdownMenuItem(value: 'active_today', child: Text('Active Users Today')),
-                ],
-                onChanged: (v) => setModal(() => target = v ?? 'all_users'),
-              ),
-            ]),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                DropdownButtonFormField<String>(
+                  initialValue: type,
+                  decoration: const InputDecoration(labelText: 'Notification Category', border: OutlineInputBorder()),
+                  items: const [
+                    DropdownMenuItem(value: 'broadcast', child: Text('📢 General Announcement (اعلانِ عام)')),
+                    DropdownMenuItem(value: 'important', child: Text('🚨 High Priority Alert (ضروری اطلاع)')),
+                    DropdownMenuItem(value: 'event_announcement', child: Text('🕌 Event / Program Update (پروگرام کی اطلاع)')),
+                    DropdownMenuItem(value: 'daily_reminder', child: Text('📿 Daily Salawat Reminder (درود کی یاد دہانی)')),
+                  ],
+                  onChanged: (v) => setModal(() => type = v ?? 'broadcast'),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: target,
+                  decoration: const InputDecoration(labelText: 'Target Group', border: OutlineInputBorder()),
+                  items: const [
+                    DropdownMenuItem(value: 'all_users', child: Text('All Users (تمام موبائل صارفین)')),
+                    DropdownMenuItem(value: 'active_today', child: Text('Active Users Today (آج کے فعال صارفین)')),
+                  ],
+                  onChanged: (v) => setModal(() => target = v ?? 'all_users'),
+                ),
+                const SizedBox(height: 12),
+                _field(titleC, 'Notification Title (English)', hintText: 'e.g. Special Milad Gathering Tonight!'),
+                const SizedBox(height: 12),
+                _field(titleUrC, 'Notification Title (Urdu / اردو)', hintText: 'مثلاً: آج رات خصوصی محفلِ میلاد!'),
+                const SizedBox(height: 12),
+                _field(bodyC, 'Message Body (English)', maxLines: 3, hintText: 'Enter full notification message to be displayed on mobile screens...'),
+                const SizedBox(height: 12),
+                _field(bodyUrC, 'Message Body (Urdu / اردو)', maxLines: 3, hintText: 'موبائل اسکرین پر ظاہر ہونے والا مکمل پیغام درج کریں...'),
+              ]),
             ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
             ElevatedButton.icon(
               icon: const Icon(Icons.send_rounded, size: 16),
-              label: const Text('Send Broadcast'),
+              label: const Text('Send Broadcast to Mobile Users'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryEmerald,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              ),
               onPressed: () async {
-                if (titleC.text.isEmpty || bodyC.text.isEmpty) {
-                  _snack('Please fill out both title and body.');
+                if (titleC.text.trim().isEmpty || bodyC.text.trim().isEmpty) {
+                  _snack('Please fill out both notification title and message body.');
                   return;
                 }
                 await AdminService.sendNotification(
-                  title: titleC.text,
-                  body: bodyC.text,
+                  title: titleC.text.trim(),
+                  titleUr: titleUrC.text.trim().isNotEmpty ? titleUrC.text.trim() : titleC.text.trim(),
+                  body: bodyC.text.trim(),
+                  bodyUr: bodyUrC.text.trim().isNotEmpty ? bodyUrC.text.trim() : bodyC.text.trim(),
+                  type: type,
                   target: target,
                 );
                 if (ctx.mounted) {
                   Navigator.pop(ctx);
-                  _snack('Notification sent successfully!');
+                  _snack('Push notification broadcasted successfully to all users! 🚀');
                 }
               },
             ),
@@ -2262,12 +3016,17 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     );
   }
 
-  void _confirmDelete(BuildContext context, Future<void> Function() onDelete) {
+  void _confirmDelete(
+    BuildContext context,
+    Future<void> Function() onDelete, {
+    String? customTitle,
+    String? customMessage,
+  }) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Delete'),
-        content: const Text('Are you sure you want to delete this entry? This action cannot be undone.'),
+        title: Text(customTitle ?? 'Confirm Delete'),
+        content: Text(customMessage ?? 'Are you sure you want to delete this entry? This action cannot be undone.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
@@ -2285,6 +3044,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
       ),
     );
   }
+
 
   // ── Helpers ───────────────────────────────────────────────────
 

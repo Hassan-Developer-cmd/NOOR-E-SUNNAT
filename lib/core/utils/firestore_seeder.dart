@@ -71,7 +71,6 @@ class FirestoreSeeder {
 
       if (dailyCount > 0 && !force) {
         results['daily_content']['status'] = 'Skipped (Already has $dailyCount docs)';
-      } else {
         const defaultHadith = DailyContentModel(
           id: 'default_hadith',
           type: 'hadith',
@@ -86,16 +85,36 @@ class FirestoreSeeder {
           isTopicOfTheDay: true,
         );
 
+        const defaultAyat = DailyContentModel(
+          id: 'default_ayat',
+          type: 'ayat',
+          title: 'Commandment of Sending Durood & Salam',
+          titleUr: 'درود و سلام بھیجنے کا قرآنی حکم',
+          arabicText: 'إِنَّ اللَّهَ وَمَلَائِكَتَهُ يُصَلُّونَ عَلَى النَّبِيِّ ۚ يَا أَيُّهَا الَّذِينَ آمَنُوا صَلُّوا عَلَيْهِ وَسَلِّمُوا تَسْلِيمًا',
+          content: 'Indeed, Allah and His angels send blessings upon the Prophet. O you who have believed, ask [Allah to confer] blessing upon him and ask [Allah to grant him] peace.',
+          contentUr: 'بے شک اللہ اور اس کے فرشتے نبی پر درود بھیجتے ہیں۔ اے ایمان والو! تم بھی ان پر درود اور خوب سلام بھیجو۔',
+          citation: 'Surah Al-Ahzab (33:56)',
+          citationUr: 'سورۃ الاحزاب (۳۳:۵۶)',
+          isActive: true,
+          isTopicOfTheDay: true,
+        );
+
         final batch = _firestore.batch();
         batch.set(
           _firestore.collection('daily_content').doc(defaultHadith.id),
           defaultHadith.toMap(),
           SetOptions(merge: true),
         );
+        batch.set(
+          _firestore.collection('daily_content').doc(defaultAyat.id),
+          defaultAyat.toMap(),
+          SetOptions(merge: true),
+        );
         await batch.commit();
         results['daily_content']['seeded'] = true;
-        results['daily_content']['status'] = 'Seeded default Hadith';
+        results['daily_content']['status'] = 'Seeded default Hadith & Ayat';
       }
+
 
       // 4. Check & Seed Events
       final eventsSnap = await _firestore.collection('events').get();

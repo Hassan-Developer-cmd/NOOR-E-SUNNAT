@@ -9,7 +9,117 @@ class ContentService {
 
   // ── Hadith / Ayat of the Day & Topic of the Day ────────────
 
-  /// Live stream of the active Daily Hadith / Ayat or Topic of the Day.
+  static final DailyContentModel defaultHadith = const DailyContentModel(
+    id: 'default_hadith',
+    type: 'hadith',
+    title: 'Virtue of Sending Durood',
+    titleUr: 'درود شریف کی فضیلت',
+    arabicText: 'مَنْ صَلَّى عَلَيَّ وَاحِدَةً صَلَّى اللهُ عَلَيْهِ عَشْرًا',
+    content:
+        'Whoever sends blessings upon me once, Allah will send blessings upon him ten times.',
+    contentUr:
+        'جو شخص مجھ پر ایک بار درود بھیجتا ہے، اللہ تعالیٰ اس پر دس رحمتیں نازل فرماتا ہے۔',
+    citation: 'Sahih Muslim 408',
+    citationUr: 'صحیح مسلم ۴۰۸',
+    isActive: true,
+    isTopicOfTheDay: true,
+  );
+
+  static final DailyContentModel defaultAyat = const DailyContentModel(
+    id: 'default_ayat',
+    type: 'ayat',
+    title: 'Commandment of Sending Durood & Salam',
+    titleUr: 'درود و سلام بھیجنے کا قرآنی حکم',
+    arabicText:
+        'إِنَّ اللَّهَ وَمَلَائِكَتَهُ يُصَلُّونَ عَلَى النَّبِيِّ ۚ يَا أَيُّهَا الَّذِينَ آمَنُوا صَلُّوا عَلَيْهِ وَسَلِّمُوا تَسْلِيمًا',
+    content:
+        'Indeed, Allah and His angels send blessings upon the Prophet. O you who have believed, ask [Allah to confer] blessing upon him and ask [Allah to grant him] peace.',
+    contentUr:
+        'بے شک اللہ اور اس کے فرشتے نبی پر درود بھیجتے ہیں۔ اے ایمان والو! تم بھی ان پر درود اور خوب سلام بھیجو۔',
+    citation: 'Surah Al-Ahzab (33:56)',
+    citationUr: 'سورۃ الاحزاب (۳۳:۵۶)',
+    isActive: true,
+    isTopicOfTheDay: true,
+  );
+
+  /// Live stream of active Daily Hadiths list (Topic of the day first, then newest).
+  static Stream<List<DailyContentModel>> get dailyHadithsStream {
+    return _firestore
+        .collection('daily_content')
+        .snapshots()
+        .map((snap) {
+      final items = snap.docs
+          .map((doc) => DailyContentModel.fromMap(doc.id, doc.data()))
+          .where((d) => d.isHadith && d.isActive)
+          .toList();
+
+      items.sort((a, b) {
+        if (a.isTopicOfTheDay && !b.isTopicOfTheDay) return -1;
+        if (!a.isTopicOfTheDay && b.isTopicOfTheDay) return 1;
+        final aTime = a.createdAt ?? a.scheduledDate ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bTime = b.createdAt ?? b.scheduledDate ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bTime.compareTo(aTime);
+      });
+
+      return items.isNotEmpty ? items : [defaultHadith];
+    }).handleError((e) {
+      if (kDebugMode) print('ContentService.dailyHadithsStream error: $e');
+      return [defaultHadith];
+    });
+  }
+
+  /// Live stream of active Daily Ayats list (Topic of the day first, then newest).
+  static Stream<List<DailyContentModel>> get dailyAyatsStream {
+    return _firestore
+        .collection('daily_content')
+        .snapshots()
+        .map((snap) {
+      final items = snap.docs
+          .map((doc) => DailyContentModel.fromMap(doc.id, doc.data()))
+          .where((d) => d.isAyat && d.isActive)
+          .toList();
+
+      items.sort((a, b) {
+        if (a.isTopicOfTheDay && !b.isTopicOfTheDay) return -1;
+        if (!a.isTopicOfTheDay && b.isTopicOfTheDay) return 1;
+        final aTime = a.createdAt ?? a.scheduledDate ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bTime = b.createdAt ?? b.scheduledDate ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bTime.compareTo(aTime);
+      });
+
+      return items.isNotEmpty ? items : [defaultAyat];
+    }).handleError((e) {
+      if (kDebugMode) print('ContentService.dailyAyatsStream error: $e');
+      return [defaultAyat];
+    });
+  }
+
+  /// Live stream of all active Topic of the Day entries (both Hadith and Ayat).
+  static Stream<List<DailyContentModel>> get topicsOfTheDayStream {
+    return _firestore
+        .collection('daily_content')
+        .snapshots()
+        .map((snap) {
+      final items = snap.docs
+          .map((doc) => DailyContentModel.fromMap(doc.id, doc.data()))
+          .where((d) => d.isTopicOfTheDay && d.isActive)
+          .toList();
+
+      items.sort((a, b) {
+        final aTime = a.createdAt ?? a.scheduledDate ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bTime = b.createdAt ?? b.scheduledDate ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bTime.compareTo(aTime);
+      });
+
+      if (items.isNotEmpty) return items;
+      return [defaultHadith, defaultAyat];
+    }).handleError((e) {
+      if (kDebugMode) print('ContentService.topicsOfTheDayStream error: $e');
+      return [defaultHadith, defaultAyat];
+    });
+  }
+
+  /// Live stream of single primary daily content item for legacy widgets.
   static Stream<DailyContentModel?> get dailyContentStream {
     return _firestore
         .collection('daily_content')
@@ -17,7 +127,7 @@ class ContentService {
         .map((snap) {
       if (snap.docs.isNotEmpty) {
         // Priority 1: Topic of the day
-        final topicDoc = snap.docs.where((d) => d.data()['is_topic_of_the_day'] == true).firstOrNull;
+        final topicDoc = snap.docs.where((d) => d.data()['is_topic_of_the_day'] == true && (d.data()['is_active'] as bool? ?? true)).firstOrNull;
         if (topicDoc != null) {
           return DailyContentModel.fromMap(topicDoc.id, topicDoc.data());
         }
@@ -29,10 +139,10 @@ class ContentService {
         // Fallback: newest document
         return DailyContentModel.fromMap(snap.docs.first.id, snap.docs.first.data());
       }
-      return _defaultDailyContent;
+      return defaultHadith;
     }).handleError((e) {
       if (kDebugMode) print('ContentService.dailyContentStream error: $e');
-      return _defaultDailyContent;
+      return defaultHadith;
     });
   }
 
@@ -50,27 +160,13 @@ class ContentService {
         final bTime = b.createdAt ?? b.scheduledDate ?? DateTime.fromMillisecondsSinceEpoch(0);
         return bTime.compareTo(aTime); // newest first
       });
-      return list.isNotEmpty ? list : [_defaultDailyContent];
+      return list.isNotEmpty ? list : [defaultHadith, defaultAyat];
     }).handleError((e) {
       if (kDebugMode) print('ContentService.allDailyContentHistoryStream error: $e');
-      return [_defaultDailyContent];
+      return [defaultHadith, defaultAyat];
     });
   }
 
-  static DailyContentModel get _defaultDailyContent => const DailyContentModel(
-        id: 'default_hadith',
-        type: 'hadith',
-        title: 'Virtue of Sending Durood',
-        titleUr: 'درود شریف کی فضیلت',
-        arabicText: 'مَنْ صَلَّى عَلَيَّ وَاحِدَةً صَلَّى اللهُ عَلَيْهِ عَشْرًا',
-        content:
-            'Whoever sends blessings upon me once, Allah will send blessings upon him ten times.',
-        contentUr:
-            'جو شخص مجھ پر ایک بار درود بھیجتا ہے، اللہ تعالیٰ اس پر دس رحمتیں نازل فرماتا ہے۔',
-        citation: 'Sahih Muslim 408',
-        citationUr: 'صحیح مسلم ۴۰۸',
-        isTopicOfTheDay: true,
-      );
 
   // ── Masail ──────────────────────────────────────────────────
 

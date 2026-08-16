@@ -146,9 +146,32 @@ class NotificationsSheet extends StatelessWidget {
                   itemCount: items.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {
-
                     final item = items[index];
-                    return _NotificationTile(item: item, isUrdu: isUrdu);
+                    return Dismissible(
+                      key: Key(item.id),
+                      direction: DismissDirection.endToStart,
+                      background: Container(
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.only(right: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade400,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 24),
+                      ),
+                      onDismissed: (_) async {
+                        await NotificationService.deleteNotification(item.id);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(isUrdu ? 'اعلان حذف کر دیا گیا' : 'Notification deleted'),
+                              duration: const Duration(seconds: 1),
+                            ),
+                          );
+                        }
+                      },
+                      child: _NotificationTile(item: item, isUrdu: isUrdu),
+                    );
                   },
                 );
               },
@@ -172,6 +195,10 @@ class _NotificationTile extends StatelessWidget {
         return Icons.campaign_rounded;
       case 'event_update':
         return Icons.star_rounded;
+      case 'daily_reminder':
+        return Icons.auto_awesome_rounded;
+      case 'important':
+        return Icons.warning_amber_rounded;
       default:
         return Icons.notifications_rounded;
     }
@@ -183,6 +210,10 @@ class _NotificationTile extends StatelessWidget {
         return const Color(0xFF0284C7);
       case 'event_update':
         return AppColors.accentGold;
+      case 'daily_reminder':
+        return const Color(0xFF8B5CF6);
+      case 'important':
+        return Colors.red.shade600;
       default:
         return AppColors.primaryEmerald;
     }
@@ -194,6 +225,10 @@ class _NotificationTile extends StatelessWidget {
         return const Color(0xFFE0F2FE);
       case 'event_update':
         return AppColors.goldLight;
+      case 'daily_reminder':
+        return const Color(0xFFF3E8FF);
+      case 'important':
+        return const Color(0xFFFEE2E2);
       default:
         return AppColors.emeraldContainer;
     }
@@ -277,7 +312,8 @@ class _NotificationTile extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          if (item.sentAt != null)
+                          if (item.sentAt != null) ...[
+                            const SizedBox(width: 6),
                             Text(
                               _formatTime(item.sentAt),
                               style: TextStyle(
@@ -285,6 +321,7 @@ class _NotificationTile extends StatelessWidget {
                                 color: Colors.grey.shade500,
                               ),
                             ),
+                          ],
                         ],
                       ),
                       const SizedBox(height: 4),
@@ -314,6 +351,16 @@ class _NotificationTile extends StatelessWidget {
                     ],
                   ),
                 ),
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 16, color: Colors.grey),
+                  tooltip: isUrdu ? 'حذف کریں' : 'Delete',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                  onPressed: () async {
+                    await NotificationService.deleteNotification(item.id);
+                  },
+                ),
               ],
             ),
           ),
@@ -322,3 +369,4 @@ class _NotificationTile extends StatelessWidget {
     );
   }
 }
+

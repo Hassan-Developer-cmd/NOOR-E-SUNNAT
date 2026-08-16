@@ -40,19 +40,25 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   }
 
   Future<void> _routeToNext() async {
-    await Future.delayed(const Duration(milliseconds: 2500));
+    await Future.delayed(const Duration(milliseconds: 2200));
     if (!mounted) return;
 
-    if (AuthService.isLoggedIn) {
-      // User has active persistent login session
-      await AuthService.ensureUserDocExists();
+    // Resolve authenticated user token from Firebase Auth & secure storage
+    final user = await AuthService.resolveCurrentUser();
+    final hasPersistedSession = await AuthService.isSessionPersisted();
+
+    if (!mounted) return;
+
+    if (user != null || (hasPersistedSession && AuthService.isLoggedIn)) {
+      // User has active persistent login session — take directly into main app
+      await AuthService.ensureUserDocExists(user);
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const MainShell()),
       );
     } else {
-      // User is not logged in, route to LoginScreen
+      // User is not logged in or explicitly signed out — route to LoginScreen
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -68,6 +74,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       );
     }
   }
+
 
 
   @override

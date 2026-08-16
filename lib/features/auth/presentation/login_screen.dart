@@ -90,285 +90,291 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final lp = globalLanguageProvider;
+    return ListenableBuilder(
+      listenable: globalLanguageProvider,
+      builder: (context, _) {
+        final lp = globalLanguageProvider;
 
-    return Scaffold(
-      backgroundColor: AppColors.bgPrimary,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              // ── Hero Banner Header ──
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(28, 44, 28, 36),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color(0xFF0A3A2A),
-                      Color(0xFF064E3B),
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(32),
-                    bottomRight: Radius.circular(32),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    // Language Toggle (mobile only)
-                    if (!kIsWeb) ...[
-                      Align(
-                        alignment: Alignment.topRight,
-                        child: GestureDetector(
-                          onTap: () => lp.toggleLanguage(),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.25),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.language_rounded, size: 14, color: Colors.white),
-                                const SizedBox(width: 6),
-                                Text(
-                                  lp.isUrdu ? 'EN' : 'اردو',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
+        return Scaffold(
+          backgroundColor: AppColors.bgPrimary,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  // ── Hero Banner Header ──
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(28, 44, 28, 36),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Color(0xFF0A3A2A),
+                          Color(0xFF064E3B),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(32),
+                        bottomRight: Radius.circular(32),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        // Language Toggle (mobile only)
+                        if (!kIsWeb) ...[
+                          Align(
+                            alignment: AlignmentDirectional.topEnd,
+                            child: GestureDetector(
+                              onTap: () => lp.toggleLanguage(),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.25),
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
-
-                    // Logo Emblem
-                    Container(
-                      width: 76,
-                      height: 76,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.goldBright.withValues(alpha: 0.5),
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.goldBright.withValues(alpha: 0.15),
-                            blurRadius: 16,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.shield_moon_rounded,
-                        size: 38,
-                        color: AppColors.goldBright,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    Text(
-                      lp.tr('app_title'),
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      lp.tr('greeting_banner'),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.white.withValues(alpha: 0.8),
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // ── Form Body Card ──
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _isSignUp ? lp.tr('sign_up') : lp.tr('sign_in'),
-                      style: AppTypography.headingLarge,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _isSignUp
-                          ? 'Create your account to get started'
-                          : 'Welcome back — sign in to continue',
-                      style: AppTypography.bodyMedium,
-                    ),
-                    const SizedBox(height: 24),
-
-                    // ── Form Fields ──
-                    Form(
-                      key: _formKey,
-                      child: Column(
-                        children: [
-                          if (_isSignUp) ...[
-                            _buildField(
-                              controller: _nameController,
-                              hint: lp.tr('full_name'),
-                              icon: Icons.person_outline_rounded,
-                              validator: (v) => (_isSignUp && (v == null || v.trim().isEmpty))
-                                  ? lp.tr('please_enter_name')
-                                  : null,
-                            ),
-                            const SizedBox(height: 14),
-                          ],
-                          _buildField(
-                            controller: _emailController,
-                            hint: lp.tr('email'),
-                            icon: Icons.mail_outline_rounded,
-                            keyboardType: TextInputType.emailAddress,
-                            validator: (v) =>
-                                (v == null || v.trim().isEmpty || !v.contains('@'))
-                                    ? lp.tr('please_enter_email')
-                                    : null,
-                          ),
-                          const SizedBox(height: 14),
-                          _buildField(
-                            controller: _passwordController,
-                            hint: lp.tr('password'),
-                            icon: Icons.lock_outline_rounded,
-                            obscure: _obscurePassword,
-                            suffixIcon: IconButton(
-                              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_off_outlined
-                                    : Icons.visibility_outlined,
-                                size: 20,
-                                color: AppColors.textMuted,
-                              ),
-                            ),
-                            validator: (v) => (v == null || v.trim().length < 6)
-                                ? lp.tr('please_enter_password')
-                                : null,
-                          ),
-                          const SizedBox(height: 22),
-
-                          // Email Auth Button
-                          SizedBox(
-                            width: double.infinity,
-                            height: 52,
-                            child: ElevatedButton(
-                              onPressed: (_loading || _googleLoading) ? null : _handleEmailAuth,
-                              child: _loading
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2.5,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.language_rounded, size: 14, color: Colors.white),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      lp.isUrdu ? 'EN' : 'اردو',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
                                       ),
-                                    )
-                                  : Text(_isSignUp ? lp.tr('sign_up') : lp.tr('sign_in')),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
+                          const SizedBox(height: 20),
                         ],
-                      ),
-                    ),
 
-                    const SizedBox(height: 16),
-
-                    // Toggle Sign In / Sign Up
-                    Center(
-                      child: GestureDetector(
-                        onTap: () => setState(() {
-                          _isSignUp = !_isSignUp;
-                          _formKey.currentState?.reset();
-                        }),
-                        child: RichText(
-                          text: TextSpan(
-                            style: AppTypography.bodySmall,
-                            children: [
-                              TextSpan(
-                                text: _isSignUp
-                                    ? 'Already have an account? '
-                                    : "Don't have an account? ",
+                        // Logo Emblem
+                        Container(
+                          width: 76,
+                          height: 76,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.goldBright.withValues(alpha: 0.5),
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.goldBright.withValues(alpha: 0.15),
+                                blurRadius: 16,
+                                spreadRadius: 2,
                               ),
-                              TextSpan(
-                                text: _isSignUp ? lp.tr('sign_in') : lp.tr('sign_up'),
-                                style: const TextStyle(
-                                  color: AppColors.primaryEmerald,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.shield_moon_rounded,
+                            size: 38,
+                            color: AppColors.goldBright,
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        Text(
+                          lp.tr('app_title'),
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          lp.tr('greeting_banner'),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.white.withValues(alpha: 0.8),
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // ── Form Body Card ──
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _isSignUp ? lp.tr('sign_up') : lp.tr('sign_in'),
+                          style: AppTypography.headingLarge,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _isSignUp
+                              ? lp.tr('login_subtitle_signup')
+                              : lp.tr('login_subtitle_signin'),
+                          style: AppTypography.bodyMedium,
+                        ),
+                        const SizedBox(height: 24),
+
+                        // ── Form Fields ──
+                        Form(
+                          key: _formKey,
+                          child: Column(
+                            children: [
+                              if (_isSignUp) ...[
+                                _buildField(
+                                  controller: _nameController,
+                                  hint: lp.tr('full_name'),
+                                  icon: Icons.person_outline_rounded,
+                                  validator: (v) => (_isSignUp && (v == null || v.trim().isEmpty))
+                                      ? lp.tr('please_enter_name')
+                                      : null,
+                                ),
+                                const SizedBox(height: 14),
+                              ],
+                              _buildField(
+                                controller: _emailController,
+                                hint: lp.tr('email'),
+                                icon: Icons.mail_outline_rounded,
+                                keyboardType: TextInputType.emailAddress,
+                                validator: (v) =>
+                                    (v == null || v.trim().isEmpty || !v.contains('@'))
+                                        ? lp.tr('please_enter_email')
+                                        : null,
+                              ),
+                              const SizedBox(height: 14),
+                              _buildField(
+                                controller: _passwordController,
+                                hint: lp.tr('password'),
+                                icon: Icons.lock_outline_rounded,
+                                obscure: _obscurePassword,
+                                suffixIcon: IconButton(
+                                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
+                                    size: 20,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                                validator: (v) => (v == null || v.trim().length < 6)
+                                    ? lp.tr('please_enter_password')
+                                    : null,
+                              ),
+                              const SizedBox(height: 22),
+
+                              // Email Auth Button
+                              SizedBox(
+                                width: double.infinity,
+                                height: 52,
+                                child: ElevatedButton(
+                                  onPressed: (_loading || _googleLoading) ? null : _handleEmailAuth,
+                                  child: _loading
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.5,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        )
+                                      : Text(_isSignUp ? lp.tr('sign_up') : lp.tr('sign_in')),
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ),
-                    ),
 
-                    const SizedBox(height: 24),
+                        const SizedBox(height: 16),
 
-                    // Divider
-                    Row(
-                      children: [
-                        const Expanded(child: Divider(color: AppColors.borderLight)),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                        // Toggle Sign In / Sign Up
+                        Center(
+                          child: GestureDetector(
+                            onTap: () => setState(() {
+                              _isSignUp = !_isSignUp;
+                              _formKey.currentState?.reset();
+                            }),
+                            child: RichText(
+                              text: TextSpan(
+                                style: AppTypography.bodySmall,
+                                children: [
+                                  TextSpan(
+                                    text: _isSignUp
+                                        ? lp.tr('already_have_account_prefix')
+                                        : lp.tr('dont_have_account_prefix'),
+                                  ),
+                                  TextSpan(
+                                    text: _isSignUp ? lp.tr('sign_in') : lp.tr('sign_up'),
+                                    style: const TextStyle(
+                                      color: AppColors.primaryEmerald,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Divider
+                        Row(
+                          children: [
+                            const Expanded(child: Divider(color: AppColors.borderLight)),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                lp.tr('or_divider'),
+                                style: AppTypography.caption,
+                              ),
+                            ),
+                            const Expanded(child: Divider(color: AppColors.borderLight)),
+                          ],
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // ── Official Premium Google Sign-In Button ──
+                        _buildGoogleSignInButton(lp),
+
+                        const SizedBox(height: 24),
+
+                        // Terms & Privacy Footer
+                        Center(
                           child: Text(
-                            lp.tr('or_divider'),
+                            lp.tr('terms_privacy'),
+                            textAlign: TextAlign.center,
                             style: AppTypography.caption,
                           ),
                         ),
-                        const Expanded(child: Divider(color: AppColors.borderLight)),
                       ],
                     ),
-
-                    const SizedBox(height: 20),
-
-                    // ── Official Premium Google Sign-In Button ──
-                    _buildGoogleSignInButton(lp),
-
-                    const SizedBox(height: 24),
-
-                    // Terms & Privacy Footer
-                    Center(
-                      child: Text(
-                        lp.tr('terms_privacy'),
-                        textAlign: TextAlign.center,
-                        style: AppTypography.caption,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
   Widget _buildGoogleSignInButton(LanguageProvider lp) {
+
     return Container(
       width: double.infinity,
       height: 52,

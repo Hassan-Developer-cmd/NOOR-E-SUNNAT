@@ -1,10 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../core/utils/firestore_seeder.dart';
 
 class FirebaseInitService {
-  /// Ensures initial Firestore collections exist and are seeded.
+  /// Ensures initial Firestore collections exist and are seeded safely
+  /// without disrupting any existing user authentication sessions.
   static Future<void> seedInitialDatabase() async {
     final firestore = FirebaseFirestore.instance;
 
@@ -13,8 +13,8 @@ class FirebaseInitService {
       await FirestoreSeeder.checkAndSeedFirestore();
       await FirestoreSeeder.updateGlobalCounterBaseline(totalCount: 125000, todayCount: 4820);
 
-      // Ensure default admin account exists in Firebase Auth + Firestore
-      await _ensureDefaultAdminAccount(firestore);
+      // Ensure admin roles and metadata are registered in Firestore
+      await _ensureAdminMetadataInFirestore(firestore);
 
       if (kDebugMode) {
         print('FirebaseInitService: Successfully verified initial Firestore collections.');
@@ -26,53 +26,33 @@ class FirebaseInitService {
     }
   }
 
-  /// Creates the default admin account in Firebase Auth (if not already registered)
-  /// Creates default admin accounts in Firebase Auth (if not already registered)
-  /// and writes is_admin:true to the users collection in Firestore.
-  static Future<void> _ensureDefaultAdminAccount(FirebaseFirestore firestore) async {
-    const adminAccounts = [
-      {'email': 'admin@faizanedurood.com', 'pass': 'Admin@123456'},
-      {'email': 'admin.portal@faizanedurood.com', 'pass': 'Admin@123456'},
+  /// Writes default admin role configuration to Firestore safely
+  /// WITHOUT touching FirebaseAuth.instance sessions or signing out active users.
+  static Future<void> _ensureAdminMetadataInFirestore(FirebaseFirestore firestore) async {
+    const adminEmails = [
+      'admin@faizanedurood.com',
+      'admin.portal@faizanedurood.com',
     ];
 
-    for (var acc in adminAccounts) {
-      final email = acc['email']!;
-      final pass = acc['pass']!;
+    try {
+      for (final email in adminEmails) {
+        final query = await firestore
+            .collection('users')
+            .where('email', isEqualTo: email)
+            .limit(1)
+            .get();
 
-      try {
-        UserCredential cred;
-        try {
-          cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
-            email: email,
-            password: pass,
-          );
-        } on FirebaseAuthException catch (e) {
-          if (e.code == 'user-not-found') {
-            cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-              email: email,
-              password: pass,
-            );
-          } else {
-            continue;
+        if (query.docs.isNotEmpty) {
+          final doc = query.docs.first;
+          if (doc.data()['is_admin'] != true) {
+            await doc.reference.set({'is_admin': true}, SetOptions(merge: true));
           }
         }
-
-        final uid = cred.user?.uid;
-        if (uid != null) {
-          await firestore.collection('users').doc(uid).set({
-            'userId': uid,
-            'email': email,
-            'username': 'Super Admin',
-            'is_admin': true,
-            'created_at': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
-        }
-
-        await FirebaseAuth.instance.signOut();
-      } catch (e) {
-        if (kDebugMode) print('FirebaseInitService admin error for $email: $e');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('FirebaseInitService _ensureAdminMetadataInFirestore notice: $e');
       }
     }
   }
 }
-

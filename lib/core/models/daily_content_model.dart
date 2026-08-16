@@ -88,9 +88,50 @@ class DailyContentModel {
             : FieldValue.serverTimestamp(),
       };
 
+  DailyContentModel copyWith({
+    String? id,
+    String? type,
+    String? title,
+    String? titleUr,
+    String? arabicText,
+    String? content,
+    String? contentUr,
+    String? citation,
+    String? citationUr,
+    String? imageUrl,
+    bool? isActive,
+    bool? isTopicOfTheDay,
+    DateTime? scheduledDate,
+    DateTime? createdAt,
+  }) {
+    return DailyContentModel(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      title: title ?? this.title,
+      titleUr: titleUr ?? this.titleUr,
+      arabicText: arabicText ?? this.arabicText,
+      content: content ?? this.content,
+      contentUr: contentUr ?? this.contentUr,
+      citation: citation ?? this.citation,
+      citationUr: citationUr ?? this.citationUr,
+      imageUrl: imageUrl ?? this.imageUrl,
+      isActive: isActive ?? this.isActive,
+      isTopicOfTheDay: isTopicOfTheDay ?? this.isTopicOfTheDay,
+      scheduledDate: scheduledDate ?? this.scheduledDate,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  bool get isHadith => type.toLowerCase() == 'hadith';
+  bool get isAyat => type.toLowerCase() == 'ayat';
+
   String getTitle(bool isUrdu) {
     if (isUrdu && titleUr.isNotEmpty) return titleUr;
-    return title.isNotEmpty ? title : 'Hadith of the Day';
+    if (title.isNotEmpty) return title;
+    if (isUrdu) {
+      return isAyat ? 'آج کی آیتِ مبارکہ' : 'آج کی حدیثِ پاک';
+    }
+    return isAyat ? 'Ayat of the Day' : 'Hadith of the Day';
   }
 
   String getContent(bool isUrdu) {
@@ -103,3 +144,4 @@ class DailyContentModel {
     return citation;
   }
 }
+
