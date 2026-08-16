@@ -48,6 +48,24 @@ class EventModel {
   String getLocation(bool isUrdu) => isUrdu && locationUr.isNotEmpty ? locationUr : location;
   String getDescription(bool isUrdu) => isUrdu && descriptionUr.isNotEmpty ? descriptionUr : description;
 
+  String getStatusLabel(bool isUrdu) {
+    switch (status.toLowerCase()) {
+      case 'ongoing':
+        return isUrdu ? '🔥 جاری ہے' : '🔥 LIVE NOW';
+      case 'featured':
+        return isUrdu ? '⭐ خصوصی' : '⭐ FEATURED';
+      case 'coming soon':
+        return isUrdu ? '⏳ عنقریب' : '⏳ COMING SOON';
+      case 'completed':
+        return isUrdu ? '✅ مکمل ہو گیا' : '✅ COMPLETED';
+      case 'cancelled':
+        return isUrdu ? '🚫 منسوخ' : '🚫 CANCELLED';
+      default:
+        return status.toUpperCase();
+    }
+  }
+
+
   EventModel copyWith({
     String? id,
     String? title,

@@ -86,7 +86,7 @@ class EventCard extends StatelessWidget {
                         border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                       ),
                       child: Text(
-                        event.status.toUpperCase(),
+                        event.getStatusLabel(isUrdu),
                         style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
@@ -94,6 +94,7 @@ class EventCard extends StatelessWidget {
                           letterSpacing: 0.5,
                         ),
                       ),
+
                     ),
                     if (onNextTap != null)
                       Material(

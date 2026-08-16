@@ -387,7 +387,8 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
                           color: AppColors.primaryEmerald,
                         ),
                         onPressed: () => _nextPage(events.length),
-                        tooltip: 'Next Event',
+                        tooltip: lp.isUrdu ? 'اگلا پروگرام' : 'Next Event',
+
                       ),
                     InkWell(
                       onTap: () {

@@ -578,13 +578,16 @@ class _QAAnswerCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    question.category.toUpperCase(),
+                    isUrdu
+                        ? QuestionModel.getCategoryUrdu(question.category)
+                        : question.category.toUpperCase(),
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       color: isPending ? AppColors.goldDark : AppColors.primaryEmerald,
                     ),
                   ),
+
                 ),
                 const Spacer(),
 
