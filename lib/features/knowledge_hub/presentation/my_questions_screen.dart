@@ -261,8 +261,72 @@ class _QuestionCardState extends State<_QuestionCard> {
     return '${dt.day}/${dt.month}/${dt.year}';
   }
 
+  void _confirmDeleteQuestion(BuildContext context, String questionId, bool isUrdu) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 22),
+            const SizedBox(width: 8),
+            Text(
+              isUrdu ? 'سوال حذف کریں' : 'Delete Question',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ],
+        ),
+        content: Text(
+          isUrdu
+              ? 'کیا آپ واقعی اس سوال کو حذف کرنا چاہتے ہیں؟ یہ عمل واپس نہیں لیا جا سکتا۔'
+              : 'Are you sure you want to permanently delete this question? This action cannot be undone.',
+          style: const TextStyle(fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(isUrdu ? 'منسوخ کریں' : 'Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await QuestionsService.deleteQuestion(questionId);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(isUrdu ? 'سوال کامیابی سے حذف ہو گیا' : 'Question deleted successfully'),
+                      backgroundColor: Colors.red.shade700,
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(isUrdu ? 'حذف کرنے میں خرابی پیش آئی' : 'Failed to delete question'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: Text(isUrdu ? 'حذف کریں' : 'Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+
     final q = widget.question;
     final isUrdu = widget.isUrdu;
     final isAnswered = q.isAnswered;
@@ -294,7 +358,7 @@ class _QuestionCardState extends State<_QuestionCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Row: Category & Status Badge
+                // Top Row: Category, Status Badge & Delete Button
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -315,37 +379,51 @@ class _QuestionCardState extends State<_QuestionCard> {
                       ),
                     ),
 
-                    // Status Pill
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isAnswered ? AppColors.emeraldContainer : AppColors.goldLight,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isAnswered ? Icons.check_circle_rounded : Icons.schedule_rounded,
-                            size: 13,
-                            color: isAnswered ? AppColors.primaryEmerald : AppColors.goldDark,
+                    // Status Pill & Delete Button
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isAnswered ? AppColors.emeraldContainer : AppColors.goldLight,
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            isAnswered
-                                ? (isUrdu ? 'جواب دیا گیا ✅' : 'Answered ✅')
-                                : (isUrdu ? 'زیرِ غور (24 گھنٹے میں جواب)' : 'Pending (Within 24h)'),
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: isAnswered ? AppColors.primaryEmerald : AppColors.goldDark,
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isAnswered ? Icons.check_circle_rounded : Icons.schedule_rounded,
+                                size: 13,
+                                color: isAnswered ? AppColors.primaryEmerald : AppColors.goldDark,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                isAnswered
+                                    ? (isUrdu ? 'جواب دیا گیا ✅' : 'Answered ✅')
+                                    : (isUrdu ? 'زیرِ غور (24 گھنٹے میں جواب)' : 'Pending (Within 24h)'),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: isAnswered ? AppColors.primaryEmerald : AppColors.goldDark,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 4),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
+                          tooltip: isUrdu ? 'سوال حذف کریں' : 'Delete Question',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                          onPressed: () => _confirmDeleteQuestion(context, q.id, isUrdu),
+                        ),
+                      ],
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 12),
 
                 // Question Text

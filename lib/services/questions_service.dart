@@ -87,4 +87,14 @@ class QuestionsService {
       return list;
     });
   }
+
+  /// Deletes a question from Firestore by ID.
+  static Future<void> deleteQuestion(String questionId) async {
+    try {
+      await _firestore.collection('user_questions').doc(questionId).delete();
+    } catch (e) {
+      if (kDebugMode) print('QuestionsService.deleteQuestion error: $e');
+      rethrow;
+    }
+  }
 }

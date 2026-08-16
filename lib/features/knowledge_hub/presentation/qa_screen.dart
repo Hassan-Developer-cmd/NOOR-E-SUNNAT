@@ -540,8 +540,72 @@ class _QAAnswerCard extends StatelessWidget {
     this.showStatusHeader = false,
   });
 
+  void _confirmDeleteQuestion(BuildContext context, String questionId, bool isUrdu) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 22),
+            const SizedBox(width: 8),
+            Text(
+              isUrdu ? 'سوال حذف کریں' : 'Delete Question',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ],
+        ),
+        content: Text(
+          isUrdu
+              ? 'کیا آپ واقعی اس سوال کو حذف کرنا چاہتے ہیں؟ یہ عمل واپس نہیں لیا جا سکتا۔'
+              : 'Are you sure you want to permanently delete this question? This action cannot be undone.',
+          style: const TextStyle(fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(isUrdu ? 'منسوخ کریں' : 'Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await QuestionsService.deleteQuestion(questionId);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(isUrdu ? 'سوال کامیابی سے حذف ہو گیا' : 'Question deleted successfully'),
+                      backgroundColor: Colors.red.shade700,
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(isUrdu ? 'حذف کرنے میں خرابی پیش آئی' : 'Failed to delete question'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: Text(isUrdu ? 'حذف کریں' : 'Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+
     final isPending = question.isPending;
 
     return Container(
@@ -638,9 +702,20 @@ class _QAAnswerCard extends StatelessWidget {
                       ],
                     ),
                   ),
+                if (showStatusHeader) ...[
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
+                    tooltip: isUrdu ? 'سوال حذف کریں' : 'Delete Question',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                    onPressed: () => _confirmDeleteQuestion(context, question.id, isUrdu),
+                  ),
+                ],
               ],
             ),
           ),
+
 
           // Question Content
           Padding(
