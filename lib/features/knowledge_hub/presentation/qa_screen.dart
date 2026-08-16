@@ -70,10 +70,9 @@ class _QAScreenState extends State<QAScreen> with SingleTickerProviderStateMixin
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
             SliverAppBar(
-
               pinned: true,
               floating: true,
-              expandedHeight: 210,
+              expandedHeight: 220,
               backgroundColor: AppColors.primaryEmerald,
               elevation: 0,
               title: Text(
@@ -134,7 +133,7 @@ class _QAScreenState extends State<QAScreen> with SingleTickerProviderStateMixin
                     Positioned(
                       left: 16,
                       right: 16,
-                      bottom: 56,
+                      bottom: 58,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,7 +146,10 @@ class _QAScreenState extends State<QAScreen> with SingleTickerProviderStateMixin
                               color: Colors.white,
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
+                              height: 1.25,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 3),
                           Text(
@@ -157,6 +159,7 @@ class _QAScreenState extends State<QAScreen> with SingleTickerProviderStateMixin
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.85),
                               fontSize: 12,
+                              height: 1.25,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -170,6 +173,7 @@ class _QAScreenState extends State<QAScreen> with SingleTickerProviderStateMixin
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(48),
                 child: Container(
+                  height: 48,
                   color: Colors.white,
                   child: TabBar(
                     controller: _tabController,
@@ -177,28 +181,36 @@ class _QAScreenState extends State<QAScreen> with SingleTickerProviderStateMixin
                     indicatorWeight: 3,
                     labelColor: AppColors.primaryEmerald,
                     unselectedLabelColor: const Color(0xFF64748B),
-                    labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, height: 1.2),
                     tabs: [
                       Tab(
-                        iconMargin: const EdgeInsets.only(bottom: 2),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.public_rounded, size: 16),
-                            const SizedBox(width: 6),
-                            Text(isUrdu ? 'عمومی سوالات' : 'Public Q&A'),
-                          ],
+                        height: 48,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.public_rounded, size: 16),
+                              const SizedBox(width: 6),
+                              Text(isUrdu ? 'عمومی سوالات' : 'Public Q&A'),
+                            ],
+                          ),
                         ),
                       ),
                       Tab(
-                        iconMargin: const EdgeInsets.only(bottom: 2),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.mark_chat_unread_outlined, size: 16),
-                            const SizedBox(width: 6),
-                            Text(isUrdu ? 'میرے سوالات' : 'My Inquiries'),
-                          ],
+                        height: 48,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.mark_chat_unread_outlined, size: 16),
+                              const SizedBox(width: 6),
+                              Text(isUrdu ? 'میرے سوالات' : 'My Inquiries'),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -206,6 +218,7 @@ class _QAScreenState extends State<QAScreen> with SingleTickerProviderStateMixin
                 ),
               ),
             ),
+
           ];
         },
         body: Column(

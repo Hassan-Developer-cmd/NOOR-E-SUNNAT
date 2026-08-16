@@ -32,7 +32,6 @@ void main() async {
   runApp(const FaizanEDuroodApp());
 }
 
-
 class FaizanEDuroodApp extends StatelessWidget {
   const FaizanEDuroodApp({super.key});
 
@@ -94,7 +93,6 @@ class _WebAdminEntryGateState extends State<_WebAdminEntryGate> {
     if (mounted) setState(() => _clearing = false);
   }
 
-
   @override
   Widget build(BuildContext context) {
     if (_clearing) {
@@ -113,7 +111,6 @@ class _WebAdminEntryGateState extends State<_WebAdminEntryGate> {
         }),
       );
     }
-
 
     // No onCancel on web — admins must log in, no escape to user app
     return AdminLoginScreen(
@@ -172,7 +169,8 @@ class _MainShellState extends State<MainShell> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => CounterScreen(counterService: _counterService),
+                  builder: (context) =>
+                      CounterScreen(counterService: _counterService),
                 ),
               );
             },
@@ -203,7 +201,6 @@ class _MainShellState extends State<MainShell> {
           bottomNavigationBar: Directionality(
             textDirection: lp.textDirection,
             child: Container(
-
               decoration: const BoxDecoration(
                 color: Colors.white,
                 border: Border(
@@ -258,7 +255,6 @@ class _MainShellState extends State<MainShell> {
               ),
             ),
           ),
-
         );
       },
     );
