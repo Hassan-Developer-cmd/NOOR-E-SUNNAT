@@ -113,10 +113,9 @@ class HomeScreen extends StatelessWidget {
                 actions: [
                   // Notification Bell with live unread badge
                   Center(
-                    child: StreamBuilder<int>(
-                      stream: NotificationService.unreadCountStream,
-                      builder: (context, snapshot) {
-                        final unreadCount = snapshot.data ?? 0;
+                    child: ValueListenableBuilder<int>(
+                      valueListenable: NotificationService.unreadCountNotifier,
+                      builder: (context, unreadCount, _) {
                         return Stack(
                           clipBehavior: Clip.none,
                           children: [
@@ -164,6 +163,7 @@ class HomeScreen extends StatelessWidget {
                       },
                     ),
                   ),
+
                   const SizedBox(width: 8),
 
                   // Language toggle

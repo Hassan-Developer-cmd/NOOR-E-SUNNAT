@@ -61,11 +61,22 @@ class NotificationService {
       _liveNotificationsSub;
   static final Set<String> _seenNotificationIds = {};
 
-  /// Initializes local notifications with high-priority channel settings.
+  /// Reactive notifiers for live UI updates
+  static final ValueNotifier<int> unreadCountNotifier = ValueNotifier<int>(0);
+  static final ValueNotifier<int> lastReadTimestampNotifier = ValueNotifier<int>(0);
+
+  static int _lastReadMs = 0;
+  static List<Map<String, dynamic>> _latestNotificationData = [];
+
+  /// Initializes local notifications and reads cached lastRead timestamp.
   static Future<void> initialize() async {
     if (_isInitialized) return;
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+      _lastReadMs = prefs.getInt(_lastReadPrefKey) ?? 0;
+      lastReadTimestampNotifier.value = _lastReadMs;
+
       if (!kIsWeb) {
         const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
         const darwinInit = DarwinInitializationSettings(
@@ -105,6 +116,33 @@ class NotificationService {
     }
   }
 
+  /// Recalculates unread count from cached docs and triggers reactive notifiers.
+  static void _recalculateUnread() {
+    int count = 0;
+    for (var data in _latestNotificationData) {
+      int? timeMs;
+      final raw = data['sent_at'];
+      if (raw is Timestamp) {
+        timeMs = raw.millisecondsSinceEpoch;
+      } else if (raw is String && raw.isNotEmpty) {
+        timeMs = DateTime.tryParse(raw)?.millisecondsSinceEpoch;
+      }
+
+      if (timeMs != null) {
+        if (timeMs > _lastReadMs) count++;
+      } else {
+        if (_lastReadMs == 0) count++;
+      }
+    }
+    unreadCountNotifier.value = count;
+  }
+
+  /// Checks if a specific notification timestamp is unread.
+  static bool isUnread(DateTime? sentAt) {
+    if (sentAt == null) return false;
+    return sentAt.millisecondsSinceEpoch > _lastReadMs;
+  }
+
   /// Starts listening to Firestore for real-time notifications and displays WhatsApp-style heads-up popups.
   static void startListeningToLiveNotifications() {
     _liveNotificationsSub?.cancel();
@@ -115,6 +153,9 @@ class NotificationService {
         .collection('notifications')
         .snapshots()
         .listen((snapshot) {
+      _latestNotificationData = snapshot.docs.map((d) => d.data()).toList();
+      _recalculateUnread();
+
       if (isFirstSnapshot) {
         // Record all existing notification IDs so we do not spam notifications for old history on app boot
         for (var doc in snapshot.docs) {
@@ -203,7 +244,6 @@ class NotificationService {
     }
   }
 
-
   /// Live stream of notifications ordered by newest first with robust client-side sorting.
   static Stream<List<InAppNotificationItem>> get notificationsStream {
     return _firestore.collection('notifications').snapshots().map((snap) {
@@ -224,30 +264,35 @@ class NotificationService {
     });
   }
 
-  /// Real-time count of unread notifications.
+  /// Real-time count of unread notifications stream.
   static Stream<int> get unreadCountStream async* {
-    final prefs = await SharedPreferences.getInstance();
-    final lastReadMs = prefs.getInt(_lastReadPrefKey) ?? 0;
+    if (!_isInitialized) {
+      final prefs = await SharedPreferences.getInstance();
+      _lastReadMs = prefs.getInt(_lastReadPrefKey) ?? 0;
+      lastReadTimestampNotifier.value = _lastReadMs;
+    }
+    _recalculateUnread();
+    yield unreadCountNotifier.value;
 
-    yield* _firestore.collection('notifications').snapshots().map((snap) {
-      int count = 0;
-      for (var doc in snap.docs) {
-        final data = doc.data();
-        if (data['sent_at'] is Timestamp) {
-          final timeMs = (data['sent_at'] as Timestamp).millisecondsSinceEpoch;
-          if (timeMs > lastReadMs) count++;
-        }
+    final controller = StreamController<int>.broadcast();
+    void listener() {
+      if (!controller.isClosed) {
+        controller.add(unreadCountNotifier.value);
       }
-      return count;
-    });
+    }
+    unreadCountNotifier.addListener(listener);
+    yield* controller.stream;
   }
 
-  /// Marks all current notifications as read.
+  /// Marks all current notifications as read instantly.
   static Future<void> markAllAsRead() async {
     try {
+      _lastReadMs = DateTime.now().millisecondsSinceEpoch;
+      lastReadTimestampNotifier.value = _lastReadMs;
+      _recalculateUnread(); // Instantly clears unread count to 0 in UI
+
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(
-          _lastReadPrefKey, DateTime.now().millisecondsSinceEpoch);
+      await prefs.setInt(_lastReadPrefKey, _lastReadMs);
     } catch (e) {
       if (kDebugMode) print('NotificationService.markAllAsRead error: $e');
     }

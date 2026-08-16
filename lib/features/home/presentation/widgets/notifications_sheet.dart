@@ -250,123 +250,161 @@ class _NotificationTile extends StatelessWidget {
     final body = item.getBody(isUrdu);
     final isEvent = item.eventId != null || item.type.startsWith('event_');
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderLight),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            if (isEvent) {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const UpcomingEventsScreen()),
-              );
-            }
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Icon Avatar
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: _iconBg,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(_icon, color: _iconColor, size: 20),
-                ),
-                const SizedBox(width: 12),
+    return ValueListenableBuilder<int>(
+      valueListenable: NotificationService.lastReadTimestampNotifier,
+      builder: (context, lastRead, child) {
 
-                // Content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              title,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF0F172A),
+        final isUnread = NotificationService.isUnread(item.sentAt);
+
+        return Container(
+          decoration: BoxDecoration(
+            color: isUnread ? const Color(0xFFF0FDF4) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isUnread
+                  ? AppColors.primaryEmerald.withValues(alpha: 0.35)
+                  : AppColors.borderLight,
+              width: isUnread ? 1.5 : 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () {
+                if (isEvent) {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const UpcomingEventsScreen()),
+                  );
+                }
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Icon Avatar with unread indicator dot
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: _iconBg,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(_icon, color: _iconColor, size: 20),
+                        ),
+                        if (isUnread)
+                          Positioned(
+                            top: -2,
+                            right: -2,
+                            child: Container(
+                              width: 10,
+                              height: 10,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFEF4444),
+                                shape: BoxShape.circle,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          if (item.sentAt != null) ...[
-                            const SizedBox(width: 6),
-                            Text(
-                              _formatTime(item.sentAt),
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey.shade500,
+                      ],
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Content
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  title,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight:
+                                        isUnread ? FontWeight.w800 : FontWeight.bold,
+                                    color: const Color(0xFF0F172A),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
+                              if (item.sentAt != null) ...[
+                                const SizedBox(width: 6),
+                                Text(
+                                  _formatTime(item.sentAt),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: isUnread
+                                        ? AppColors.primaryEmerald
+                                        : Colors.grey.shade500,
+                                    fontWeight: isUnread
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            body,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF475569),
+                              height: 1.4,
+                            ),
+                          ),
+                          if (isEvent) ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Text(
+                                  isUrdu ? 'ایونٹ کی تفصیلات دیکھیں ←' : 'View event details →',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primaryEmerald,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        body,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF475569),
-                          height: 1.4,
-                        ),
-                      ),
-                      if (isEvent) ...[
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Text(
-                              isUrdu ? 'ایونٹ کی تفصیلات دیکھیں ←' : 'View event details →',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primaryEmerald,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 16, color: Colors.grey),
+                      tooltip: isUrdu ? 'حذف کریں' : 'Delete',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                      onPressed: () async {
+                        await NotificationService.deleteNotification(item.id);
+                      },
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 4),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 16, color: Colors.grey),
-                  tooltip: isUrdu ? 'حذف کریں' : 'Delete',
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                  onPressed: () async {
-                    await NotificationService.deleteNotification(item.id);
-                  },
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
+
 
