@@ -30,20 +30,33 @@ class InAppNotificationItem {
 
   factory InAppNotificationItem.fromMap(String id, Map<String, dynamic> map) {
     DateTime? timestamp;
-    final rawSent = map['sent_at'];
+    final rawSent = map['sent_at'] ??
+        map['created_at'] ??
+        map['timestamp'] ??
+        map['time'] ??
+        map['sentAt'] ??
+        map['createdAt'];
+
     if (rawSent is Timestamp) {
       timestamp = rawSent.toDate();
     } else if (rawSent is String && rawSent.isNotEmpty) {
       timestamp = DateTime.tryParse(rawSent);
+    } else if (rawSent is int && rawSent > 0) {
+      timestamp = DateTime.fromMillisecondsSinceEpoch(rawSent);
     }
+
+    final resolvedTitle = (map['title'] ?? map['title_en'] ?? map['titleEn'] ?? '') as String;
+    final resolvedTitleUr = (map['title_ur'] ?? map['titleUr'] ?? map['title_urdu'] ?? '') as String;
+    final resolvedBody = (map['body'] ?? map['body_en'] ?? map['bodyEn'] ?? map['message'] ?? '') as String;
+    final resolvedBodyUr = (map['body_ur'] ?? map['bodyUr'] ?? map['body_urdu'] ?? map['message_ur'] ?? '') as String;
 
     return InAppNotificationItem(
       id: id,
-      title: map['title'] as String? ?? '',
-      titleUr: map['title_ur'] as String? ?? '',
-      body: map['body'] as String? ?? '',
-      bodyUr: map['body_ur'] as String? ?? '',
-      type: map['type'] as String? ?? 'broadcast',
+      title: resolvedTitle,
+      titleUr: resolvedTitleUr,
+      body: resolvedBody,
+      bodyUr: resolvedBodyUr,
+      type: (map['type'] ?? 'broadcast') as String,
       eventId: map['event_id'] as String?,
       sentAt: timestamp,
     );
@@ -121,11 +134,19 @@ class NotificationService {
     int count = 0;
     for (var data in _latestNotificationData) {
       int? timeMs;
-      final raw = data['sent_at'];
+      final raw = data['sent_at'] ??
+          data['created_at'] ??
+          data['timestamp'] ??
+          data['time'] ??
+          data['sentAt'] ??
+          data['createdAt'];
+
       if (raw is Timestamp) {
         timeMs = raw.millisecondsSinceEpoch;
       } else if (raw is String && raw.isNotEmpty) {
         timeMs = DateTime.tryParse(raw)?.millisecondsSinceEpoch;
+      } else if (raw is int && raw > 0) {
+        timeMs = raw;
       }
 
       if (timeMs != null) {
@@ -287,7 +308,7 @@ class NotificationService {
   /// Marks all current notifications as read instantly.
   static Future<void> markAllAsRead() async {
     try {
-      _lastReadMs = DateTime.now().millisecondsSinceEpoch;
+      _lastReadMs = DateTime.now().millisecondsSinceEpoch + 1000;
       lastReadTimestampNotifier.value = _lastReadMs;
       _recalculateUnread(); // Instantly clears unread count to 0 in UI
 

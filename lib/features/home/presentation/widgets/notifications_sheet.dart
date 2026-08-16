@@ -9,14 +9,16 @@ class NotificationsSheet extends StatelessWidget {
   const NotificationsSheet({super.key});
 
   static void show(BuildContext context) {
-    NotificationService.markAllAsRead();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const NotificationsSheet(),
-    );
+    ).whenComplete(() {
+      NotificationService.markAllAsRead();
+    });
   }
+
 
   @override
   Widget build(BuildContext context) {
