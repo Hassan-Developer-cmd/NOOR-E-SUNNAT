@@ -17,13 +17,18 @@ import '../../../main.dart';
 
 
 class AdminDashboardWeb extends StatefulWidget {
-  final VoidCallback onSwitchToApp;
+  final VoidCallback? onSignOut;
 
-  const AdminDashboardWeb({super.key, required this.onSwitchToApp});
+  const AdminDashboardWeb({
+    super.key,
+    this.onSignOut,
+  });
 
   @override
+
   State<AdminDashboardWeb> createState() => _AdminDashboardWebState();
 }
+
 
 class _AdminDashboardWebState extends State<AdminDashboardWeb> {
   int _selectedNavIndex = 0;
@@ -333,16 +338,17 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
           Material(
             color: Colors.transparent,
             child: ListTile(
-              leading: const Icon(Icons.phone_iphone_rounded, color: AppColors.accentGold),
-              title: Text(lp.tr('switch_to_mobile'),
+              leading: const Icon(Icons.logout_rounded, color: Colors.white70),
+              title: Text(lp.tr('sign_out'),
                   style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
               onTap: () {
                 if (isDrawer) Navigator.pop(context);
-                widget.onSwitchToApp();
+                widget.onSignOut?.call();
               },
             ),
           ),
           const SizedBox(height: 12),
+
         ],
       ),
     );

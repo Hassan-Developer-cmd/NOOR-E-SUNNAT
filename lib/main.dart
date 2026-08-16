@@ -106,13 +106,14 @@ class _WebAdminEntryGateState extends State<_WebAdminEntryGate> {
 
     if (_isAuthenticated) {
       return AdminDashboardWeb(
-        onSwitchToApp: () => setState(() {
+        onSignOut: () => setState(() {
           _isAuthenticated = false;
           _clearing = true;
           _clearStaleSession();
         }),
       );
     }
+
 
     // No onCancel on web — admins must log in, no escape to user app
     return AdminLoginScreen(
