@@ -307,8 +307,9 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
+    _pageController = PageController(viewportFraction: 0.92);
   }
+
 
   @override
   void dispose() {
@@ -433,13 +434,14 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
                   final event = events[index];
                   return Padding(
                     key: ValueKey('event_wrap_${event.id}'),
-                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
                     child: EventCard(
                       key: ValueKey('event_card_${event.id}'),
                       event: event,
                       onNextTap: events.length > 1 ? () => _nextPage(events.length) : null,
                     ),
                   );
+
                 },
 
               ),

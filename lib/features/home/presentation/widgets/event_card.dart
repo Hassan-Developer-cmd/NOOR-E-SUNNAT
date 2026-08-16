@@ -20,9 +20,11 @@ class EventCard extends StatelessWidget {
     final isUrdu = lp.isUrdu;
 
     return Container(
+      key: ValueKey('event_card_${event.id}'),
       width: width ?? double.infinity,
-      clipBehavior: Clip.antiAlias,
+      clipBehavior: Clip.antiAliasWithSaveLayer,
       decoration: BoxDecoration(
+        color: event.gradientColors.first,
         borderRadius: BorderRadius.circular(20),
         gradient: LinearGradient(
           colors: event.gradientColors,
@@ -38,8 +40,9 @@ class EventCard extends StatelessWidget {
         ],
       ),
       child: Stack(
-        clipBehavior: Clip.antiAlias,
+        clipBehavior: Clip.antiAliasWithSaveLayer,
         children: [
+
 
           // Decorative background circle
           Positioned(
@@ -187,10 +190,12 @@ class _InfoRow extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
             maxLines: 1,
+            softWrap: false,
             overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
     );
+
   }
 }
