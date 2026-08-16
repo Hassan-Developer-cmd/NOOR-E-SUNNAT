@@ -429,14 +429,18 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
                   setState(() => _currentPage = index);
                 },
                 itemBuilder: (context, index) {
+                  final event = events[index];
                   return Padding(
+                    key: ValueKey('event_wrap_${event.id}'),
                     padding: const EdgeInsets.symmetric(horizontal: 2),
                     child: EventCard(
-                      event: events[index],
+                      key: ValueKey('event_card_${event.id}'),
+                      event: event,
                       onNextTap: events.length > 1 ? () => _nextPage(events.length) : null,
                     ),
                   );
                 },
+
               ),
             ),
 

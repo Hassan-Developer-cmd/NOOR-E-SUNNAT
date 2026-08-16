@@ -21,6 +21,7 @@ class EventCard extends StatelessWidget {
 
     return Container(
       width: width ?? double.infinity,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         gradient: LinearGradient(
@@ -37,7 +38,9 @@ class EventCard extends StatelessWidget {
         ],
       ),
       child: Stack(
+        clipBehavior: Clip.antiAlias,
         children: [
+
           // Decorative background circle
           Positioned(
             top: -20,
