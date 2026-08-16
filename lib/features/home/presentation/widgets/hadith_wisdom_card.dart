@@ -315,38 +315,45 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
               Row(
                 children: [
                   if (isTopic) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                      margin: const EdgeInsets.only(right: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFEF3C7),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.6)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.star_rounded, size: 12, color: Color(0xFF854D0E)),
-                          const SizedBox(width: 3),
-                          Text(
-                            item.isAyat
-                                ? (isUrdu ? 'آیت موضوع ⭐' : 'AYAT TOPIC ⭐')
-                                : (isUrdu ? 'حدیث موضوع ⭐' : 'HADITH TOPIC ⭐'),
-                            style: const TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF854D0E),
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        margin: const EdgeInsetsDirectional.only(end: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF3C7),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.6)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.star_rounded, size: 12, color: Color(0xFF854D0E)),
+                            const SizedBox(width: 3),
+                            Flexible(
+                              child: Text(
+                                item.isAyat
+                                    ? (isUrdu ? 'آیت موضوع' : 'AYAT TOPIC')
+                                    : (isUrdu ? 'حدیث موضوع' : 'HADITH TOPIC'),
+                                style: const TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF854D0E),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ],
                   Expanded(
+                    flex: 2,
                     child: Text(
                       title,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 13.5,
                         fontWeight: FontWeight.bold,
                         color: isTopic ? const Color(0xFF854D0E) : AppColors.primaryEmerald,
                       ),
@@ -355,32 +362,41 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
                     ),
                   ),
                   if (totalCount > 1) ...[
-                    IconButton(
-                      icon: const Icon(Icons.chevron_left_rounded, size: 20),
-                      onPressed: onPrev,
-                      constraints: const BoxConstraints(),
-                      padding: EdgeInsets.zero,
+                    InkWell(
+                      onTap: onPrev,
+                      borderRadius: BorderRadius.circular(12),
+                      child: const Padding(
+                        padding: EdgeInsets.all(3),
+                        child: Icon(Icons.chevron_left_rounded, size: 18),
+                      ),
                     ),
-                    Text(
-                      '${currentIndex + 1}/$totalCount',
-                      style: const TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      child: Text(
+                        '${currentIndex + 1}/$totalCount',
+                        style: const TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                      ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.chevron_right_rounded, size: 20),
-                      onPressed: onNext,
-                      constraints: const BoxConstraints(),
-                      padding: EdgeInsets.zero,
+                    InkWell(
+                      onTap: onNext,
+                      borderRadius: BorderRadius.circular(12),
+                      child: const Padding(
+                        padding: EdgeInsets.all(3),
+                        child: Icon(Icons.chevron_right_rounded, size: 18),
+                      ),
                     ),
                   ],
-                  IconButton(
-                    icon: const Icon(Icons.share_rounded, size: 18, color: AppColors.primaryEmerald),
-                    tooltip: isUrdu ? 'شئیر کریں' : 'Share',
-                    onPressed: () => _shareContent(context, title, arabic, content, citation),
-                    constraints: const BoxConstraints(),
-                    padding: const EdgeInsets.only(left: 6),
+                  InkWell(
+                    onTap: () => _shareContent(context, title, arabic, content, citation),
+                    borderRadius: BorderRadius.circular(12),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+                      child: Icon(Icons.share_rounded, size: 16, color: AppColors.primaryEmerald),
+                    ),
                   ),
                 ],
               ),
+
               const SizedBox(height: 12),
 
               // Arabic Calligraphy Text

@@ -342,12 +342,17 @@ class _ProfileStatCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              title,
+              style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+              maxLines: 1,
+            ),
           ),
         ],
       ),
     );
+
   }
 }

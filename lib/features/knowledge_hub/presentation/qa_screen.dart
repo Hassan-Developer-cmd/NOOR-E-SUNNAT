@@ -70,9 +70,10 @@ class _QAScreenState extends State<QAScreen> with SingleTickerProviderStateMixin
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
             SliverAppBar(
+
               pinned: true,
               floating: true,
-              expandedHeight: 180,
+              expandedHeight: 210,
               backgroundColor: AppColors.primaryEmerald,
               elevation: 0,
               title: Text(
@@ -133,8 +134,9 @@ class _QAScreenState extends State<QAScreen> with SingleTickerProviderStateMixin
                     Positioned(
                       left: 16,
                       right: 16,
-                      bottom: 58,
+                      bottom: 56,
                       child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
@@ -288,14 +290,18 @@ class _QAScreenState extends State<QAScreen> with SingleTickerProviderStateMixin
                   // Status Filter Chips (for My Inquiries Tab)
                   if (_tabController.index == 1) ...[
                     const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        _buildStatusFilterChip('all', isUrdu ? 'تمام سوالات' : 'All'),
-                        const SizedBox(width: 8),
-                        _buildStatusFilterChip('pending', isUrdu ? 'زیرِ غور (24h)' : 'Pending (24h)'),
-                        const SizedBox(width: 8),
-                        _buildStatusFilterChip('answered', isUrdu ? 'جواب شدہ' : 'Answered'),
-                      ],
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: [
+                          _buildStatusFilterChip('all', isUrdu ? 'تمام سوالات' : 'All'),
+                          const SizedBox(width: 8),
+                          _buildStatusFilterChip('pending', isUrdu ? 'زیرِ غور (24h)' : 'Pending (24h)'),
+                          const SizedBox(width: 8),
+                          _buildStatusFilterChip('answered', isUrdu ? 'جواب دیا گیا' : 'Answered'),
+                        ],
+                      ),
                     ),
                   ],
                 ],
@@ -303,6 +309,7 @@ class _QAScreenState extends State<QAScreen> with SingleTickerProviderStateMixin
             ),
 
             // Tab View Body
+
             Expanded(
               child: TabBarView(
                 controller: _tabController,

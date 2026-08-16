@@ -201,8 +201,9 @@ class _MainShellState extends State<MainShell> {
                 )
               : activeBody,
           bottomNavigationBar: Directionality(
-            textDirection: TextDirection.ltr,
+            textDirection: lp.textDirection,
             child: Container(
+
               decoration: const BoxDecoration(
                 color: Colors.white,
                 border: Border(

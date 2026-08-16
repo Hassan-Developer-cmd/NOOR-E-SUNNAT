@@ -224,28 +224,55 @@ class HomeScreen extends StatelessWidget {
                     const SizedBox(height: 14),
 
                     // Send Salawat CTA
-                    SizedBox(
+                    Container(
                       width: double.infinity,
-                      height: 52,
+                      constraints: const BoxConstraints(minHeight: 52),
                       child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryEmerald,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 2,
+                        ),
                         onPressed: onNavigateToCounter,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.touch_app_rounded,
-                                size: 18, color: Colors.white),
+                            const Icon(
+                              Icons.touch_app_rounded,
+                              size: 20,
+                              color: Colors.white,
+                            ),
                             const SizedBox(width: 8),
                             Flexible(
-                              child: Text(
-                                lp.tr('send_salawat_now'),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  lp.tr('send_salawat_now'),
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.3,
+                                    color: Colors.white,
+                                    fontFamily: lp.isUrdu ? AppTypography.urduFontFamily : AppTypography.englishFontFamily,
+                                  ),
+                                  strutStyle: const StrutStyle(
+                                    forceStrutHeight: true,
+                                    height: 1.3,
+                                  ),
+                                  maxLines: 1,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
+
                     const SizedBox(height: 28),
 
                     // Upgraded Responsive PageView Events Section with Dynamic Dots & Arrow Nav
