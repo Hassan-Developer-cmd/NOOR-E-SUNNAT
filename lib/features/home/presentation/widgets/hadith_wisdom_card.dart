@@ -307,7 +307,7 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
         ],
 
         Padding(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -317,25 +317,25 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
                   if (isTopic) ...[
                     Flexible(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        margin: const EdgeInsetsDirectional.only(end: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        margin: const EdgeInsetsDirectional.only(end: 5),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFEF3C7),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.6)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.star_rounded, size: 12, color: Color(0xFF854D0E)),
-                            const SizedBox(width: 3),
+                            const Icon(Icons.star_rounded, size: 11, color: Color(0xFF854D0E)),
+                            const SizedBox(width: 2),
                             Flexible(
                               child: Text(
                                 item.isAyat
                                     ? (isUrdu ? 'آیت موضوع' : 'AYAT TOPIC')
                                     : (isUrdu ? 'حدیث موضوع' : 'HADITH TOPIC'),
                                 style: const TextStyle(
-                                  fontSize: 9,
+                                  fontSize: 8.5,
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF854D0E),
                                 ),
@@ -349,11 +349,10 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
                     ),
                   ],
                   Expanded(
-                    flex: 2,
                     child: Text(
                       title,
                       style: TextStyle(
-                        fontSize: 13.5,
+                        fontSize: 13,
                         fontWeight: FontWeight.bold,
                         color: isTopic ? const Color(0xFF854D0E) : AppColors.primaryEmerald,
                       ),
@@ -361,41 +360,47 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  if (totalCount > 1) ...[
-                    InkWell(
-                      onTap: onPrev,
-                      borderRadius: BorderRadius.circular(12),
-                      child: const Padding(
-                        padding: EdgeInsets.all(3),
-                        child: Icon(Icons.chevron_left_rounded, size: 18),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (totalCount > 1) ...[
+                        InkWell(
+                          onTap: onPrev,
+                          borderRadius: BorderRadius.circular(10),
+                          child: const Padding(
+                            padding: EdgeInsets.all(2),
+                            child: Icon(Icons.chevron_left_rounded, size: 17),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 1),
+                          child: Text(
+                            '${currentIndex + 1}/$totalCount',
+                            style: const TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        InkWell(
+                          onTap: onNext,
+                          borderRadius: BorderRadius.circular(10),
+                          child: const Padding(
+                            padding: EdgeInsets.all(2),
+                            child: Icon(Icons.chevron_right_rounded, size: 17),
+                          ),
+                        ),
+                      ],
+                      InkWell(
+                        onTap: () => _shareContent(context, title, arabic, content, citation),
+                        borderRadius: BorderRadius.circular(10),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 3, vertical: 2),
+                          child: Icon(Icons.share_rounded, size: 15, color: AppColors.primaryEmerald),
+                        ),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      child: Text(
-                        '${currentIndex + 1}/$totalCount',
-                        style: const TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    InkWell(
-                      onTap: onNext,
-                      borderRadius: BorderRadius.circular(12),
-                      child: const Padding(
-                        padding: EdgeInsets.all(3),
-                        child: Icon(Icons.chevron_right_rounded, size: 18),
-                      ),
-                    ),
-                  ],
-                  InkWell(
-                    onTap: () => _shareContent(context, title, arabic, content, citation),
-                    borderRadius: BorderRadius.circular(12),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 3),
-                      child: Icon(Icons.share_rounded, size: 16, color: AppColors.primaryEmerald),
-                    ),
+                    ],
                   ),
                 ],
               ),
+
 
               const SizedBox(height: 12),
 
