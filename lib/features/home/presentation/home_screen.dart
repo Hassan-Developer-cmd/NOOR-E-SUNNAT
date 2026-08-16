@@ -307,8 +307,9 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(viewportFraction: 0.90);
+    _pageController = PageController(viewportFraction: 1.0);
   }
+
 
   @override
   void dispose() {
@@ -424,7 +425,6 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
                 controller: _pageController,
                 physics: const BouncingScrollPhysics(),
                 pageSnapping: true,
-                allowImplicitScrolling: false,
                 itemCount: events.length,
                 onPageChanged: (index) {
                   setState(() => _currentPage = index);
@@ -434,10 +434,11 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
                   return RepaintBoundary(
                     key: ValueKey('event_repaint_${event.id}'),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
                       child: EventCard(
                         key: ValueKey('event_card_${event.id}'),
                         event: event,
+                        width: double.infinity,
                         onNextTap: events.length > 1 ? () => _nextPage(events.length) : null,
                       ),
                     ),
@@ -445,6 +446,7 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
                 },
               ),
             ),
+
 
 
 
