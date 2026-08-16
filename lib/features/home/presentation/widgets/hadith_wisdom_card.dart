@@ -65,19 +65,18 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
     );
   }
 
-
   Widget _buildCardHeader(BuildContext context, bool isUrdu) {
     String headerTitle;
     IconData headerIcon;
 
     if (_selectedTab == 0) {
-      headerTitle = isUrdu ? 'روزانہ حدیثِ مبارکہ' : 'DAILY HADITH';
+      headerTitle = isUrdu ? 'آج کی حدیث مبارکہ' : 'DAILY HADITH';
       headerIcon = Icons.menu_book_rounded;
     } else if (_selectedTab == 1) {
-      headerTitle = isUrdu ? 'روزانہ آیتِ مبارکہ' : 'DAILY AYAT';
+      headerTitle = isUrdu ? 'آج کی آیتِ مبارکہ' : 'DAILY AYAT';
       headerIcon = Icons.auto_stories_rounded;
     } else {
-      headerTitle = isUrdu ? 'آج کا موضوع' : 'TOPIC OF THE DAY';
+      headerTitle = isUrdu ? 'آج کا خاص موضوع' : 'TOPIC OF THE DAY';
       headerIcon = Icons.star_rounded;
     }
 
@@ -119,7 +118,7 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
           ),
           IconButton(
             icon: const Icon(Icons.history_rounded, size: 20, color: Colors.white),
-            tooltip: isUrdu ? 'سابقہ احادیث و آیات' : 'History & Archive',
+            tooltip: isUrdu ? 'حدیث آرکائیو / تمام دیکھیں' : 'History & Archive',
             onPressed: () => _showHistorySheet(context, isUrdu),
             constraints: const BoxConstraints(),
             padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -140,19 +139,19 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
         children: [
           _buildSegmentButton(
             index: 0,
-            label: isUrdu ? 'حدیث شریف' : 'Hadith',
+            label: isUrdu ? 'حدیث مبارکہ' : 'Daily Hadith',
             icon: Icons.format_quote_rounded,
           ),
           const SizedBox(width: 6),
           _buildSegmentButton(
             index: 1,
-            label: isUrdu ? 'آیتِ مبارکہ' : 'Ayat',
+            label: isUrdu ? 'آیت مبارکہ' : 'Daily Ayat',
             icon: Icons.bookmark_added_rounded,
           ),
           const SizedBox(width: 6),
           _buildSegmentButton(
             index: 2,
-            label: isUrdu ? 'موضوع' : 'Topic ⭐',
+            label: isUrdu ? 'خاص موضوع' : 'Topic of Day ⭐',
             icon: Icons.star_rounded,
           ),
         ],
@@ -179,7 +178,9 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected
-                  ? (index == 2 ? AppColors.accentGold : AppColors.primaryEmerald.withValues(alpha: 0.5))
+                  ? (index == 2
+                      ? AppColors.accentGold
+                      : AppColors.primaryEmerald.withValues(alpha: 0.5))
                   : Colors.transparent,
               width: 1,
             ),
@@ -230,8 +231,10 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
             currentIndex: _hadithIndex,
             totalCount: list.length,
             isUrdu: isUrdu,
-            onPrev: () => setState(() => _hadithIndex = (_hadithIndex - 1 + list.length) % list.length),
-            onNext: () => setState(() => _hadithIndex = (_hadithIndex + 1) % list.length),
+            onPrev: () => setState(
+                () => _hadithIndex = (_hadithIndex - 1 + list.length) % list.length),
+            onNext: () => setState(
+                () => _hadithIndex = (_hadithIndex + 1) % list.length),
           );
         },
       );
@@ -248,8 +251,10 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
             currentIndex: _ayatIndex,
             totalCount: list.length,
             isUrdu: isUrdu,
-            onPrev: () => setState(() => _ayatIndex = (_ayatIndex - 1 + list.length) % list.length),
-            onNext: () => setState(() => _ayatIndex = (_ayatIndex + 1) % list.length),
+            onPrev: () => setState(
+                () => _ayatIndex = (_ayatIndex - 1 + list.length) % list.length),
+            onNext: () => setState(
+                () => _ayatIndex = (_ayatIndex + 1) % list.length),
           );
         },
       );
@@ -266,8 +271,10 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
             currentIndex: _topicIndex,
             totalCount: list.length,
             isUrdu: isUrdu,
-            onPrev: () => setState(() => _topicIndex = (_topicIndex - 1 + list.length) % list.length),
-            onNext: () => setState(() => _topicIndex = (_topicIndex + 1) % list.length),
+            onPrev: () => setState(
+                () => _topicIndex = (_topicIndex - 1 + list.length) % list.length),
+            onNext: () => setState(
+                () => _topicIndex = (_topicIndex + 1) % list.length),
           );
         },
       );
@@ -317,8 +324,8 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
                   if (isTopic) ...[
                     Flexible(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                        margin: const EdgeInsetsDirectional.only(end: 5),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        margin: const EdgeInsetsDirectional.only(end: 6),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFEF3C7),
                           borderRadius: BorderRadius.circular(6),
@@ -328,12 +335,12 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(Icons.star_rounded, size: 11, color: Color(0xFF854D0E)),
-                            const SizedBox(width: 2),
+                            const SizedBox(width: 3),
                             Flexible(
                               child: Text(
                                 item.isAyat
-                                    ? (isUrdu ? 'آیت موضوع' : 'AYAT TOPIC')
-                                    : (isUrdu ? 'حدیث موضوع' : 'HADITH TOPIC'),
+                                    ? (isUrdu ? 'آیت کا موضوع' : 'AYAT TOPIC')
+                                    : (isUrdu ? 'حدیث کا موضوع' : 'HADITH TOPIC'),
                                 style: const TextStyle(
                                   fontSize: 8.5,
                                   fontWeight: FontWeight.bold,
@@ -364,43 +371,55 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (totalCount > 1) ...[
-                        InkWell(
-                          onTap: onPrev,
-                          borderRadius: BorderRadius.circular(10),
-                          child: const Padding(
-                            padding: EdgeInsets.all(2),
-                            child: Icon(Icons.chevron_left_rounded, size: 17),
+                        Tooltip(
+                          message: isUrdu ? 'پچھلا' : 'Previous',
+                          child: InkWell(
+                            onTap: onPrev,
+                            borderRadius: BorderRadius.circular(10),
+                            child: const Padding(
+                              padding: EdgeInsets.all(2),
+                              child: Icon(Icons.chevron_left_rounded, size: 17),
+                            ),
                           ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 1),
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
                           child: Text(
                             '${currentIndex + 1}/$totalCount',
-                            style: const TextStyle(fontSize: 10, color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                        InkWell(
-                          onTap: onNext,
-                          borderRadius: BorderRadius.circular(10),
-                          child: const Padding(
-                            padding: EdgeInsets.all(2),
-                            child: Icon(Icons.chevron_right_rounded, size: 17),
+                        Tooltip(
+                          message: isUrdu ? 'اگلا' : 'Next',
+                          child: InkWell(
+                            onTap: onNext,
+                            borderRadius: BorderRadius.circular(10),
+                            child: const Padding(
+                              padding: EdgeInsets.all(2),
+                              child: Icon(Icons.chevron_right_rounded, size: 17),
+                            ),
                           ),
                         ),
                       ],
-                      InkWell(
-                        onTap: () => _shareContent(context, title, arabic, content, citation),
-                        borderRadius: BorderRadius.circular(10),
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 3, vertical: 2),
-                          child: Icon(Icons.share_rounded, size: 15, color: AppColors.primaryEmerald),
+                      Tooltip(
+                        message: isUrdu ? 'شئیر کریں' : 'Share',
+                        child: InkWell(
+                          onTap: () => _shareContent(context, title, arabic, content, citation),
+                          borderRadius: BorderRadius.circular(10),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            child: Icon(Icons.share_rounded, size: 15, color: AppColors.primaryEmerald),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ],
               ),
-
 
               const SizedBox(height: 12),
 
@@ -413,7 +432,9 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
                     color: isTopic ? const Color(0xFFFCF9EE) : const Color(0xFFF4F9F5),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: isTopic ? AppColors.accentGold.withValues(alpha: 0.3) : AppColors.emeraldContainer,
+                      color: isTopic
+                          ? AppColors.accentGold.withValues(alpha: 0.3)
+                          : AppColors.emeraldContainer,
                     ),
                   ),
                   child: Text(
@@ -435,11 +456,13 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
               // Content / Translation
               Text(
                 '"$content"',
-                style: const TextStyle(
-                  fontSize: 13.5,
+                textAlign: isUrdu ? TextAlign.right : TextAlign.left,
+                textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
+                style: TextStyle(
+                  fontSize: isUrdu ? 14.5 : 13.5,
                   fontWeight: FontWeight.w500,
                   color: AppColors.textPrimary,
-                  height: 1.6,
+                  height: isUrdu ? 1.6 : 1.5,
                 ),
               ),
               const SizedBox(height: 14),
@@ -450,9 +473,10 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
                 children: [
                   TextButton.icon(
                     onPressed: () => _showHistorySheet(context, isUrdu),
-                    icon: const Icon(Icons.collections_bookmark_rounded, size: 14, color: AppColors.primaryEmerald),
+                    icon: const Icon(Icons.collections_bookmark_rounded,
+                        size: 14, color: AppColors.primaryEmerald),
                     label: Text(
-                      isUrdu ? 'احادیث و آیات کا خزانہ' : 'View Archive',
+                      isUrdu ? 'حدیث آرکائیو / تمام دیکھیں' : 'View Archive',
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -471,12 +495,15 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
                         color: isTopic ? const Color(0xFFFEF3C7) : AppColors.emeraldContainer,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: isTopic ? AppColors.accentGold.withValues(alpha: 0.5) : Colors.transparent,
+                          color: isTopic
+                              ? AppColors.accentGold.withValues(alpha: 0.5)
+                              : Colors.transparent,
                           width: 1,
                         ),
                       ),
                       child: Text(
                         citation,
+                        textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -505,12 +532,16 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
     );
   }
 
-  static void _shareContent(BuildContext context, String title, String arabic, String content, String citation) {
-    final textToShare = '$title\n\n${arabic.isNotEmpty ? "$arabic\n\n" : ""}"$content"\n\n— $citation\n\nShared via Faizan e Durood App';
+  static void _shareContent(BuildContext context, String title, String arabic,
+      String content, String citation) {
+    final isUrdu = globalLanguageProvider.isUrdu;
+    final sharedVia = isUrdu ? 'فیضانِ درود پاک ایپ کے ذریعے ارسال کردہ' : 'Shared via Faizan e Durood App';
+    final textToShare =
+        '$title\n\n${arabic.isNotEmpty ? "$arabic\n\n" : ""}"$content"\n\n— $citation\n\n$sharedVia';
     Clipboard.setData(ClipboardData(text: textToShare));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(globalLanguageProvider.isUrdu
+        content: Text(isUrdu
             ? 'مواد کلپ بورڈ پر کاپی ہو گیا! واٹس ایپ / سوشل پر شئیر کریں۔'
             : 'Quote copied! Ready to share on WhatsApp & Socials.'),
         backgroundColor: const Color(0xFF0F5132),
@@ -572,11 +603,15 @@ class _DailyContentArchiveSheetState extends State<_DailyContentArchiveSheet> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.collections_bookmark_rounded, color: AppColors.primaryEmerald, size: 20),
+                      const Icon(Icons.collections_bookmark_rounded,
+                          color: AppColors.primaryEmerald, size: 20),
                       const SizedBox(width: 8),
                       Text(
-                        isUrdu ? 'احادیث و آیات کا خزانہ' : 'Hadith & Ayat Archive',
-                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.primaryEmerald),
+                        isUrdu ? 'حدیث آرکائیو / تمام دیکھیں' : 'Hadith & Ayat Archive',
+                        style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryEmerald),
                       ),
                     ],
                   ),
@@ -595,7 +630,9 @@ class _DailyContentArchiveSheetState extends State<_DailyContentArchiveSheet> {
                 controller: _searchController,
                 onChanged: (v) => setState(() => _searchQuery = v.trim().toLowerCase()),
                 decoration: InputDecoration(
-                  hintText: isUrdu ? 'تلاش کریں (حدیث، آیت، حوالہ...)' : 'Search by keyword, surah, book...',
+                  hintText: isUrdu
+                      ? 'تلاش کریں (حدیث، آیت، حوالہ...)'
+                      : 'Search by keyword, surah, book...',
                   prefixIcon: const Icon(Icons.search, size: 20),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
@@ -629,9 +666,9 @@ class _DailyContentArchiveSheetState extends State<_DailyContentArchiveSheet> {
                 children: [
                   _filterChip('all', isUrdu ? 'تمام' : 'All'),
                   const SizedBox(width: 8),
-                  _filterChip('hadith', isUrdu ? 'احادیث' : 'Hadiths'),
+                  _filterChip('hadith', isUrdu ? 'احادیث مبارکہ' : 'Hadiths'),
                   const SizedBox(width: 8),
-                  _filterChip('ayat', isUrdu ? 'آیات' : 'Ayats'),
+                  _filterChip('ayat', isUrdu ? 'آیات مبارکہ' : 'Ayats'),
                   const SizedBox(width: 8),
                   _filterChip('topics', isUrdu ? 'موضوعات ⭐' : 'Topics ⭐'),
                 ],
@@ -645,7 +682,8 @@ class _DailyContentArchiveSheetState extends State<_DailyContentArchiveSheet> {
                 stream: ContentService.allDailyContentHistoryStream,
                 builder: (context, snap) {
                   if (snap.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator(color: AppColors.primaryEmerald));
+                    return const Center(
+                        child: CircularProgressIndicator(color: AppColors.primaryEmerald));
                   }
                   var history = snap.data ?? [];
 
@@ -682,7 +720,8 @@ class _DailyContentArchiveSheetState extends State<_DailyContentArchiveSheet> {
                             const SizedBox(height: 12),
                             Text(
                               isUrdu ? 'کوئی مواد دستیاب نہیں ہے۔' : 'No entries found.',
-                              style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                              style: const TextStyle(
+                                  fontSize: 14, color: AppColors.textSecondary),
                             ),
                           ],
                         ),
@@ -710,7 +749,9 @@ class _DailyContentArchiveSheetState extends State<_DailyContentArchiveSheet> {
                           color: isTop ? const Color(0xFFFDFBF7) : const Color(0xFFF8FAFC),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: isTop ? AppColors.accentGold.withValues(alpha: 0.6) : AppColors.borderLight,
+                            color: isTop
+                                ? AppColors.accentGold.withValues(alpha: 0.6)
+                                : AppColors.borderLight,
                           ),
                         ),
                         child: Column(
@@ -719,34 +760,42 @@ class _DailyContentArchiveSheetState extends State<_DailyContentArchiveSheet> {
                             Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                                  margin: const EdgeInsets.only(right: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 7, vertical: 3),
+                                  margin: const EdgeInsetsDirectional.only(end: 6),
                                   decoration: BoxDecoration(
-                                    color: entry.isAyat ? const Color(0xFFEDE9FE) : AppColors.emeraldContainer,
+                                    color: entry.isAyat
+                                        ? const Color(0xFFEDE9FE)
+                                        : AppColors.emeraldContainer,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
                                     entry.isAyat
-                                        ? (isUrdu ? 'آیت' : 'AYAT')
-                                        : (isUrdu ? 'حدیث' : 'HADITH'),
+                                        ? (isUrdu ? 'آیت مبارکہ' : 'AYAT')
+                                        : (isUrdu ? 'حدیث مبارکہ' : 'HADITH'),
                                     style: TextStyle(
                                       fontSize: 9,
                                       fontWeight: FontWeight.bold,
-                                      color: entry.isAyat ? const Color(0xFF6D28D9) : AppColors.primaryEmerald,
+                                      color: entry.isAyat
+                                          ? const Color(0xFF6D28D9)
+                                          : AppColors.primaryEmerald,
                                     ),
                                   ),
                                 ),
                                 if (isTop) ...[
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                    margin: const EdgeInsets.only(right: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 3),
+                                    margin: const EdgeInsetsDirectional.only(end: 6),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFFEF3C7),
                                       borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.5)),
+                                      border: Border.all(
+                                          color: AppColors.accentGold
+                                              .withValues(alpha: 0.5)),
                                     ),
                                     child: Text(
-                                      isUrdu ? 'موضوع ⭐' : 'TOPIC ⭐',
+                                      isUrdu ? 'خاص موضوع ⭐' : 'TOPIC ⭐',
                                       style: const TextStyle(
                                         fontSize: 8.5,
                                         fontWeight: FontWeight.bold,
@@ -761,21 +810,27 @@ class _DailyContentArchiveSheetState extends State<_DailyContentArchiveSheet> {
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
-                                      color: isTop ? const Color(0xFF854D0E) : AppColors.primaryEmerald,
+                                      color: isTop
+                                          ? const Color(0xFF854D0E)
+                                          : AppColors.primaryEmerald,
                                     ),
                                   ),
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.share_outlined, size: 16, color: Colors.grey),
-                                  onPressed: () => _HadithWisdomCardState._shareContent(
-                                    context,
-                                    eTitle,
-                                    eArab,
-                                    eContent,
-                                    eCit,
+                                Tooltip(
+                                  message: isUrdu ? 'شئیر کریں' : 'Share',
+                                  child: IconButton(
+                                    icon: const Icon(Icons.share_outlined,
+                                        size: 16, color: Colors.grey),
+                                    onPressed: () => _HadithWisdomCardState._shareContent(
+                                      context,
+                                      eTitle,
+                                      eArab,
+                                      eContent,
+                                      eCit,
+                                    ),
+                                    constraints: const BoxConstraints(),
+                                    padding: EdgeInsets.zero,
                                   ),
-                                  constraints: const BoxConstraints(),
-                                  padding: EdgeInsets.zero,
                                 ),
                               ],
                             ),
@@ -784,6 +839,7 @@ class _DailyContentArchiveSheetState extends State<_DailyContentArchiveSheet> {
                               Text(
                                 eArab,
                                 textDirection: TextDirection.rtl,
+                                textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   fontFamily: 'Amiri',
                                   fontSize: 16,
@@ -795,14 +851,25 @@ class _DailyContentArchiveSheetState extends State<_DailyContentArchiveSheet> {
                             const SizedBox(height: 8),
                             Text(
                               '"$eContent"',
-                              style: const TextStyle(fontSize: 13, color: AppColors.textPrimary, height: 1.5),
+                              textAlign: isUrdu ? TextAlign.right : TextAlign.left,
+                              textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
+                              style: TextStyle(
+                                fontSize: isUrdu ? 14 : 13,
+                                color: AppColors.textPrimary,
+                                height: isUrdu ? 1.6 : 1.5,
+                              ),
                             ),
                             const SizedBox(height: 8),
                             Align(
                               alignment: AlignmentDirectional.centerEnd,
                               child: Text(
                                 '— $eCit',
-                                style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: AppColors.textSecondary),
+                                textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontStyle: FontStyle.italic,
+                                  color: AppColors.textSecondary,
+                                ),
                               ),
                             ),
                           ],

@@ -434,17 +434,18 @@ class _HadithWisdomBanner extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          const Align(
+          Align(
             alignment: AlignmentDirectional.centerEnd,
             child: Text(
-              '— Sunan Ibn Majah',
-              style: TextStyle(
+              lp.isUrdu ? '— سنن ابن ماجہ' : '— Sunan Ibn Majah',
+              style: const TextStyle(
                 fontSize: 11,
                 fontStyle: FontStyle.italic,
                 color: Color(0xFF78350F),
               ),
             ),
           ),
+
         ],
       ),
     );

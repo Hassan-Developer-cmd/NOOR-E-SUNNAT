@@ -126,22 +126,37 @@ class DailyContentModel {
   bool get isAyat => type.toLowerCase() == 'ayat';
 
   String getTitle(bool isUrdu) {
-    if (isUrdu && titleUr.isNotEmpty) return titleUr;
-    if (title.isNotEmpty) return title;
     if (isUrdu) {
-      return isAyat ? 'آج کی آیتِ مبارکہ' : 'آج کی حدیثِ پاک';
+      if (titleUr.isNotEmpty) return titleUr;
+      if (isTopicOfTheDay) return 'آج کا خاص موضوع';
+      return isAyat ? 'آج کی آیتِ مبارکہ' : 'آج کی حدیث مبارکہ';
+    } else {
+      if (title.isNotEmpty) return title;
+      if (isTopicOfTheDay) return 'Topic of the day';
+      return isAyat ? 'DAILY AYAT' : 'DAILY HADITH';
     }
-    return isAyat ? 'Ayat of the Day' : 'Hadith of the Day';
   }
 
   String getContent(bool isUrdu) {
     if (isUrdu && contentUr.isNotEmpty) return contentUr;
-    return content;
+    if (!isUrdu && content.isNotEmpty) return content;
+    return contentUr.isNotEmpty ? contentUr : content;
   }
 
   String getCitation(bool isUrdu) {
-    if (isUrdu && citationUr.isNotEmpty) return citationUr;
-    return citation;
+    if (isUrdu) {
+      if (citationUr.isNotEmpty) {
+        return citationUr.startsWith('حوالہ:') ? citationUr : 'حوالہ: $citationUr';
+      }
+      if (citation.isNotEmpty) return 'حوالہ: $citation';
+    } else {
+      if (citation.isNotEmpty) {
+        return citation.startsWith('Reference:') ? citation : 'Reference: $citation';
+      }
+      if (citationUr.isNotEmpty) return 'Reference: $citationUr';
+    }
+    return '';
   }
 }
+
 
