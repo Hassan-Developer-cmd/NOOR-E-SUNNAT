@@ -307,9 +307,8 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(viewportFraction: 0.92);
+    _pageController = PageController(viewportFraction: 0.90);
   }
-
 
   @override
   void dispose() {
@@ -389,7 +388,6 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
                         ),
                         onPressed: () => _nextPage(events.length),
                         tooltip: lp.isUrdu ? 'اگلا پروگرام' : 'Next Event',
-
                       ),
                     InkWell(
                       onTap: () {
@@ -419,7 +417,7 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
             ),
             const SizedBox(height: 12),
 
-            // PageView Carousel with Full-Width Event Cards
+            // PageView Carousel with Full-Width Isolated Event Cards
             SizedBox(
               height: 168,
               child: PageView.builder(
@@ -432,20 +430,21 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
                 },
                 itemBuilder: (context, index) {
                   final event = events[index];
-                  return Padding(
-                    key: ValueKey('event_wrap_${event.id}'),
-                    padding: const EdgeInsets.symmetric(horizontal: 5),
-                    child: EventCard(
-                      key: ValueKey('event_card_${event.id}'),
-                      event: event,
-                      onNextTap: events.length > 1 ? () => _nextPage(events.length) : null,
+                  return RepaintBoundary(
+                    key: ValueKey('event_repaint_${event.id}'),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: EventCard(
+                        key: ValueKey('event_card_${event.id}'),
+                        event: event,
+                        onNextTap: events.length > 1 ? () => _nextPage(events.length) : null,
+                      ),
                     ),
                   );
-
                 },
-
               ),
             ),
+
 
             const SizedBox(height: 10),
 
