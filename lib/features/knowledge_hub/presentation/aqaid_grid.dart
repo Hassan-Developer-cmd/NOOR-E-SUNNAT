@@ -6,7 +6,7 @@ import '../../../main.dart';
 import '../../../services/content_service.dart';
 import 'aqaid_detail_screen.dart';
 
-/// Redesigned Islamic Aqaid (Creed) screen with modern image-grid categories & local assets.
+/// Main Islamic Aqaid Screen displaying isolated 2-Column Category Grid.
 class AqaidGridScreen extends StatefulWidget {
   const AqaidGridScreen({super.key});
 
@@ -16,16 +16,15 @@ class AqaidGridScreen extends StatefulWidget {
 
 class _AqaidGridScreenState extends State<AqaidGridScreen> {
   String _searchQuery = '';
-  String _selectedCategory = 'all';
   final TextEditingController _searchController = TextEditingController();
 
-  final List<Map<String, String>> _categories = [
+  static final List<Map<String, String>> _categories = [
     {
       'id': 'tawheed',
       'en': 'Tawheed',
       'ur': 'عقیدہ توحید',
       'image': 'assets/images/tauheed.png',
-      'desc_ur': 'اللہ تعالیٰ کی یکتائی اور صفات',
+      'desc_ur': 'اللہ تعالیٰ کی یکتائی، ذات اور صفات کا بیان',
       'desc_en': 'Oneness and Divine Attributes of Allah',
     },
     {
@@ -33,23 +32,23 @@ class _AqaidGridScreenState extends State<AqaidGridScreen> {
       'en': 'Risalat & Khatm-e-Nabuwwat',
       'ur': 'عقیدہ رسالت و ختم نبوت',
       'image': 'assets/images/risalat.png',
-      'desc_ur': 'شانِ مصطفیٰ اور ختمِ نبوت',
+      'desc_ur': 'شانِ رسالت اور عقیدہ ختمِ نبوت کی اہمیت',
       'desc_en': 'Prophethood and Finality of Prophet Muhammad (ﷺ)',
     },
     {
       'id': 'ishq_rasool',
-      'en': 'Ishq-e-Rasool',
+      'en': 'Ishq-e-Rasool ﷺ',
       'ur': 'عشقِ رسول ﷺ',
       'image': 'assets/images/ishq_rasool.png',
-      'desc_ur': 'محبتِ رسول اصلِ ایمان',
-      'desc_en': 'Love for the Prophet is the core of Faith',
+      'desc_ur': 'محبت و تعظیمِ مصطفیٰ ﷺ اصلِ ایمان ہے',
+      'desc_en': 'Love for the Holy Prophet is the core of Faith',
     },
     {
       'id': 'sahaba_ahlebait',
       'en': 'Sahaba & Ahl-e-Bait',
       'ur': 'صحابہ و اہلِ بیت',
       'image': 'assets/images/sahaba.png',
-      'desc_ur': 'صحابہ کرام اور اہلِ بیتِ اطہار کی تعظیم',
+      'desc_ur': 'صحابہ کرام اور اہلِ بیتِ اطہار کی محبت و تعظیم',
       'desc_en': 'Reverence for Companions and Holy Household',
     },
     {
@@ -57,24 +56,24 @@ class _AqaidGridScreenState extends State<AqaidGridScreen> {
       'en': 'Wilayat & Awliya',
       'ur': 'مقامِ ولایت و اولیاء',
       'image': 'assets/images/wilayat.png',
-      'desc_ur': 'اولیاء اللہ کا مقام اور کرامات',
-      'desc_en': 'Status and miracles of Friends of Allah',
+      'desc_ur': 'اولیاء اللہ کا بلند مقام، فیض اور کرامات کا ثبوت',
+      'desc_en': 'Status and miracles of the Righteous Friends of Allah',
     },
     {
       'id': 'quran',
       'en': 'The Holy Quran',
       'ur': 'قرآنِ پاک',
       'image': 'assets/images/tauheed.png',
-      'desc_ur': 'کلامِ الٰہی کا اعجاز اور صداقت',
-      'desc_en': 'The Miracle and Truth of the Holy Quran',
+      'desc_ur': 'کلامِ الٰہی کا اعجاز، صداقت اور عظمت',
+      'desc_en': 'The Divine Miracle and Truth of the Holy Quran',
     },
     {
       'id': 'ahle_sunnat',
       'en': 'Ahle Sunnat wal Jama\'at',
       'ur': 'اہلِ سنت والجماعت',
       'image': 'assets/images/sahaba.png',
-      'desc_ur': 'سوادہ اعظم اور صحیح اسلامی عقائد',
-      'desc_en': 'The Main Body of Orthodox Islamic Creed',
+      'desc_ur': 'سوادہ اعظم، جمہور صحابہ اور صحیح اسلامی عقائد',
+      'desc_en': 'The Main Body of Authentic Islamic Creed',
     },
   ];
 
@@ -196,7 +195,6 @@ class _AqaidGridScreenState extends State<AqaidGridScreen> {
   }
 
   int _getTopicCountForCategory(String categoryId, List<AqaidItemModel> allEntries) {
-    if (categoryId == 'all') return allEntries.length;
     return allEntries.where((item) => item.categoryId.toLowerCase() == categoryId.toLowerCase()).length;
   }
 
@@ -248,42 +246,28 @@ class _AqaidGridScreenState extends State<AqaidGridScreen> {
               final allEntries = rawEntries.isNotEmpty ? rawEntries : _fallbackAqaid;
 
               final query = _searchQuery.trim().toLowerCase();
-              final filteredAqaid = allEntries.where((item) {
-                final matchesCat = _selectedCategory == 'all' ||
-                    item.categoryId.toLowerCase() == _selectedCategory.toLowerCase();
-
-                final titleEn = item.title.toLowerCase();
-                final titleUr = item.titleUr.toLowerCase();
-                final explEn = item.explanation.toLowerCase();
-                final explUr = item.explanationUr.toLowerCase();
-
-                final matchesQuery = query.isEmpty ||
-                    titleEn.contains(query) ||
-                    titleUr.contains(query) ||
-                    explEn.contains(query) ||
-                    explUr.contains(query);
-
-                return matchesCat && matchesQuery;
+              final filteredCategories = _categories.where((cat) {
+                if (query.isEmpty) return true;
+                final en = cat['en']!.toLowerCase();
+                final ur = cat['ur']!.toLowerCase();
+                final descEn = (cat['desc_en'] ?? '').toLowerCase();
+                final descUr = (cat['desc_ur'] ?? '').toLowerCase();
+                return en.contains(query) || ur.contains(query) || descEn.contains(query) || descUr.contains(query);
               }).toList();
 
-              final isSearching = query.isNotEmpty;
-              final isFiltered = _selectedCategory != 'all';
-
-              return SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 36),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 1. Search Bar
-                    Container(
+              return Column(
+                children: [
+                  // 1. Search Bar Header
+                  Container(
+                    color: AppColors.primaryEmerald,
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                    child: Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.borderLight),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
+                            color: Colors.black.withValues(alpha: 0.08),
                             blurRadius: 10,
                             offset: const Offset(0, 3),
                           ),
@@ -312,205 +296,62 @@ class _AqaidGridScreenState extends State<AqaidGridScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                  ),
 
-                    // 2. Horizontal Quick Filter Chips (All + Specific Categories)
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      child: Row(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: FilterChip(
-                              selected: _selectedCategory == 'all',
-                              selectedColor: AppColors.primaryEmerald,
-                              backgroundColor: AppColors.bgOffWhite,
-                              label: Text(
-                                isUrdu ? 'تمام موضوعات' : 'All Topics',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: _selectedCategory == 'all' ? FontWeight.bold : FontWeight.w500,
-                                  color: _selectedCategory == 'all' ? Colors.white : AppColors.textPrimary,
-                                ),
-                              ),
-                              onSelected: (selected) {
-                                setState(() => _selectedCategory = 'all');
-                              },
-                            ),
-                          ),
-                          ..._categories.map((cat) {
-                            final isSelected = _selectedCategory == cat['id'];
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: FilterChip(
-                                selected: isSelected,
-                                selectedColor: AppColors.primaryEmerald,
-                                backgroundColor: AppColors.bgOffWhite,
-                                label: Text(
-                                  isUrdu ? cat['ur']! : cat['en']!,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                    color: isSelected ? Colors.white : AppColors.textPrimary,
-                                  ),
-                                ),
-                                onSelected: (selected) {
-                                  setState(() {
-                                    _selectedCategory = selected ? cat['id']! : 'all';
-                                  });
-                                },
-                              ),
-                            );
-                          }),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // 3. Featured Image Grid Section (Shown when browsing or selected)
-                    if (!isSearching) ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            isUrdu ? 'بنیادی اسلامی عقائد' : 'Core Islamic Beliefs',
-                            style: AppTypography.headingMedium.copyWith(fontSize: 16),
-                          ),
-                          if (isFiltered)
-                            GestureDetector(
-                              onTap: () => setState(() => _selectedCategory = 'all'),
-                              child: Text(
-                                isUrdu ? 'تمام دیکھیں' : 'View All',
-                                style: const TextStyle(
-                                  color: AppColors.primaryEmerald,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Featured Full-Width Banner Card (Sahaba & Ahl-e-Bait)
-                      _buildCategoryCard(
-                        category: _categories.firstWhere((c) => c['id'] == 'sahaba_ahlebait'),
-                        topicCount: _getTopicCountForCategory('sahaba_ahlebait', allEntries),
-                        isUrdu: isUrdu,
-                        isSelected: _selectedCategory == 'sahaba_ahlebait',
-                        isBanner: true,
-                        onTap: () {
-                          setState(() {
-                            _selectedCategory = _selectedCategory == 'sahaba_ahlebait' ? 'all' : 'sahaba_ahlebait';
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 12),
-
-                      // 2-Column Responsive Image Grid for other Categories
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.95,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
-                        itemCount: _categories.where((c) => c['id'] != 'sahaba_ahlebait').length,
-                        itemBuilder: (context, index) {
-                          final catList = _categories.where((c) => c['id'] != 'sahaba_ahlebait').toList();
-                          final cat = catList[index];
-                          final count = _getTopicCountForCategory(cat['id']!, allEntries);
-                          final isSelected = _selectedCategory == cat['id'];
-
-                          return _buildCategoryCard(
-                            category: cat,
-                            topicCount: count,
-                            isUrdu: isUrdu,
-                            isSelected: isSelected,
-                            isBanner: false,
-                            onTap: () {
-                              setState(() {
-                                _selectedCategory = isSelected ? 'all' : cat['id']!;
-                              });
-                            },
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-
-                    // 4. Topic Articles Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          isSearching
-                              ? (isUrdu ? 'تلاش کے نتائج (${filteredAqaid.length})' : 'Search Results (${filteredAqaid.length})')
-                              : (isFiltered
-                                  ? (isUrdu ? 'مضامین و تفصیلات (${filteredAqaid.length})' : 'Category Topics (${filteredAqaid.length})')
-                                  : (isUrdu ? 'تمام مضامین و عقائد (${filteredAqaid.length})' : 'All Topics & Articles (${filteredAqaid.length})')),
-                          style: AppTypography.headingMedium.copyWith(fontSize: 16),
-                        ),
-                        if (isFiltered || isSearching)
-                          InkWell(
-                            onTap: () {
-                              _searchController.clear();
-                              setState(() {
-                                _searchQuery = '';
-                                _selectedCategory = 'all';
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(8),
+                  // 2. Full-Page Scrollable 2-Column Grid View
+                  Expanded(
+                    child: filteredCategories.isEmpty
+                        ? Center(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              child: Text(
-                                isUrdu ? 'ری سیٹ کریں' : 'Reset Filter',
-                                style: const TextStyle(
-                                  color: AppColors.primaryEmerald,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
+                              padding: const EdgeInsets.all(32),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.search_off_rounded, size: 48, color: Colors.grey),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    isUrdu ? 'کوئی کیٹیگری نہیں ملی' : 'No categories found',
+                                    style: AppTypography.headingMedium.copyWith(fontSize: 16),
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
+                          )
+                        : GridView.builder(
+                            physics: const BouncingScrollPhysics(),
+                            padding: const EdgeInsets.all(16),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: 0.95,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                            ),
+                            itemCount: filteredCategories.length,
+                            itemBuilder: (context, index) {
+                              final cat = filteredCategories[index];
+                              final count = _getTopicCountForCategory(cat['id']!, allEntries);
 
-                    // 5. Individual Topic Cards List or Empty State
-                    if (filteredAqaid.isEmpty)
-                      _buildEmptyState(isUrdu)
-                    else
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: filteredAqaid.length,
-                        itemBuilder: (context, index) {
-                          final aqaidItem = filteredAqaid[index];
-                          return _AqaidItemCard(
-                            item: aqaidItem,
-                            isUrdu: isUrdu,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => AqaidDetailScreen(item: aqaidItem),
-                                ),
+                              return _buildCategoryGridCard(
+                                key: ValueKey('aqaid_category_${cat['id']}'),
+                                category: cat,
+                                topicCount: count,
+                                isUrdu: isUrdu,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => AqaidCategoryDetailScreen(
+                                        category: cat,
+                                        allEntries: allEntries,
+                                      ),
+                                    ),
+                                  );
+                                },
                               );
                             },
-                          );
-                        },
-                      ),
-
-                    const SizedBox(height: 20),
-
-                    // 6. Did You Know? Informative Banner
-                    const _DidYouKnowBanner(),
-                  ],
-                ),
+                          ),
+                  ),
+                ],
               );
             },
           ),
@@ -519,40 +360,31 @@ class _AqaidGridScreenState extends State<AqaidGridScreen> {
     );
   }
 
-  // ── Modern Category Image Card Widget ─────────────────────────
-
-  Widget _buildCategoryCard({
+  Widget _buildCategoryGridCard({
+    Key? key,
     required Map<String, String> category,
     required int topicCount,
     required bool isUrdu,
-    required bool isSelected,
     required VoidCallback onTap,
-    bool isBanner = false,
   }) {
     final title = isUrdu ? category['ur']! : category['en']!;
     final imagePath = category['image']!;
     final countLabel = isUrdu ? '$topicCount موضوعات' : '$topicCount Topics';
 
     return Container(
-      height: isBanner ? 140 : null,
+      key: key,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isSelected ? AppColors.accentGold : Colors.transparent,
-          width: isSelected ? 2.5 : 0,
-        ),
         boxShadow: [
           BoxShadow(
-            color: isSelected
-                ? AppColors.primaryEmerald.withValues(alpha: 0.25)
-                : Colors.black.withValues(alpha: 0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         clipBehavior: Clip.antiAlias,
         child: Material(
           color: Colors.transparent,
@@ -583,7 +415,7 @@ class _AqaidGridScreenState extends State<AqaidGridScreen> {
                   },
                 ),
 
-                // 2. Dark Gradient Overlay for optimal text contrast
+                // 2. Dark Gradient Overlay for text contrast
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -607,21 +439,17 @@ class _AqaidGridScreenState extends State<AqaidGridScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.accentGold
-                          : Colors.black.withValues(alpha: 0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected
-                            ? AppColors.goldBright
-                            : Colors.white.withValues(alpha: 0.3),
+                        color: Colors.white.withValues(alpha: 0.3),
                         width: 0.8,
                       ),
                     ),
                     child: Text(
                       countLabel,
-                      style: TextStyle(
-                        color: isSelected ? const Color(0xFF78350F) : Colors.white,
+                      style: const TextStyle(
+                        color: Colors.white,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
@@ -629,7 +457,7 @@ class _AqaidGridScreenState extends State<AqaidGridScreen> {
                   ),
                 ),
 
-                // 4. Bottom Title & Description
+                // 4. Bottom Title
                 Padding(
                   padding: const EdgeInsets.all(12),
                   child: Column(
@@ -639,7 +467,7 @@ class _AqaidGridScreenState extends State<AqaidGridScreen> {
                       Text(
                         title,
                         style: TextStyle(
-                          fontSize: isBanner ? 19 : 16,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                           fontFamily: isUrdu ? 'UrduFont' : null,
@@ -665,80 +493,221 @@ class _AqaidGridScreenState extends State<AqaidGridScreen> {
       ),
     );
   }
+}
 
-  // ── Empty State Widget ────────────────────────────────────────
+/// Dedicated Screen displaying the specific articles/beliefs belonging ONLY to the selected category.
+class AqaidCategoryDetailScreen extends StatelessWidget {
+  final Map<String, String> category;
+  final List<AqaidItemModel> allEntries;
 
-  Widget _buildEmptyState(bool isUrdu) {
-    final isSearching = _searchQuery.trim().isNotEmpty;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.borderLight),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: const BoxDecoration(
-              color: AppColors.emeraldContainer,
-              shape: BoxShape.circle,
+  const AqaidCategoryDetailScreen({
+    super.key,
+    required this.category,
+    required this.allEntries,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: globalLanguageProvider,
+      builder: (context, _) {
+        final lp = globalLanguageProvider;
+        final isUrdu = lp.isUrdu;
+
+        final catId = category['id']!;
+        final catTitle = isUrdu ? category['ur']! : category['en']!;
+        final catDesc = isUrdu ? (category['desc_ur'] ?? '') : (category['desc_en'] ?? '');
+        final imagePath = category['image']!;
+
+        final categoryItems = allEntries
+            .where((item) => item.categoryId.toLowerCase() == catId.toLowerCase())
+            .toList();
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFF8FAFC),
+          appBar: AppBar(
+            backgroundColor: AppColors.primaryEmerald,
+            elevation: 0,
+            leading: const BackButton(color: Colors.white),
+            title: Text(
+              catTitle,
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 18),
             ),
-            child: Icon(
-              isSearching ? Icons.search_off_rounded : Icons.menu_book_outlined,
-              size: 36,
-              color: AppColors.primaryEmerald,
+            actions: [
+              GestureDetector(
+                onTap: () => lp.toggleLanguage(),
+                child: Container(
+                  margin: const EdgeInsetsDirectional.only(end: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(
+                    isUrdu ? 'EN' : 'اردو',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          body: categoryItems.isEmpty
+              ? _buildEmptyState(context, isUrdu)
+              : ListView.builder(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 36),
+                  itemCount: categoryItems.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      // Category Hero Header Card
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        height: 140,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.12),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          clipBehavior: Clip.antiAlias,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.asset(
+                                imagePath,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Container(color: AppColors.primaryEmerald),
+                              ),
+                              Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.black.withValues(alpha: 0.4),
+                                      Colors.black.withValues(alpha: 0.85),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      catTitle,
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                        fontFamily: isUrdu ? 'UrduFont' : null,
+                                      ),
+                                    ),
+                                    if (catDesc.isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        catDesc,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.white.withValues(alpha: 0.9),
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    final item = categoryItems[index - 1];
+                    return _AqaidItemCard(
+                      item: item,
+                      isUrdu: isUrdu,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AqaidDetailScreen(item: item),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context, bool isUrdu) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                color: AppColors.emeraldContainer,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.menu_book_outlined,
+                size: 40,
+                color: AppColors.primaryEmerald,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            isSearching
-                ? (isUrdu ? 'کوئی عقیدہ نہیں ملا' : 'No Aqaid Found')
-                : (isUrdu
-                    ? 'اس کیٹیگری میں فی الحال کوئی عقیدہ دستیاب نہیں ہے'
-                    : 'No topics available in this category yet'),
-            textAlign: TextAlign.center,
-            style: AppTypography.headingMedium.copyWith(fontSize: 16),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            isSearching
-                ? (isUrdu
-                    ? 'برائے مہربانی مختلف الفاظ کے ساتھ تلاش کریں یا تمام موضوعات منتخب کریں۔'
-                    : 'Please try searching with different keywords or selecting another category.')
-                : (isUrdu
-                    ? 'نیا مستند مواد جلد شامل کیا جائے گا۔ ان شاء اللہ'
-                    : 'New verified content will be added soon. Insha\'Allah.'),
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 13, color: Colors.grey, height: 1.3),
-          ),
-          const SizedBox(height: 16),
-          TextButton.icon(
-            onPressed: () {
-              _searchController.clear();
-              setState(() {
-                _searchQuery = '';
-                _selectedCategory = 'all';
-              });
-            },
-            icon: const Icon(Icons.refresh_rounded, size: 16, color: AppColors.primaryEmerald),
-            label: Text(
-              isSearching
-                  ? (isUrdu ? 'تلاش ختم کریں' : 'Clear Search')
-                  : (isUrdu ? 'تمام موضوعات دیکھیں' : 'View All Topics'),
-              style: const TextStyle(color: AppColors.primaryEmerald, fontWeight: FontWeight.bold),
+            const SizedBox(height: 16),
+            Text(
+              isUrdu ? 'اس کیٹیگری میں فی الحال کوئی عقیدہ دستیاب نہیں ہے' : 'No topics available in this category yet',
+              textAlign: TextAlign.center,
+              style: AppTypography.headingMedium.copyWith(fontSize: 16),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              isUrdu ? 'نیا مستند مواد جلد شامل کیا جائے گا۔ ان شاء اللہ' : 'New verified content will be added soon. Insha\'Allah.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13, color: Colors.grey, height: 1.3),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.arrow_back_rounded, size: 16),
+              label: Text(isUrdu ? 'واپس جائیں' : 'Go Back'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryEmerald,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-// ── One Card For Each Aqeeda ───────────────────────────────────────
+// ── One Card For Each Aqeeda Article ───────────────────────────────
 
 class _AqaidItemCard extends StatelessWidget {
   final AqaidItemModel item;
@@ -756,7 +725,6 @@ class _AqaidItemCard extends StatelessWidget {
     final title = item.getTitle(isUrdu);
     final explanation = item.getExplanation(isUrdu);
     final book = item.getBook(isUrdu);
-    final categoryTitle = _getCategoryTitle(item.categoryId, isUrdu);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -784,7 +752,7 @@ class _AqaidItemCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Category & Icon Row
+                // Top Row: Star indicator + Forward chevron
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -794,14 +762,14 @@ class _AqaidItemCard extends StatelessWidget {
                         color: AppColors.emeraldContainer,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Row(
+                      child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.star_rounded, size: 13, color: AppColors.primaryEmerald),
-                          const SizedBox(width: 4),
+                          Icon(Icons.star_rounded, size: 13, color: AppColors.primaryEmerald),
+                          SizedBox(width: 4),
                           Text(
-                            categoryTitle,
-                            style: const TextStyle(
+                            'مستند عقیدہ',
+                            style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                               color: AppColors.primaryEmerald,
@@ -900,99 +868,6 @@ class _AqaidItemCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  String _getCategoryTitle(String categoryId, bool isUrdu) {
-    switch (categoryId.toLowerCase()) {
-      case 'tawheed':
-        return isUrdu ? 'توحید' : 'Tawheed';
-      case 'risalat':
-        return isUrdu ? 'رسالت' : 'Risalat';
-      case 'ahle_sunnat':
-        return isUrdu ? 'اہلِ سنت' : 'Ahle Sunnat';
-      case 'quran':
-        return isUrdu ? 'قرآن پاک' : 'Quran';
-      case 'sahaba_ahlebait':
-        return isUrdu ? 'صحابہ و اہل بیت' : 'Sahaba o Ahlebait';
-      case 'ishq_rasool':
-        return isUrdu ? 'عشقِ رسول' : 'Ishq-e-Rasool';
-      case 'wilayat':
-        return isUrdu ? 'ولایت' : 'Wilayat';
-      default:
-        return isUrdu ? 'عقیدہ' : 'Aqeeda';
-    }
-  }
-}
-
-// ── Did You Know Banner ────────────────────────────────────────────
-
-class _DidYouKnowBanner extends StatelessWidget {
-  const _DidYouKnowBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    final lp = globalLanguageProvider;
-    final isUrdu = lp.isUrdu;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0F5132), Color(0xFF1B4332)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0F5132).withValues(alpha: 0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(Icons.lightbulb_rounded, color: AppColors.goldBright, size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isUrdu ? 'کیا آپ جانتے ہیں؟' : 'Did You Know?',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.goldBright,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  isUrdu
-                      ? 'صحیح اسلامی عقائد کا علم حاصل کرنا ہر مسلمان مرد اور عورت پر فرضِ عین ہے۔'
-                      : 'Acquiring the correct knowledge of Islamic Creed (Aqaid) is a personal obligation (Fard \'Ayn) upon every Muslim.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.9),
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

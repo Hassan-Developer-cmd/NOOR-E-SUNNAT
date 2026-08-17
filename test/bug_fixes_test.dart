@@ -22,19 +22,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Find Quran filter chip by predicate
-      final quranFilter = find.byWidgetPredicate(
-        (w) => w is FilterChip && (w.label is Text) &&
-            (((w.label as Text).data?.contains('Quran') ?? false) ||
-             ((w.label as Text).data?.contains('قرآن') ?? false)),
-      );
-      expect(quranFilter, findsOneWidget);
+      // Find Quran category card by ValueKey
+      final quranCard = find.byKey(const ValueKey('aqaid_category_quran'));
+      expect(quranCard, findsOneWidget);
 
-      await tester.ensureVisible(quranFilter);
-      await tester.tap(quranFilter, warnIfMissed: false);
+      await tester.tap(quranCard, warnIfMissed: false);
       await tester.pumpAndSettle();
 
-      // Verify that Quran Pak items are found and loaded (either English or Urdu title)
+      // Verify that Quran Pak items are found and loaded on the category detail screen
       final hasTitle = find.text('The Holy Quran: Eternal Word of Allah').evaluate().isNotEmpty ||
           find.text('قرآنِ مجید: اللہ تعالیٰ کا کلامِ غیر مخلوق').evaluate().isNotEmpty ||
           find.textContaining('Quran').evaluate().isNotEmpty ||
