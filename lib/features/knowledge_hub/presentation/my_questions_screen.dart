@@ -29,33 +29,61 @@ class _MyQuestionsScreenState extends State<MyQuestionsScreen> {
   Widget build(BuildContext context) {
     final lp = globalLanguageProvider;
     final isUrdu = lp.isUrdu;
-    final userId = FirebaseAuth.instance.currentUser?.uid ?? 'guest';
+    String userId = 'guest';
+    try {
+      userId = FirebaseAuth.instance.currentUser?.uid ?? 'guest';
+    } catch (_) {
+      userId = 'guest';
+    }
 
     return Scaffold(
       backgroundColor: AppColors.bgOffWhite,
       appBar: AppBar(
-        title: Text(isUrdu ? 'میرے سوالات و استفسارات' : 'My Questions & Q&A'),
+        titleSpacing: 0,
         backgroundColor: AppColors.primaryEmerald,
         elevation: 0,
+        leading: const BackButton(color: Colors.white),
+        title: Padding(
+          padding: const EdgeInsetsDirectional.only(end: 4),
+          child: Text(
+            isUrdu ? 'میرے سوالات و استفسارات' : 'My Questions & Inquiries',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_comment_rounded),
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+            icon: const Icon(Icons.add_comment_rounded, color: Colors.white, size: 20),
             tooltip: isUrdu ? 'نیا سوال پوچھیں' : 'Ask a Question',
             onPressed: () => AskQuestionSheet.show(context),
           ),
-          IconButton(
-            icon: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
+          Padding(
+            padding: const EdgeInsetsDirectional.only(end: 12, start: 2),
+            child: Center(
+              child: InkWell(
+                onTap: () => lp.toggleLanguage(),
                 borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                isUrdu ? 'EN' : 'اردو',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    isUrdu ? 'EN' : 'اردو',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                ),
               ),
             ),
-            onPressed: () => lp.toggleLanguage(),
           ),
         ],
       ),
@@ -200,7 +228,7 @@ class _MyQuestionsScreenState extends State<MyQuestionsScreen> {
                       )
                     : ListView.builder(
                         physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 92),
                         itemCount: filtered.length,
                         itemBuilder: (context, index) {
                           final q = filtered[index];
@@ -212,9 +240,11 @@ class _MyQuestionsScreenState extends State<MyQuestionsScreen> {
           );
         },
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.primaryEmerald,
         foregroundColor: Colors.white,
+        elevation: 4,
         onPressed: () => AskQuestionSheet.show(context),
         icon: const Icon(Icons.add_comment_rounded),
         label: Text(isUrdu ? 'سوال پوچھیں' : 'Ask Question'),

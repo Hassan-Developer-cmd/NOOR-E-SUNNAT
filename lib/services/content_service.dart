@@ -172,36 +172,44 @@ class ContentService {
 
   /// Live stream of Masail items from Firestore.
   static Stream<List<MasailItemModel>> get masailStream {
-    return _firestore
-        .collection('masail_entries')
-        .orderBy('created_at', descending: false)
-        .snapshots()
-        .map((snap) {
-      return snap.docs
-          .map((doc) => MasailItemModel.fromMap(doc.id, doc.data()))
-          .toList();
-    }).handleError((e) {
-      if (kDebugMode) print('ContentService masail error: $e');
-      return <MasailItemModel>[];
-    });
+    try {
+      return _firestore
+          .collection('masail_entries')
+          .orderBy('created_at', descending: false)
+          .snapshots()
+          .map((snap) {
+        return snap.docs
+            .map((doc) => MasailItemModel.fromMap(doc.id, doc.data()))
+            .toList();
+      }).handleError((e) {
+        if (kDebugMode) print('ContentService masail error: $e');
+        return <MasailItemModel>[];
+      });
+    } catch (_) {
+      return Stream.value(<MasailItemModel>[]);
+    }
   }
 
   // ── Aqaid ───────────────────────────────────────────────────
 
   /// Live stream of Aqaid items from Firestore.
   static Stream<List<AqaidItemModel>> get aqaidStream {
-    return _firestore
-        .collection('aqaid_entries')
-        .orderBy('created_at', descending: false)
-        .snapshots()
-        .map((snap) {
-      return snap.docs
-          .map((doc) => AqaidItemModel.fromMap(doc.id, doc.data()))
-          .toList();
-    }).handleError((e) {
-      if (kDebugMode) print('ContentService aqaid error: $e');
-      return <AqaidItemModel>[];
-    });
+    try {
+      return _firestore
+          .collection('aqaid_entries')
+          .orderBy('created_at', descending: false)
+          .snapshots()
+          .map((snap) {
+        return snap.docs
+            .map((doc) => AqaidItemModel.fromMap(doc.id, doc.data()))
+            .toList();
+      }).handleError((e) {
+        if (kDebugMode) print('ContentService aqaid error: $e');
+        return <AqaidItemModel>[];
+      });
+    } catch (_) {
+      return Stream.value(<AqaidItemModel>[]);
+    }
   }
 
   // ── Category Definitions & Filtering ──────────────────────────

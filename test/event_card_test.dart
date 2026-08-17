@@ -127,7 +127,7 @@ void main() {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: List.generate(events.length, (index) {
                         final isActive = index == activeIndex;
-                        return Container(
+                        return SizedBox(
                           key: ValueKey('dot_$index'),
                           width: isActive ? 22 : 7,
                           height: 7,

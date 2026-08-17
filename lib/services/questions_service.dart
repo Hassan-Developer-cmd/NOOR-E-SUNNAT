@@ -51,41 +51,55 @@ class QuestionsService {
 
   /// Live stream of questions submitted by a specific user.
   static Stream<List<QuestionModel>> getUserQuestionsStream(String userId) {
-    return _firestore
-        .collection('user_questions')
-        .where('user_id', isEqualTo: userId)
-        .snapshots()
-        .map((snap) {
-      final list = snap.docs
-          .map((doc) => QuestionModel.fromMap(doc.id, doc.data()))
-          .toList();
-      list.sort((a, b) {
-        final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        final bTime = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        return bTime.compareTo(aTime); // Newest first
+    try {
+      return _firestore
+          .collection('user_questions')
+          .where('user_id', isEqualTo: userId)
+          .snapshots()
+          .map((snap) {
+        final list = snap.docs
+            .map((doc) => QuestionModel.fromMap(doc.id, doc.data()))
+            .toList();
+        list.sort((a, b) {
+          final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final bTime = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          return bTime.compareTo(aTime); // Newest first
+        });
+        return list;
+      }).handleError((e) {
+        if (kDebugMode) print('QuestionsService error: $e');
+        return <QuestionModel>[];
       });
-      return list;
-    });
+    } catch (_) {
+      return Stream.value(<QuestionModel>[]);
+    }
   }
 
   /// Live stream of public answered questions for all users.
   static Stream<List<QuestionModel>> get publicAnsweredQuestionsStream {
-    return _firestore
-        .collection('user_questions')
-        .where('status', isEqualTo: 'Answered')
-        .where('is_public', isEqualTo: true)
-        .snapshots()
-        .map((snap) {
-      final list = snap.docs
-          .map((doc) => QuestionModel.fromMap(doc.id, doc.data()))
-          .toList();
-      list.sort((a, b) {
-        final aTime = a.answeredAt ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        final bTime = b.answeredAt ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        return bTime.compareTo(aTime);
+    try {
+      return _firestore
+          .collection('user_questions')
+          .where('status', isEqualTo: 'Answered')
+          .where('is_public', isEqualTo: true)
+          .snapshots()
+          .map((snap) {
+        final list = snap.docs
+            .map((doc) => QuestionModel.fromMap(doc.id, doc.data()))
+            .toList();
+        list.sort((a, b) {
+          final aTime = a.answeredAt ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final bTime = b.answeredAt ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          return bTime.compareTo(aTime);
+        });
+        return list;
+      }).handleError((e) {
+        if (kDebugMode) print('QuestionsService error: $e');
+        return <QuestionModel>[];
       });
-      return list;
-    });
+    } catch (_) {
+      return Stream.value(<QuestionModel>[]);
+    }
   }
 
   /// Deletes a question from Firestore by ID.

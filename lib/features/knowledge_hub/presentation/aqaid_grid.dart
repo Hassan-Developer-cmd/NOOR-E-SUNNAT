@@ -64,6 +64,61 @@ class _AqaidGridScreenState extends State<AqaidGridScreen> {
       book: 'Sharh Al-Aqaid Al-Nasafiyya',
       bookUr: 'شرح العقائد النسفیہ',
     ),
+    AqaidItemModel(
+      id: 'aq_4',
+      categoryId: 'quran',
+      title: 'The Holy Quran: Eternal Word of Allah',
+      titleUr: 'قرآنِ مجید: اللہ تعالیٰ کا کلامِ غیر مخلوق',
+      arabicText: 'وَإِنَّهُ لَتَنزِيلُ رَبِّ الْعَالَمِينَ',
+      explanation: 'The Holy Quran is the literal, eternal, and uncreated Word of Allah (Kalamullah), revealed to the Prophet Muhammad (ﷺ) through Archangel Jibril (AS). It is fully preserved, unaltered, and protected from any addition or omission for all times.',
+      explanationUr: 'قرآنِ مجید اللہ تبارک و تعالیٰ کا کلامِ پاک ہے جو غیر مخلوق اور ازلی ہے۔ یہ سیدنا محمد مصطفیٰ صلی اللہ علیہ وآلہ وسلم پر بذریعہ حضرت جبرائیل علیہ السلام نازل ہوا۔ اس کا ایک ایک حرف قیامت تک ہر قسم کے تغیر و تبدل سے محفوظ ہے۔',
+      book: 'Surah Ash-Shu\'ara (26:192) & Surah Al-Hijr (15:9)',
+      bookUr: 'سورۃ الشعراء (۱۹۲) اور سورۃ الحجر (۹)',
+    ),
+    AqaidItemModel(
+      id: 'aq_5',
+      categoryId: 'quran',
+      title: 'Inimitability & Miraculous Nature of the Quran',
+      titleUr: 'قرآنِ مجید کا اعجاز اور صداقت',
+      arabicText: 'قُل لَّئِنِ اجْتَمَعَتِ الإِنسُ وَالْجِنُّ عَلَى أَن يَأْتُواْ بِمِثْلِ هَـذَا الْقُرْآنِ لاَ يَأْتُونَ بِمِثْلِهِ',
+      explanation: 'The Quran is a living, everlasting miracle. Neither mankind nor the jinn can produce even a single chapter comparable to its profound wisdom, eloquence, and divine perfection.',
+      explanationUr: 'قرآنِ کریم ایک زندہ و پائندہ معجزہ ہے۔ جن و انس مل کر بھی اس جیسی ایک چھوٹی سے چھوٹی سورت پیش کرنے سے عاجز ہیں۔ اس کا اعجاز اور بلاغت ابدی ہے۔',
+      book: 'Surah Al-Isra (17:88)',
+      bookUr: 'سورۃ الاسراء (۸۸)',
+    ),
+    AqaidItemModel(
+      id: 'aq_6',
+      categoryId: 'sahaba_ahlebait',
+      title: 'Status of the Noble Sahaba & Blessed Ahl al-Bayt',
+      titleUr: 'صحابہ کرام اور اہلِ بیتِ اطہار کا بلند مقام',
+      arabicText: 'إِنَّمَا يُرِيدُ اللَّهُ لِيُذْهِبَ عَنكُمُ الرِّجْسَ أَهْلَ الْبَيْتِ وَيُطَهِّرَكُمْ تَطْهِيرًا',
+      explanation: 'Love for the pure Ahl al-Bayt and the honourable Sahaba (Companions) is an integral part of faith in Ahle Sunnat wal Jama\'at. Respecting and honoring all of them is an obligation upon every Muslim.',
+      explanationUr: 'اہلِ سنت کا متفقہ عقیدہ ہے کہ تمام صحابہ کرام عادل ہیں اور اہلِ بیتِ اطہار کی محبت جزوِ ایمان ہے۔ ان کی تکریم و تعظیم ہر مسلمان پر لازم ہے۔',
+      book: 'Surah Al-Ahzab (33:33)',
+      bookUr: 'سورۃ الاحزاب (۳۳)',
+    ),
+    AqaidItemModel(
+      id: 'aq_7',
+      categoryId: 'ishq_rasool',
+      title: 'Love for the Prophet (ﷺ) is the Core of Faith',
+      titleUr: 'عشقِ مصطفیٰ صلی اللہ علیہ وآلہ وسلم: اصلِ ایمان',
+      arabicText: 'لَا يُؤْمِنُ أَحَدُكُمْ حَتَّى أَكُونَ أَحَبَّ إِلَيْهِ مِنْ وَالِدِهِ وَوَلَدِهِ وَالنَّاسِ أَجْمَعِينَ',
+      explanation: 'True Iman is achieved only when the Messenger of Allah (ﷺ) is more beloved to the believer than their parents, children, wealth, and all humanity combined.',
+      explanationUr: 'حضور نبی اکرم صلی اللہ علیہ وآلہ وسلم کی ذاتِ اقدس سے سچی محبت اور والہانہ عشق ہر مسلمان پر اپنی جان، اولاد اور تمام کائنات سے بڑھ کر فرض ہے، یہی ایمان کی روح ہے۔',
+      book: 'Sahih al-Bukhari (15)',
+      bookUr: 'صحیح البخاری (۱۵)',
+    ),
+    AqaidItemModel(
+      id: 'aq_8',
+      categoryId: 'wilayat',
+      title: 'Status & Miracles of Awliya Allah (Friends of Allah)',
+      titleUr: 'مقامِ ولایت اور اولیاء اللہ کی کرامات کا برحق ہونا',
+      arabicText: 'أَلَا إِنَّ أَوْلِيَاءَ اللَّهِ لَا خَوْفٌ عَلَيْهِمْ وَلَا هُمْ يَحْزَنُونَ',
+      explanation: 'The Awliya (righteous saints and friends of Allah) are bestowed with divine closeness, and their karamat (miracles granted by Allah) are authentic and recognized by the creed of Ahle Sunnat.',
+      explanationUr: 'اولیاء اللہ کا وجود، ان کا فیض اور ان کی کرامات برحق ہیں۔ وہ اللہ کے برگزیدہ بندے ہیں جن پر کوئی خوف اور غم نہیں ہوتا۔ ان کا احترام و محبت باعثِ برکت ہے۔',
+      book: 'Surah Yunus (10:62)',
+      bookUr: 'سورۃ یونس (۶۲)',
+    ),
   ];
 
   @override
@@ -273,6 +328,7 @@ class _AqaidGridScreenState extends State<AqaidGridScreen> {
   }
 
   Widget _buildEmptyState(bool isUrdu) {
+    final isSearching = _searchQuery.trim().isNotEmpty;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(32),
@@ -290,20 +346,33 @@ class _AqaidGridScreenState extends State<AqaidGridScreen> {
               color: AppColors.emeraldContainer,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.search_off_rounded, size: 36, color: AppColors.primaryEmerald),
+            child: Icon(
+              isSearching ? Icons.search_off_rounded : Icons.menu_book_outlined,
+              size: 36,
+              color: AppColors.primaryEmerald,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
-            isUrdu ? 'کوئی عقیدہ نہیں ملا' : 'No Aqaid Found',
+            isSearching
+                ? (isUrdu ? 'کوئی عقیدہ نہیں ملا' : 'No Aqaid Found')
+                : (isUrdu
+                    ? 'اس کیٹیگری میں فی الحال کوئی عقیدہ دستیاب نہیں ہے'
+                    : 'No topics available in this category yet'),
+            textAlign: TextAlign.center,
             style: AppTypography.headingMedium.copyWith(fontSize: 16),
           ),
           const SizedBox(height: 8),
           Text(
-            isUrdu
-                ? 'براہ کرم سرچ کیورڈ تبدیل کریں یا تمام موضوعات منتخب کریں۔'
-                : 'Try adjusting your search query or selecting another category.',
+            isSearching
+                ? (isUrdu
+                    ? 'برائے مہربانی مختلف الفاظ کے ساتھ تلاش کریں یا تمام موضوعات منتخب کریں۔'
+                    : 'Please try searching with different keywords or selecting another category.')
+                : (isUrdu
+                    ? 'نیا مستند مواد جلد شامل کیا جائے گا۔ ان شاء اللہ'
+                    : 'New verified content will be added soon. Insha\'Allah.'),
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 13, color: Colors.grey),
+            style: const TextStyle(fontSize: 13, color: Colors.grey, height: 1.3),
           ),
           const SizedBox(height: 16),
           TextButton.icon(
@@ -316,7 +385,9 @@ class _AqaidGridScreenState extends State<AqaidGridScreen> {
             },
             icon: const Icon(Icons.refresh_rounded, size: 16, color: AppColors.primaryEmerald),
             label: Text(
-              isUrdu ? 'فلٹرز ختم کریں' : 'Reset Filters',
+              isSearching
+                  ? (isUrdu ? 'تلاش ختم کریں' : 'Clear Search')
+                  : (isUrdu ? 'تمام موضوعات دیکھیں' : 'View All Topics'),
               style: const TextStyle(color: AppColors.primaryEmerald, fontWeight: FontWeight.bold),
             ),
           ),
