@@ -302,7 +302,7 @@ class _UpcomingEventsSection extends StatefulWidget {
 
 class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
   late final PageController _pageController;
-  int _currentPage = 0;
+  int _eventIndex = 0;
 
   @override
   void initState() {
@@ -310,20 +310,23 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
     _pageController = PageController(viewportFraction: 1.0);
   }
 
-
   @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
   }
 
-  void _nextPage(int totalEvents) {
-    if (totalEvents <= 0) return;
-    final nextPage = (_currentPage + 1) % totalEvents;
-    _pageController.animateToPage(
-      nextPage,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
+  Widget _buildEventCard(EventModel event) {
+    return EventCard(
+      event: event,
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const UpcomingEventsScreen(),
+          ),
+        );
+      },
     );
   }
 
@@ -336,7 +339,7 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const SizedBox(
-            height: 170,
+            height: 175,
             child: Center(
               child: CircularProgressIndicator(
                 color: AppColors.primaryEmerald,
@@ -365,7 +368,7 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
 
         return Column(
           children: [
-            // Section Header with Title, Arrow Nav, and View All Button
+            // Section Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -377,94 +380,67 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Row(
-                  children: [
-                    if (events.length > 1)
-                      IconButton(
-                        visualDensity: VisualDensity.compact,
-                        icon: Icon(
-                          lp.isUrdu ? Icons.arrow_back_ios_new_rounded : Icons.arrow_forward_ios_rounded,
-                          size: 16,
-                          color: AppColors.primaryEmerald,
-                        ),
-                        onPressed: () => _nextPage(events.length),
-                        tooltip: lp.isUrdu ? 'اگلا پروگرام' : 'Next Event',
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const UpcomingEventsScreen(),
                       ),
-                    InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const UpcomingEventsScreen(),
-                          ),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                        child: Text(
-                          lp.tr('view_all'),
-                          style: const TextStyle(
-                            color: AppColors.primaryEmerald,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                          ),
-                        ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                    child: Text(
+                      lp.tr('view_all'),
+                      style: const TextStyle(
+                        color: AppColors.primaryEmerald,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
 
-            // PageView Carousel with Full-Width Isolated Event Cards
+            // Clean PageView Carousel
             SizedBox(
-              height: 155,
+              height: 175,
               child: PageView.builder(
                 controller: _pageController,
                 physics: const BouncingScrollPhysics(),
                 pageSnapping: true,
                 itemCount: events.length,
-                onPageChanged: (index) {
-                  setState(() => _currentPage = index);
+                onPageChanged: (idx) {
+                  setState(() => _eventIndex = idx);
                 },
                 itemBuilder: (context, index) {
                   final event = events[index];
-                  return RepaintBoundary(
-                    key: ValueKey('event_repaint_${event.id}'),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      child: EventCard(
-                        key: ValueKey('event_card_${event.id}'),
-                        event: event,
-                        width: double.infinity,
-                        onNextTap: events.length > 1 ? () => _nextPage(events.length) : null,
-                      ),
-                    ),
-                  );
+                  return _buildEventCard(event);
                 },
               ),
             ),
 
-
-
-
             const SizedBox(height: 10),
 
-            // Dynamic Page Indicator Dots
+            // Smooth Dot Indicator Row
             if (events.length > 1)
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(events.length, (index) {
-                  final isActive = index == _currentPage;
+                  final isActive = index == _eventIndex;
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 250),
                     margin: const EdgeInsets.symmetric(horizontal: 3),
-                    width: isActive ? 20 : 8,
-                    height: 8,
+                    width: isActive ? 22 : 7,
+                    height: 7,
                     decoration: BoxDecoration(
-                      color: isActive ? AppColors.primaryEmerald : const Color(0xFFCBD5E1),
+                      color: isActive
+                          ? AppColors.primaryEmerald
+                          : const Color(0xFFCBD5E1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   );
