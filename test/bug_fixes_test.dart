@@ -30,7 +30,8 @@ void main() {
       );
       expect(quranFilter, findsOneWidget);
 
-      await tester.tap(quranFilter);
+      await tester.ensureVisible(quranFilter);
+      await tester.tap(quranFilter, warnIfMissed: false);
       await tester.pumpAndSettle();
 
       // Verify that Quran Pak items are found and loaded (either English or Urdu title)
