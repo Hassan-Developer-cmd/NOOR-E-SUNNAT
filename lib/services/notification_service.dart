@@ -66,6 +66,9 @@ class InAppNotificationItem {
 class NotificationService {
   static final _firestore = FirebaseFirestore.instance;
   static const _lastReadPrefKey = 'last_read_notification_timestamp_ms';
+  static const _readIdsPrefKey = 'read_notification_ids_set';
+  static const _clearedIdsPrefKey = 'cleared_notification_ids_set';
+
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
@@ -73,15 +76,19 @@ class NotificationService {
   static StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
       _liveNotificationsSub;
   static final Set<String> _seenNotificationIds = {};
+  static final Set<String> _readNotificationIds = {};
+  static final Set<String> _clearedNotificationIds = {};
 
   /// Reactive notifiers for live UI updates
   static final ValueNotifier<int> unreadCountNotifier = ValueNotifier<int>(0);
   static final ValueNotifier<int> lastReadTimestampNotifier = ValueNotifier<int>(0);
+  static final ValueNotifier<Set<String>> readNotificationIdsNotifier = ValueNotifier<Set<String>>({});
+  static final ValueNotifier<Set<String>> clearedNotificationIdsNotifier = ValueNotifier<Set<String>>({});
 
   static int _lastReadMs = 0;
   static List<Map<String, dynamic>> _latestNotificationData = [];
 
-  /// Initializes local notifications and reads cached lastRead timestamp.
+  /// Initializes local notifications and reads cached state.
   static Future<void> initialize() async {
     if (_isInitialized) return;
 
@@ -89,6 +96,16 @@ class NotificationService {
       final prefs = await SharedPreferences.getInstance();
       _lastReadMs = prefs.getInt(_lastReadPrefKey) ?? 0;
       lastReadTimestampNotifier.value = _lastReadMs;
+
+      final savedReadIds = prefs.getStringList(_readIdsPrefKey) ?? [];
+      _readNotificationIds.clear();
+      _readNotificationIds.addAll(savedReadIds);
+      readNotificationIdsNotifier.value = Set.from(_readNotificationIds);
+
+      final savedClearedIds = prefs.getStringList(_clearedIdsPrefKey) ?? [];
+      _clearedNotificationIds.clear();
+      _clearedNotificationIds.addAll(savedClearedIds);
+      clearedNotificationIdsNotifier.value = Set.from(_clearedNotificationIds);
 
       if (!kIsWeb) {
         const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -133,6 +150,13 @@ class NotificationService {
   static void _recalculateUnread() {
     int count = 0;
     for (var data in _latestNotificationData) {
+      final docId = data['id'] as String?;
+      if (docId != null) {
+        if (_readNotificationIds.contains(docId) || _clearedNotificationIds.contains(docId)) {
+          continue;
+        }
+      }
+
       int? timeMs;
       final raw = data['sent_at'] ??
           data['created_at'] ??
@@ -158,7 +182,15 @@ class NotificationService {
     unreadCountNotifier.value = count;
   }
 
-  /// Checks if a specific notification timestamp is unread.
+  /// Checks if a specific notification item is unread.
+  static bool isItemUnread(InAppNotificationItem item) {
+    if (_readNotificationIds.contains(item.id)) return false;
+    if (_clearedNotificationIds.contains(item.id)) return false;
+    if (item.sentAt == null) return false;
+    return item.sentAt!.millisecondsSinceEpoch > _lastReadMs;
+  }
+
+  /// Legacy helper for timestamp checks.
   static bool isUnread(DateTime? sentAt) {
     if (sentAt == null) return false;
     return sentAt.millisecondsSinceEpoch > _lastReadMs;
@@ -170,46 +202,54 @@ class NotificationService {
 
     bool isFirstSnapshot = true;
 
-    _liveNotificationsSub = _firestore
-        .collection('notifications')
-        .snapshots()
-        .listen((snapshot) {
-      _latestNotificationData = snapshot.docs.map((d) => d.data()).toList();
-      _recalculateUnread();
+    try {
+      _liveNotificationsSub = _firestore
+          .collection('notifications')
+          .snapshots()
+          .listen((snapshot) {
+        _latestNotificationData = snapshot.docs.map((d) {
+          final data = Map<String, dynamic>.from(d.data());
+          data['id'] = d.id;
+          return data;
+        }).toList();
+        _recalculateUnread();
 
-      if (isFirstSnapshot) {
-        // Record all existing notification IDs so we do not spam notifications for old history on app boot
-        for (var doc in snapshot.docs) {
-          _seenNotificationIds.add(doc.id);
-        }
-        isFirstSnapshot = false;
-        return;
-      }
-
-      for (var change in snapshot.docChanges) {
-        if (change.type == DocumentChangeType.added) {
-          final doc = change.doc;
-          if (!_seenNotificationIds.contains(doc.id)) {
+        if (isFirstSnapshot) {
+          // Record all existing notification IDs so we do not spam notifications for old history on app boot
+          for (var doc in snapshot.docs) {
             _seenNotificationIds.add(doc.id);
-            final data = doc.data();
-            if (data != null) {
-              final title = (data['title'] as String? ?? 'Notification').trim();
-              final body = (data['body'] as String? ?? '').trim();
-              if (title.isNotEmpty || body.isNotEmpty) {
-                showHeadsUpNotification(
-                  id: doc.id.hashCode,
-                  title: title,
-                  body: body,
-                  payload: doc.id,
-                );
+          }
+          isFirstSnapshot = false;
+          return;
+        }
+
+        for (var change in snapshot.docChanges) {
+          if (change.type == DocumentChangeType.added) {
+            final doc = change.doc;
+            if (!_seenNotificationIds.contains(doc.id)) {
+              _seenNotificationIds.add(doc.id);
+              final data = doc.data();
+              if (data != null) {
+                final title = (data['title'] as String? ?? 'Notification').trim();
+                final body = (data['body'] as String? ?? '').trim();
+                if (title.isNotEmpty || body.isNotEmpty) {
+                  showHeadsUpNotification(
+                    id: doc.id.hashCode,
+                    title: title,
+                    body: body,
+                    payload: doc.id,
+                  );
+                }
               }
             }
           }
         }
-      }
-    }, onError: (e) {
-      if (kDebugMode) print('NotificationService live listener error: $e');
-    });
+      }, onError: (e) {
+        if (kDebugMode) print('NotificationService live listener error: $e');
+      });
+    } catch (e) {
+      if (kDebugMode) print('NotificationService startListeningToLiveNotifications error: $e');
+    }
   }
 
   /// Displays an immediate high-priority heads-up notification (like WhatsApp).
@@ -267,22 +307,27 @@ class NotificationService {
 
   /// Live stream of notifications ordered by newest first with robust client-side sorting.
   static Stream<List<InAppNotificationItem>> get notificationsStream {
-    return _firestore.collection('notifications').snapshots().map((snap) {
-      final list = snap.docs
-          .map((doc) => InAppNotificationItem.fromMap(doc.id, doc.data()))
-          .toList();
+    try {
+      return _firestore.collection('notifications').snapshots().map((snap) {
+        final list = snap.docs
+            .where((doc) => !_clearedNotificationIds.contains(doc.id))
+            .map((doc) => InAppNotificationItem.fromMap(doc.id, doc.data()))
+            .toList();
 
-      list.sort((a, b) {
-        final aTime = a.sentAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        final bTime = b.sentAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        return bTime.compareTo(aTime); // newest first
+        list.sort((a, b) {
+          final aTime = a.sentAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final bTime = b.sentAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          return bTime.compareTo(aTime); // newest first
+        });
+
+        return list;
+      }).handleError((e) {
+        if (kDebugMode) print('NotificationService stream error: $e');
+        return <InAppNotificationItem>[];
       });
-
-      return list;
-    }).handleError((e) {
-      if (kDebugMode) print('NotificationService stream error: $e');
-      return <InAppNotificationItem>[];
-    });
+    } catch (_) {
+      return Stream.value(<InAppNotificationItem>[]);
+    }
   }
 
   /// Real-time count of unread notifications stream.
@@ -305,28 +350,103 @@ class NotificationService {
     yield* controller.stream;
   }
 
+  /// Marks an individual notification as read instantly.
+  static Future<void> markAsRead(String id) async {
+    try {
+      _readNotificationIds.add(id);
+      readNotificationIdsNotifier.value = Set.from(_readNotificationIds);
+      _recalculateUnread();
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_readIdsPrefKey, _readNotificationIds.toList());
+    } catch (e) {
+      if (kDebugMode) print('NotificationService.markAsRead error: $e');
+    }
+  }
+
   /// Marks all current notifications as read instantly.
   static Future<void> markAllAsRead() async {
     try {
-      _lastReadMs = DateTime.now().millisecondsSinceEpoch + 1000;
+      int maxTimestamp = DateTime.now().millisecondsSinceEpoch;
+      for (var data in _latestNotificationData) {
+        final id = data['id'] as String?;
+        if (id != null) {
+          _readNotificationIds.add(id);
+        }
+
+        final raw = data['sent_at'] ??
+            data['created_at'] ??
+            data['timestamp'] ??
+            data['time'] ??
+            data['sentAt'] ??
+            data['createdAt'];
+        if (raw is Timestamp && raw.millisecondsSinceEpoch > maxTimestamp) {
+          maxTimestamp = raw.millisecondsSinceEpoch;
+        } else if (raw is int && raw > maxTimestamp) {
+          maxTimestamp = raw;
+        }
+      }
+
+      for (var id in _seenNotificationIds) {
+        _readNotificationIds.add(id);
+      }
+
+      _lastReadMs = maxTimestamp + 60000;
       lastReadTimestampNotifier.value = _lastReadMs;
-      _recalculateUnread(); // Instantly clears unread count to 0 in UI
+      readNotificationIdsNotifier.value = Set.from(_readNotificationIds);
+      unreadCountNotifier.value = 0; // Force immediate 0 count in badge
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_lastReadPrefKey, _lastReadMs);
+      await prefs.setStringList(_readIdsPrefKey, _readNotificationIds.toList());
     } catch (e) {
       if (kDebugMode) print('NotificationService.markAllAsRead error: $e');
+    }
+  }
+
+  /// Clears all notifications locally from user view.
+  static Future<void> clearAllNotificationsLocally() async {
+    try {
+      for (var data in _latestNotificationData) {
+        final id = data['id'] as String?;
+        if (id != null) {
+          _clearedNotificationIds.add(id);
+          _readNotificationIds.add(id);
+        }
+      }
+      for (var id in _seenNotificationIds) {
+        _clearedNotificationIds.add(id);
+        _readNotificationIds.add(id);
+      }
+
+      clearedNotificationIdsNotifier.value = Set.from(_clearedNotificationIds);
+      readNotificationIdsNotifier.value = Set.from(_readNotificationIds);
+      unreadCountNotifier.value = 0;
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_clearedIdsPrefKey, _clearedNotificationIds.toList());
+      await prefs.setStringList(_readIdsPrefKey, _readNotificationIds.toList());
+    } catch (e) {
+      if (kDebugMode) print('NotificationService.clearAllNotificationsLocally error: $e');
     }
   }
 
   /// Deletes a notification from Firestore by document ID.
   static Future<void> deleteNotification(String id) async {
     try {
+      _clearedNotificationIds.add(id);
+      _readNotificationIds.add(id);
+      clearedNotificationIdsNotifier.value = Set.from(_clearedNotificationIds);
+      readNotificationIdsNotifier.value = Set.from(_readNotificationIds);
+      _recalculateUnread();
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_clearedIdsPrefKey, _clearedNotificationIds.toList());
+
       await _firestore.collection('notifications').doc(id).delete();
       _seenNotificationIds.remove(id);
     } catch (e) {
       if (kDebugMode) print('NotificationService.deleteNotification error: $e');
-      rethrow;
     }
   }
 

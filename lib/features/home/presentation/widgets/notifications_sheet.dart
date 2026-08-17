@@ -14,11 +14,8 @@ class NotificationsSheet extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const NotificationsSheet(),
-    ).whenComplete(() {
-      NotificationService.markAllAsRead();
-    });
+    );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -72,23 +69,43 @@ class NotificationsSheet extends StatelessWidget {
                     ),
                   ],
                 ),
-                TextButton.icon(
-                  onPressed: () async {
-                    await NotificationService.markAllAsRead();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(isUrdu ? 'تمام پیغامات پڑھ لیے گئے ہیں' : 'All marked as read'),
-                          duration: const Duration(seconds: 1),
-                        ),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.done_all_rounded, size: 16, color: AppColors.primaryEmerald),
-                  label: Text(
-                    isUrdu ? 'سب پڑھا ہوا نشان زد کریں' : 'Mark all read',
-                    style: const TextStyle(fontSize: 12, color: AppColors.primaryEmerald, fontWeight: FontWeight.bold),
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () async {
+                        await NotificationService.markAllAsRead();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(isUrdu ? 'تمام پیغامات پڑھ لیے گئے ہیں' : 'All marked as read'),
+                              duration: const Duration(seconds: 1),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.done_all_rounded, size: 16, color: AppColors.primaryEmerald),
+                      label: Text(
+                        isUrdu ? 'سب پڑھا ہوا' : 'Mark all read',
+                        style: const TextStyle(fontSize: 12, color: AppColors.primaryEmerald, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_sweep_rounded, size: 20, color: Colors.grey),
+                      tooltip: isUrdu ? 'تمام صاف کریں' : 'Clear all',
+                      onPressed: () async {
+                        await NotificationService.clearAllNotificationsLocally();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(isUrdu ? 'تمام اعلانات صاف کر دیے گئے ہیں' : 'All notifications cleared'),
+                              duration: const Duration(seconds: 1),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -252,11 +269,14 @@ class _NotificationTile extends StatelessWidget {
     final body = item.getBody(isUrdu);
     final isEvent = item.eventId != null || item.type.startsWith('event_');
 
-    return ValueListenableBuilder<int>(
-      valueListenable: NotificationService.lastReadTimestampNotifier,
-      builder: (context, lastRead, child) {
-
-        final isUnread = NotificationService.isUnread(item.sentAt);
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        NotificationService.lastReadTimestampNotifier,
+        NotificationService.readNotificationIdsNotifier,
+        NotificationService.clearedNotificationIdsNotifier,
+      ]),
+      builder: (context, child) {
+        final isUnread = NotificationService.isItemUnread(item);
 
         return Container(
           decoration: BoxDecoration(
@@ -281,6 +301,7 @@ class _NotificationTile extends StatelessWidget {
             child: InkWell(
               borderRadius: BorderRadius.circular(16),
               onTap: () {
+                NotificationService.markAsRead(item.id);
                 if (isEvent) {
                   Navigator.pop(context);
                   Navigator.push(
@@ -408,5 +429,3 @@ class _NotificationTile extends StatelessWidget {
     );
   }
 }
-
-
