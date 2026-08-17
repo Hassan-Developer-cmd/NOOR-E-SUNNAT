@@ -316,8 +316,9 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
     super.dispose();
   }
 
-  Widget _buildEventCard(EventModel event) {
+  Widget _buildEventCard(EventModel event, String languageCode) {
     return EventCard(
+      key: ValueKey('event_card_${event.id}_$languageCode'),
       event: event,
       onTap: () {
         Navigator.push(
@@ -332,121 +333,130 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
 
   @override
   Widget build(BuildContext context) {
-    final lp = globalLanguageProvider;
+    return ListenableBuilder(
+      listenable: globalLanguageProvider,
+      builder: (context, _) {
+        final lp = globalLanguageProvider;
+        final languageCode = lp.locale.languageCode;
 
-    return StreamBuilder<List<EventModel>>(
-      stream: EventsService.eventsStream,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox(
-            height: 175,
-            child: Center(
-              child: CircularProgressIndicator(
-                color: AppColors.primaryEmerald,
-                strokeWidth: 2,
-              ),
-            ),
-          );
-        }
+        return StreamBuilder<List<EventModel>>(
+          stream: EventsService.eventsStream,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(
+                height: 175,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.primaryEmerald,
+                    strokeWidth: 2,
+                  ),
+                ),
+              );
+            }
 
-        final events = snapshot.data ?? [];
-        if (events.isEmpty) {
-          return Container(
-            height: 100,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.borderLight),
-            ),
-            child: Text(
-              lp.tr('no_upcoming_events'),
-              style: AppTypography.bodyMedium,
-            ),
-          );
-        }
+            final events = snapshot.data ?? [];
+            if (events.isEmpty) {
+              return Container(
+                height: 100,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.borderLight),
+                ),
+                child: Text(
+                  lp.tr('no_upcoming_events'),
+                  style: AppTypography.bodyMedium,
+                ),
+              );
+            }
 
-        return Column(
-          children: [
-            // Section Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            return Column(
               children: [
-                Expanded(
-                  child: Text(
-                    lp.tr('upcoming_events'),
-                    style: AppTypography.headingMedium,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const UpcomingEventsScreen(),
-                      ),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                    child: Text(
-                      lp.tr('view_all'),
-                      style: const TextStyle(
-                        color: AppColors.primaryEmerald,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
+                // Section Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        lp.tr('upcoming_events'),
+                        key: ValueKey('upcoming_events_title_$languageCode'),
+                        style: AppTypography.headingMedium,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const UpcomingEventsScreen(),
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        child: Text(
+                          lp.tr('view_all'),
+                          key: ValueKey('view_all_link_$languageCode'),
+                          style: const TextStyle(
+                            color: AppColors.primaryEmerald,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Clean PageView Carousel
+                SizedBox(
+                  height: 175,
+                  child: PageView.builder(
+                    key: ValueKey('events_pageview_$languageCode'),
+                    controller: _pageController,
+                    physics: const BouncingScrollPhysics(),
+                    pageSnapping: true,
+                    itemCount: events.length,
+                    onPageChanged: (idx) {
+                      setState(() => _eventIndex = idx);
+                    },
+                    itemBuilder: (context, index) {
+                      final event = events[index];
+                      return _buildEventCard(event, languageCode);
+                    },
                   ),
                 ),
+
+                const SizedBox(height: 10),
+
+                // Smooth Dot Indicator Row
+                if (events.length > 1)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(events.length, (index) {
+                      final isActive = index == _eventIndex;
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        width: isActive ? 22 : 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? AppColors.primaryEmerald
+                              : const Color(0xFFCBD5E1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      );
+                    }),
+                  ),
               ],
-            ),
-            const SizedBox(height: 12),
-
-            // Clean PageView Carousel
-            SizedBox(
-              height: 175,
-              child: PageView.builder(
-                controller: _pageController,
-                physics: const BouncingScrollPhysics(),
-                pageSnapping: true,
-                itemCount: events.length,
-                onPageChanged: (idx) {
-                  setState(() => _eventIndex = idx);
-                },
-                itemBuilder: (context, index) {
-                  final event = events[index];
-                  return _buildEventCard(event);
-                },
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            // Smooth Dot Indicator Row
-            if (events.length > 1)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(events.length, (index) {
-                  final isActive = index == _eventIndex;
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    width: isActive ? 22 : 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: isActive
-                          ? AppColors.primaryEmerald
-                          : const Color(0xFFCBD5E1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  );
-                }),
-              ),
-          ],
+            );
+          },
         );
       },
     );
