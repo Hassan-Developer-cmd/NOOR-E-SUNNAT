@@ -293,30 +293,10 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class _UpcomingEventsSection extends StatefulWidget {
+class _UpcomingEventsSection extends StatelessWidget {
   const _UpcomingEventsSection();
 
-  @override
-  State<_UpcomingEventsSection> createState() => _UpcomingEventsSectionState();
-}
-
-class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
-  late final PageController _pageController;
-  int _eventIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(viewportFraction: 0.93);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  Widget _buildEventCard(EventModel event, String languageCode) {
+  Widget _buildDirectEventCard(BuildContext context, EventModel event, String languageCode) {
     return EventCard(
       key: ValueKey('event_card_${event.id}_$languageCode'),
       event: event,
@@ -344,7 +324,7 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const SizedBox(
-                height: 175,
+                height: 180,
                 child: Center(
                   child: CircularProgressIndicator(
                     color: AppColors.primaryEmerald,
@@ -372,6 +352,7 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
             }
 
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Section Header
                 Row(
@@ -413,51 +394,22 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
                 ),
                 const SizedBox(height: 12),
 
-                // Clean PageView Carousel
+                // Bulletproof Horizontal Scrollable List
                 SizedBox(
-                  height: 175,
-                  child: PageView.builder(
-                    key: ValueKey('events_pageview_$languageCode'),
-                    controller: _pageController,
-                    physics: const BouncingScrollPhysics(
-                      parent: AlwaysScrollableScrollPhysics(),
-                    ),
-                    pageSnapping: true,
-                    padEnds: false,
+                  height: 180,
+                  child: ListView.separated(
+                    key: ValueKey('events_listview_$languageCode'),
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
                     clipBehavior: Clip.none,
                     itemCount: events.length,
-                    onPageChanged: (idx) {
-                      setState(() => _eventIndex = idx);
-                    },
+                    separatorBuilder: (context, index) => const SizedBox(width: 12),
                     itemBuilder: (context, index) {
                       final event = events[index];
-                      return _buildEventCard(event, languageCode);
+                      return _buildDirectEventCard(context, event, languageCode);
                     },
                   ),
                 ),
-
-                const SizedBox(height: 10),
-
-                // Smooth Dot Indicator Row
-                if (events.length > 1)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(events.length, (index) {
-                      final isActive = index == _eventIndex;
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        width: isActive ? 22 : 7,
-                        height: 7,
-                        decoration: BoxDecoration(
-                          color: isActive
-                              ? AppColors.primaryEmerald
-                              : const Color(0xFFCBD5E1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      );
-                    }),
-                  ),
               ],
             );
           },

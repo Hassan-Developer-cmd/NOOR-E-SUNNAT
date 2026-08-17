@@ -5,11 +5,13 @@ import '../../../../main.dart';
 class EventCard extends StatelessWidget {
   final EventModel event;
   final VoidCallback? onTap;
+  final double? width;
 
   const EventCard({
     super.key,
     required this.event,
     this.onTap,
+    this.width,
   });
 
   @override
@@ -31,9 +33,11 @@ class EventCard extends StatelessWidget {
             : primaryColor;
 
         final isLive = event.status.toLowerCase() == 'ongoing';
+        final cardWidth = width ?? (MediaQuery.of(context).size.width * 0.82).clamp(280.0, 340.0);
 
-        return Padding(
-          padding: const EdgeInsets.only(right: 10),
+        return SizedBox(
+          width: cardWidth,
+          height: 180,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
             clipBehavior: Clip.antiAlias,
@@ -45,8 +49,8 @@ class EventCard extends StatelessWidget {
                 splashColor: Colors.white.withValues(alpha: 0.15),
                 highlightColor: Colors.white.withValues(alpha: 0.08),
                 child: Ink(
-                  width: double.infinity,
-                  height: 175,
+                  width: cardWidth,
+                  height: 180,
                   decoration: BoxDecoration(
                     color: primaryColor,
                     borderRadius: BorderRadius.circular(16),
@@ -58,8 +62,8 @@ class EventCard extends StatelessWidget {
                     boxShadow: [
                       BoxShadow(
                         color: primaryColor.withValues(alpha: 0.35),
-                        blurRadius: 12,
-                        offset: const Offset(0, 5),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),

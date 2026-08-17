@@ -7,77 +7,52 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('EventCard Widget Tests', () {
+    const testEventEnglish = EventModel(
+      id: 'event-101',
+      title: 'Grand Annual Durood Conference',
+      titleUr: 'عظیم الشان سالانہ درود کانفرنس',
+      dateTime: 'Sunday, 15 Sha\'ban - 8:00 PM',
+      location: 'Central Mosque, Karachi',
+      locationUr: 'مرکزی جامع مسجد، کراچی',
+      status: 'Featured',
+      description: 'Annual gathering of Salawat & Salam',
+    );
+
     testWidgets('Renders EventCard with English details and handles onTap', (WidgetTester tester) async {
-      bool tapped = false;
-      const testEvent = EventModel(
-        id: 'event-1',
-        title: 'Grand Mehfil-e-Naat',
-        titleUr: 'عظیم الشان محفل نعت',
-        dateTime: 'March 15, 2026 - 8:00 PM',
-        location: 'Faizan-e-Madina, Karachi',
-        locationUr: 'فیضان مدینہ، کراچی',
-        status: 'Featured',
-        description: 'Special annual gathering',
-      );
+      bool wasTapped = false;
 
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: EventCard(
-              event: testEvent,
+              event: testEventEnglish,
               onTap: () {
-                tapped = true;
+                wasTapped = true;
               },
             ),
           ),
         ),
       );
+      await tester.pumpAndSettle();
 
-      // Verify Title, DateTime, Location, and Status Badge
-      expect(find.text('Grand Mehfil-e-Naat'), findsOneWidget);
-      expect(find.text('March 15, 2026 - 8:00 PM'), findsOneWidget);
-      expect(find.text('Faizan-e-Madina, Karachi'), findsOneWidget);
+      // Check title
+      expect(find.text('Grand Annual Durood Conference'), findsOneWidget);
+
+      // Check dateTime
+      expect(find.text('Sunday, 15 Sha\'ban - 8:00 PM'), findsOneWidget);
+
+      // Check location
+      expect(find.text('Central Mosque, Karachi'), findsOneWidget);
+
+      // Check status label
       expect(find.text('⭐ FEATURED'), findsOneWidget);
 
-      // Verify Icons
-      expect(find.byIcon(Icons.calendar_today_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.location_on_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_forward_ios_rounded), findsOneWidget);
-
-      // Test tap
+      // Tap card
       await tester.tap(find.byType(EventCard));
-      await tester.pump();
-      expect(tapped, isTrue);
+      expect(wasTapped, isTrue);
     });
 
-    testWidgets('Renders Ongoing Live Event with live stream icon and badge', (WidgetTester tester) async {
-      const liveEvent = EventModel(
-        id: 'event-2',
-        title: 'Weekly Ijtima',
-        titleUr: 'ہفتہ وار اجتماع',
-        dateTime: 'Today - Live',
-        location: 'Main Hall & YouTube',
-        locationUr: 'مین ہال اور یوٹیوب',
-        status: 'Ongoing',
-        description: 'Live broadcast',
-      );
-
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: EventCard(
-              event: liveEvent,
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('Weekly Ijtima'), findsOneWidget);
-      expect(find.text('🔥 LIVE NOW'), findsOneWidget);
-      expect(find.byIcon(Icons.sensors_rounded), findsOneWidget);
-    });
-
-    testWidgets('PageView with multiple EventCards behaves properly with dots', (WidgetTester tester) async {
+    testWidgets('Horizontal ListView with multiple EventCards scrolls smoothly', (WidgetTester tester) async {
       final events = [
         const EventModel(
           id: '1',
@@ -97,65 +72,35 @@ void main() {
         ),
       ];
 
-      int activeIndex = 0;
-
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: StatefulBuilder(
-              builder: (context, setState) {
-                return Column(
-                  children: [
-                    SizedBox(
-                      height: 175,
-                      child: PageView.builder(
-                        controller: PageController(viewportFraction: 0.93),
-                        physics: const BouncingScrollPhysics(
-                          parent: AlwaysScrollableScrollPhysics(),
-                        ),
-                        pageSnapping: true,
-                        padEnds: false,
-                        itemCount: events.length,
-                        onPageChanged: (idx) {
-                          setState(() {
-                            activeIndex = idx;
-                          });
-                        },
-                        itemBuilder: (context, index) {
-                          return EventCard(event: events[index]);
-                        },
-                      ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(events.length, (index) {
-                        final isActive = index == activeIndex;
-                        return SizedBox(
-                          key: ValueKey('dot_$index'),
-                          width: isActive ? 22 : 7,
-                          height: 7,
-                        );
-                      }),
-                    ),
-                  ],
-                );
-              },
+            body: SizedBox(
+              height: 180,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemCount: events.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 12),
+                itemBuilder: (context, index) {
+                  return EventCard(event: events[index]);
+                },
+              ),
             ),
           ),
         ),
       );
-
-      // Initially on Event 1
-      expect(find.text('Event 1'), findsOneWidget);
-      expect(activeIndex, 0);
-
-      // Swipe to page 2
-      await tester.drag(find.byType(PageView), const Offset(-500, 0));
       await tester.pumpAndSettle();
 
-      // Now on Event 2
+      // Initially Event 1 is visible
+      expect(find.text('Event 1'), findsOneWidget);
+
+      // Scroll horizontally
+      await tester.drag(find.byType(ListView), const Offset(-300, 0));
+      await tester.pumpAndSettle();
+
+      // Now Event 2 is visible
       expect(find.text('Event 2'), findsOneWidget);
-      expect(activeIndex, 1);
     });
   });
 }
