@@ -4,6 +4,7 @@ import '../../../../core/constants/app_typography.dart';
 import '../../../../main.dart';
 import '../../../../services/notification_service.dart';
 import '../../../events/presentation/events_screen.dart';
+import '../../../knowledge_hub/presentation/my_questions_screen.dart';
 
 class NotificationsSheet extends StatelessWidget {
   const NotificationsSheet({super.key});
@@ -42,33 +43,36 @@ class NotificationsSheet extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Header
+          // Header Row with robust overflow prevention
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.emeraldContainer,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.notifications_active_rounded,
-                        color: AppColors.primaryEmerald,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      isUrdu ? 'اعلانات و اطلاعات' : 'Notifications',
-                      style: AppTypography.headingMedium.copyWith(fontSize: 18),
-                    ),
-                  ],
+                // Left Icon + Title
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.emeraldContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.notifications_active_rounded,
+                    color: AppColors.primaryEmerald,
+                    size: 20,
+                  ),
                 ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    isUrdu ? 'اعلانات و اطلاعات' : 'Notifications',
+                    style: AppTypography.headingMedium.copyWith(fontSize: 17),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+
+                // Right Action Buttons (Mark all read & Clear all)
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -84,15 +88,26 @@ class NotificationsSheet extends StatelessWidget {
                           );
                         }
                       },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        visualDensity: VisualDensity.compact,
+                      ),
                       icon: const Icon(Icons.done_all_rounded, size: 16, color: AppColors.primaryEmerald),
                       label: Text(
                         isUrdu ? 'سب پڑھا ہوا' : 'Mark all read',
-                        style: const TextStyle(fontSize: 12, color: AppColors.primaryEmerald, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.primaryEmerald,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete_sweep_rounded, size: 20, color: Colors.grey),
                       tooltip: isUrdu ? 'تمام صاف کریں' : 'Clear all',
+                      padding: const EdgeInsets.all(6),
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      visualDensity: VisualDensity.compact,
                       onPressed: () async {
                         await NotificationService.clearAllNotificationsLocally();
                         if (context.mounted) {
@@ -167,7 +182,7 @@ class NotificationsSheet extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final item = items[index];
                     return Dismissible(
-                      key: Key(item.id),
+                      key: ValueKey(item.id),
                       direction: DismissDirection.endToStart,
                       background: Container(
                         alignment: Alignment.centerRight,
@@ -214,6 +229,8 @@ class _NotificationTile extends StatelessWidget {
         return Icons.campaign_rounded;
       case 'event_update':
         return Icons.star_rounded;
+      case 'question_answered':
+        return Icons.mark_chat_read_rounded;
       case 'daily_reminder':
         return Icons.auto_awesome_rounded;
       case 'important':
@@ -229,6 +246,8 @@ class _NotificationTile extends StatelessWidget {
         return const Color(0xFF0284C7);
       case 'event_update':
         return AppColors.accentGold;
+      case 'question_answered':
+        return const Color(0xFF059669);
       case 'daily_reminder':
         return const Color(0xFF8B5CF6);
       case 'important':
@@ -244,6 +263,8 @@ class _NotificationTile extends StatelessWidget {
         return const Color(0xFFE0F2FE);
       case 'event_update':
         return AppColors.goldLight;
+      case 'question_answered':
+        return const Color(0xFFD1FAE5);
       case 'daily_reminder':
         return const Color(0xFFF3E8FF);
       case 'important':
@@ -263,11 +284,33 @@ class _NotificationTile extends StatelessWidget {
     return '${dt.day}/${dt.month}/${dt.year}';
   }
 
+  void _handleNavigation(BuildContext context) {
+    NotificationService.markAsRead(item.id);
+
+    final isEvent = item.eventId != null || item.type.startsWith('event_');
+    final isQA = item.type == 'question_answered' || item.type.contains('question');
+
+    if (isEvent) {
+      Navigator.pop(context);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const UpcomingEventsScreen()),
+      );
+    } else if (isQA) {
+      Navigator.pop(context);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const MyQuestionsScreen()),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final title = item.getTitle(isUrdu);
     final body = item.getBody(isUrdu);
     final isEvent = item.eventId != null || item.type.startsWith('event_');
+    final isQA = item.type == 'question_answered' || item.type.contains('question');
 
     return ListenableBuilder(
       listenable: Listenable.merge([
@@ -300,16 +343,7 @@ class _NotificationTile extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(16),
-              onTap: () {
-                NotificationService.markAsRead(item.id);
-                if (isEvent) {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const UpcomingEventsScreen()),
-                  );
-                }
-              },
+              onTap: () => _handleNavigation(context),
               child: Padding(
                 padding: const EdgeInsets.all(14),
                 child: Row(
@@ -344,13 +378,13 @@ class _NotificationTile extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
 
-                    // Content
+                    // Content Column
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Header row inside card: Title (Expanded) + SizedBox(8) + Timestamp + SizedBox(8) + Dismiss X
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Expanded(
                                 child: Text(
@@ -366,7 +400,7 @@ class _NotificationTile extends StatelessWidget {
                                 ),
                               ),
                               if (item.sentAt != null) ...[
-                                const SizedBox(width: 6),
+                                const SizedBox(width: 8),
                                 Text(
                                   _formatTime(item.sentAt),
                                   style: TextStyle(
@@ -380,9 +414,28 @@ class _NotificationTile extends StatelessWidget {
                                   ),
                                 ),
                               ],
+                              const SizedBox(width: 8),
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () async {
+                                  await NotificationService.deleteNotification(item.id);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.close_rounded,
+                                    size: 14,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 6),
                           Text(
                             body,
                             style: const TextStyle(
@@ -391,33 +444,30 @@ class _NotificationTile extends StatelessWidget {
                               height: 1.4,
                             ),
                           ),
-                          if (isEvent) ...[
+                          if (isEvent || isQA) ...[
                             const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Text(
-                                  isUrdu ? 'ایونٹ کی تفصیلات دیکھیں ←' : 'View event details →',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.primaryEmerald,
+                            GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => _handleNavigation(context),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    isEvent
+                                        ? (isUrdu ? 'ایونٹ کی تفصیلات دیکھیں ←' : 'View event details →')
+                                        : (isUrdu ? 'سوال کا جواب دیکھیں ←' : 'View question answer →'),
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primaryEmerald,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ],
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 16, color: Colors.grey),
-                      tooltip: isUrdu ? 'حذف کریں' : 'Delete',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                      onPressed: () async {
-                        await NotificationService.deleteNotification(item.id);
-                      },
                     ),
                   ],
                 ),

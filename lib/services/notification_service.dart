@@ -359,6 +359,13 @@ class NotificationService {
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(_readIdsPrefKey, _readNotificationIds.toList());
+
+      try {
+        await _firestore.collection('notifications').doc(id).update({
+          'is_read': true,
+          'read_at': FieldValue.serverTimestamp(),
+        });
+      } catch (_) {}
     } catch (e) {
       if (kDebugMode) print('NotificationService.markAsRead error: $e');
     }
@@ -399,6 +406,21 @@ class NotificationService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_lastReadPrefKey, _lastReadMs);
       await prefs.setStringList(_readIdsPrefKey, _readNotificationIds.toList());
+
+      // Attempt remote Firestore batch update if connected
+      try {
+        final snap = await _firestore.collection('notifications').get();
+        if (snap.docs.isNotEmpty) {
+          final batch = _firestore.batch();
+          for (var doc in snap.docs) {
+            batch.update(doc.reference, {
+              'is_read': true,
+              'read_at': FieldValue.serverTimestamp(),
+            });
+          }
+          await batch.commit();
+        }
+      } catch (_) {}
     } catch (e) {
       if (kDebugMode) print('NotificationService.markAllAsRead error: $e');
     }
