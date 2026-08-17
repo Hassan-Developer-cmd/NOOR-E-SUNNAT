@@ -322,7 +322,7 @@ class _AqaidGridScreenState extends State<AqaidGridScreen> {
                             padding: const EdgeInsets.all(16),
                             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
-                              childAspectRatio: 0.95,
+                              childAspectRatio: 0.90,
                               crossAxisSpacing: 12,
                               mainAxisSpacing: 12,
                             ),
@@ -459,15 +459,16 @@ class _AqaidGridScreenState extends State<AqaidGridScreen> {
 
                 // 4. Bottom Title
                 Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.end,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         title,
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                           fontFamily: isUrdu ? 'UrduFont' : null,
@@ -567,7 +568,7 @@ class AqaidCategoryDetailScreen extends StatelessWidget {
                       // Category Hero Header Card
                       return Container(
                         margin: const EdgeInsets.only(bottom: 16),
-                        height: 140,
+                        constraints: const BoxConstraints(minHeight: 140),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
@@ -582,40 +583,49 @@ class AqaidCategoryDetailScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(20),
                           clipBehavior: Clip.antiAlias,
                           child: Stack(
-                            fit: StackFit.expand,
+                            alignment: Alignment.bottomLeft,
                             children: [
-                              Image.asset(
-                                imagePath,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => Container(color: AppColors.primaryEmerald),
+                              Positioned.fill(
+                                child: Image.asset(
+                                  imagePath,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Container(color: AppColors.primaryEmerald),
+                                ),
                               ),
-                              Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      Colors.transparent,
-                                      Colors.black.withValues(alpha: 0.4),
-                                      Colors.black.withValues(alpha: 0.85),
-                                    ],
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Colors.transparent,
+                                        Colors.black.withValues(alpha: 0.45),
+                                        Colors.black.withValues(alpha: 0.92),
+                                      ],
+                                      stops: const [0.15, 0.55, 1.0],
+                                    ),
                                   ),
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.all(16),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                                 child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       catTitle,
                                       style: TextStyle(
-                                        fontSize: 20,
+                                        fontSize: 19,
                                         fontWeight: FontWeight.bold,
                                         color: Colors.white,
                                         fontFamily: isUrdu ? 'UrduFont' : null,
+                                        height: 1.25,
                                       ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                     if (catDesc.isNotEmpty) ...[
                                       const SizedBox(height: 4),
@@ -624,6 +634,7 @@ class AqaidCategoryDetailScreen extends StatelessWidget {
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: Colors.white.withValues(alpha: 0.9),
+                                          height: 1.3,
                                         ),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
