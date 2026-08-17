@@ -42,7 +42,23 @@ class ContentService {
     isTopicOfTheDay: true,
   );
 
-  /// Live stream of active Daily Hadiths list (Topic of the day first, then newest).
+  static final DailyContentModel defaultTopicOfTheDay = const DailyContentModel(
+    id: 'default_topic',
+    type: 'topicOfTheDay',
+    title: 'Virtue of Abundant Durood on Blessed Friday',
+    titleUr: 'جمعۃ المبارک کے دن کثرت سے درود شریف پڑھنے کی فضیلت',
+    arabicText: 'أَكْثِرُوا عَلَيَّ مِنَ الصَّلَاةِ فِي يَوْمِ الْجُمُعَةِ فَإِنَّ صَلَاتَكُمْ مَعْرُوضَةٌ عَلَيَّ',
+    content:
+        'Increase your recitations of Salawat upon me on Friday, for your Salawat are directly presented to me.',
+    contentUr:
+        'جمعہ کے دن مجھ پر کثرت سے درود بھیجا کرو، کیونکہ تمہارا درود مجھ پر پیش کیا جاتا ہے۔',
+    citation: 'Sunan Abi Dawud 1047',
+    citationUr: 'سنن ابی داؤد ۱۰۴۷',
+    isActive: true,
+    isTopicOfTheDay: true,
+  );
+
+  /// Live stream of active Daily Hadiths list (newest first).
   static Stream<List<DailyContentModel>> get dailyHadithsStream {
     return _firestore
         .collection('daily_content')
@@ -68,7 +84,7 @@ class ContentService {
     });
   }
 
-  /// Live stream of active Daily Ayats list (Topic of the day first, then newest).
+  /// Live stream of active Daily Ayats list (newest first).
   static Stream<List<DailyContentModel>> get dailyAyatsStream {
     return _firestore
         .collection('daily_content')
@@ -94,7 +110,7 @@ class ContentService {
     });
   }
 
-  /// Live stream of all active Topic of the Day entries (both Hadith and Ayat).
+  /// Live stream of all active Topic of the Day entries.
   static Stream<List<DailyContentModel>> get topicsOfTheDayStream {
     return _firestore
         .collection('daily_content')
@@ -112,10 +128,10 @@ class ContentService {
       });
 
       if (items.isNotEmpty) return items;
-      return [defaultHadith, defaultAyat];
+      return [defaultTopicOfTheDay, defaultHadith, defaultAyat];
     }).handleError((e) {
       if (kDebugMode) print('ContentService.topicsOfTheDayStream error: $e');
-      return [defaultHadith, defaultAyat];
+      return [defaultTopicOfTheDay, defaultHadith, defaultAyat];
     });
   }
 

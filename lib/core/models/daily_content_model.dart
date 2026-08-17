@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DailyContentModel {
   final String id;
-  final String type; // 'hadith' or 'ayat'
+  final String type; // 'hadith', 'ayat', or 'topicOfTheDay' / 'topic_of_the_day'
   final String title;
   final String titleUr;
   final String arabicText;
@@ -12,7 +12,7 @@ class DailyContentModel {
   final String citationUr;
   final String imageUrl;
   final bool isActive;
-  final bool isTopicOfTheDay;
+  final bool isTopicOfTheDayFlag;
   final DateTime? scheduledDate;
   final DateTime? createdAt;
 
@@ -28,10 +28,21 @@ class DailyContentModel {
     this.citationUr = '',
     this.imageUrl = '',
     this.isActive = true,
-    this.isTopicOfTheDay = false,
+    bool isTopicOfTheDay = false,
     this.scheduledDate,
     this.createdAt,
-  });
+  }) : isTopicOfTheDayFlag = isTopicOfTheDay;
+
+  bool get isTopicOfTheDay {
+    final normalized = type.toLowerCase();
+    return normalized == 'topicoftheday' ||
+        normalized == 'topic_of_the_day' ||
+        normalized == 'topic' ||
+        isTopicOfTheDayFlag;
+  }
+
+  bool get isHadith => type.toLowerCase() == 'hadith';
+  bool get isAyat => type.toLowerCase() == 'ayat';
 
   factory DailyContentModel.fromMap(String id, Map<String, dynamic> map) {
     DateTime? date;
@@ -50,7 +61,6 @@ class DailyContentModel {
       created = DateTime.tryParse(rawCreated);
     }
 
-    // Dynamic field resolving for 100% Firestore schema compatibility
     final resolvedTitle = (map['title'] ??
             map['title_en'] ??
             map['titleEn'] ??
@@ -208,9 +218,6 @@ class DailyContentModel {
     );
   }
 
-  bool get isHadith => type.toLowerCase() == 'hadith';
-  bool get isAyat => type.toLowerCase() == 'ayat';
-
   static bool _containsUrduOrArabic(String text) {
     return RegExp(r'[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]').hasMatch(text);
   }
@@ -223,7 +230,7 @@ class DailyContentModel {
       return isAyat ? 'آج کی آیتِ مبارکہ' : 'آج کی حدیث مبارکہ';
     } else {
       if (title.isNotEmpty && !_containsUrduOrArabic(title)) return title;
-      if (isTopicOfTheDay) return 'Topic of the day';
+      if (isTopicOfTheDay) return 'Topic of the Day';
       return isAyat ? 'DAILY AYAT' : 'DAILY HADITH';
     }
   }
@@ -250,6 +257,7 @@ class DailyContentModel {
       if (citation.isNotEmpty) {
         return citation.startsWith('حوالہ:') ? citation : 'حوالہ: $citation';
       }
+      if (isTopicOfTheDay) return 'حوالہ: منتخب کتب و احادیث';
       return isAyat ? 'حوالہ: سورۃ الاحزاب (۳۳:۵۶)' : 'حوالہ: صحیح مسلم ۴۰۸';
     } else {
       if (citation.isNotEmpty && !_containsUrduOrArabic(citation)) {
@@ -257,6 +265,7 @@ class DailyContentModel {
       }
       if (citation.isNotEmpty) return citation;
       if (citationUr.isNotEmpty) return citationUr;
+      if (isTopicOfTheDay) return 'Reference: Selected Islamic Texts';
       return isAyat ? 'Reference: Surah Al-Ahzab (33:56)' : 'Reference: Sahih Muslim 408';
     }
   }

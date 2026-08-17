@@ -759,51 +759,35 @@ class _DailyContentArchiveSheetState extends State<_DailyContentArchiveSheet> {
                           children: [
                             Row(
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 7, vertical: 3),
-                                  margin: const EdgeInsetsDirectional.only(end: 6),
-                                  decoration: BoxDecoration(
-                                    color: entry.isAyat
-                                        ? const Color(0xFFEDE9FE)
-                                        : AppColors.emeraldContainer,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    entry.isAyat
-                                        ? (isUrdu ? 'آیت مبارکہ' : 'AYAT')
-                                        : (isUrdu ? 'حدیث مبارکہ' : 'HADITH'),
-                                    style: TextStyle(
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
-                                      color: entry.isAyat
-                                          ? const Color(0xFF6D28D9)
-                                          : AppColors.primaryEmerald,
-                                    ),
-                                  ),
-                                ),
-                                if (isTop) ...[
                                   Container(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 6, vertical: 3),
+                                        horizontal: 7, vertical: 3),
                                     margin: const EdgeInsetsDirectional.only(end: 6),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFFEF3C7),
+                                      color: entry.isAyat
+                                          ? const Color(0xFFEDE9FE)
+                                          : (entry.isTopicOfTheDay
+                                              ? const Color(0xFFFEF3C7)
+                                              : AppColors.emeraldContainer),
                                       borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                          color: AppColors.accentGold
-                                              .withValues(alpha: 0.5)),
                                     ),
                                     child: Text(
-                                      isUrdu ? 'خاص موضوع ⭐' : 'TOPIC ⭐',
-                                      style: const TextStyle(
-                                        fontSize: 8.5,
+                                      entry.isAyat
+                                          ? (isUrdu ? 'آیت مبارکہ' : 'AYAT')
+                                          : (entry.isTopicOfTheDay
+                                              ? (isUrdu ? 'خاص موضوع ⭐' : 'TOPIC ⭐')
+                                              : (isUrdu ? 'حدیث مبارکہ' : 'HADITH')),
+                                      style: TextStyle(
+                                        fontSize: 9,
                                         fontWeight: FontWeight.bold,
-                                        color: Color(0xFF854D0E),
+                                        color: entry.isAyat
+                                            ? const Color(0xFF6D28D9)
+                                            : (entry.isTopicOfTheDay
+                                                ? const Color(0xFF854D0E)
+                                                : AppColors.primaryEmerald),
                                       ),
                                     ),
                                   ),
-                                ],
                                 Expanded(
                                   child: Text(
                                     eTitle,

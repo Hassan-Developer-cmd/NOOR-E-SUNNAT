@@ -1627,62 +1627,73 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
               const DataColumn(label: Text('Book / Reference', style: TextStyle(fontWeight: FontWeight.bold))),
               const DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
               const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
-            ], items.map((d) => DataRow(cells: [
-              DataCell(_statusChip(
-                d.type.toUpperCase(),
-                d.isAyat ? const Color(0xFFEDE9FE) : AppColors.emeraldContainer,
-                d.isAyat ? const Color(0xFF6D28D9) : AppColors.primaryEmerald,
-              )),
-              DataCell(Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(d.title.isNotEmpty ? d.title : (d.isAyat ? 'Daily Ayat' : 'Daily Hadith'), style: const TextStyle(fontWeight: FontWeight.w600)),
-                  if (d.titleUr.isNotEmpty)
-                    Text(d.titleUr, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                ],
-              )),
-              DataCell(
-                GestureDetector(
-                  onTap: () async {
-                    await AdminService.setTopicOfTheDay(d.id, !d.isTopicOfTheDay, type: d.type);
-                    final typeLabel = d.isAyat ? 'Ayat Topic of the Day' : 'Hadith Topic of the Day';
-                    _snack(d.isTopicOfTheDay ? '$typeLabel deactivated.' : '"${d.title.isNotEmpty ? d.title : typeLabel}" set as active $typeLabel! ⭐');
-                  },
-                  child: _statusChip(
-                    d.isTopicOfTheDay
-                        ? (d.isAyat ? '⭐ AYAT TOPIC' : '⭐ HADITH TOPIC')
-                        : 'STANDARD',
-                    d.isTopicOfTheDay ? AppColors.goldLight : Colors.grey[200]!,
-                    d.isTopicOfTheDay ? AppColors.goldDark : Colors.grey[700]!,
+            ], items.map((d) {
+              Color chipBg = AppColors.emeraldContainer;
+              Color chipFg = AppColors.primaryEmerald;
+              String typeLabel = 'HADITH';
+
+              if (d.isAyat) {
+                chipBg = const Color(0xFFEDE9FE);
+                chipFg = const Color(0xFF6D28D9);
+                typeLabel = 'AYAT';
+              } else if (d.isTopicOfTheDay) {
+                chipBg = const Color(0xFFFEF3C7);
+                chipFg = const Color(0xFF854D0E);
+                typeLabel = 'TOPIC';
+              }
+
+              return DataRow(cells: [
+                DataCell(_statusChip(typeLabel, chipBg, chipFg)),
+                DataCell(Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(d.title.isNotEmpty ? d.title : (d.isAyat ? 'Daily Ayat' : (d.isTopicOfTheDay ? 'Topic of the Day' : 'Daily Hadith')),
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    if (d.titleUr.isNotEmpty)
+                      Text(d.titleUr, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                  ],
+                )),
+                DataCell(
+                  GestureDetector(
+                    onTap: () async {
+                      await AdminService.setTopicOfTheDay(d.id, !d.isTopicOfTheDay, type: d.type);
+                      final label = d.isAyat ? 'Ayat Topic of the Day' : (d.isHadith ? 'Hadith Topic of the Day' : 'Topic of the Day');
+                      _snack(d.isTopicOfTheDay ? '$label deactivated.' : '"${d.title.isNotEmpty ? d.title : label}" set as active $label! ⭐');
+                    },
+                    child: _statusChip(
+                      d.isTopicOfTheDay ? '⭐ ACTIVE TOPIC' : 'STANDARD',
+                      d.isTopicOfTheDay ? AppColors.goldLight : Colors.grey[200]!,
+                      d.isTopicOfTheDay ? AppColors.goldDark : Colors.grey[700]!,
+                    ),
                   ),
                 ),
-              ),
-              DataCell(Text(d.citation.isNotEmpty ? d.citation : d.citationUr, style: const TextStyle(fontSize: 12))),
-              DataCell(
-                GestureDetector(
-                  onTap: () async {
-                    await AdminService.toggleDailyContentActive(d.id, !d.isActive);
-                    _snack(d.isActive ? 'Entry marked inactive.' : 'Entry activated!');
-                  },
-                  child: _statusChip(
-                    d.isActive ? 'ACTIVE' : 'INACTIVE',
-                    d.isActive ? AppColors.emeraldContainer : Colors.grey[200]!,
-                    d.isActive ? AppColors.primaryEmerald : Colors.grey[600]!,
+                DataCell(Text(d.citation.isNotEmpty ? d.citation : d.citationUr, style: const TextStyle(fontSize: 12))),
+                DataCell(
+                  GestureDetector(
+                    onTap: () async {
+                      await AdminService.toggleDailyContentActive(d.id, !d.isActive);
+                      _snack(d.isActive ? 'Entry marked inactive.' : 'Entry activated!');
+                    },
+                    child: _statusChip(
+                      d.isActive ? 'ACTIVE' : 'INACTIVE',
+                      d.isActive ? AppColors.emeraldContainer : Colors.grey[200]!,
+                      d.isActive ? AppColors.primaryEmerald : Colors.grey[600]!,
+                    ),
                   ),
                 ),
-              ),
-              DataCell(Row(children: [
-                IconButton(
-                  icon: const Icon(Icons.edit, size: 18, color: AppColors.primaryEmerald),
-                  onPressed: () => _showEditDailyContentModal(context, d),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                  onPressed: () => _confirmDelete(context, () => AdminService.deleteDailyContent(d.id)),
-                ),
-              ])),
-            ])).toList()),
+                DataCell(Row(children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit, size: 18, color: AppColors.primaryEmerald),
+                    onPressed: () => _showEditDailyContentModal(context, d),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                    onPressed: () => _confirmDelete(context, () => AdminService.deleteDailyContent(d.id)),
+                  ),
+                ])),
+              ]);
+            }).toList()),
           ],
         );
       },
@@ -2595,91 +2606,148 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModal) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Add Hadith / Ayat of the Day', style: AppTypography.titleMedium),
-          content: SizedBox(
-            width: _dialogWidth(context),
-            child: SingleChildScrollView(
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                DropdownButtonFormField<String>(
-                  initialValue: type,
-                  decoration: const InputDecoration(labelText: 'Content Type', border: OutlineInputBorder()),
-                  items: const [
-                    DropdownMenuItem(value: 'hadith', child: Text('Hadith (حدیثِ مبارکہ)')),
-                    DropdownMenuItem(value: 'ayat', child: Text('Ayat (آیتِ مبارکہ)')),
+        builder: (ctx, setModal) {
+          final isHadithType = type == 'hadith';
+          final isAyatType = type == 'ayat';
+          final isTopicType = type == 'topicOfTheDay' || type == 'topic_of_the_day';
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text(
+              isHadithType
+                  ? 'Add Daily Hadith (حدیثِ مبارکہ)'
+                  : (isAyatType
+                      ? 'Add Daily Ayat (آیتِ مبارکہ)'
+                      : 'Add Topic of the Day (آج کا خاص موضوع)'),
+              style: AppTypography.titleMedium,
+            ),
+            content: SizedBox(
+              width: _dialogWidth(context),
+              child: SingleChildScrollView(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  DropdownButtonFormField<String>(
+                    initialValue: type,
+                    decoration: const InputDecoration(labelText: 'Content Type', border: OutlineInputBorder()),
+                    items: const [
+                      DropdownMenuItem(value: 'hadith', child: Text('Hadith (حدیثِ مبارکہ)')),
+                      DropdownMenuItem(value: 'ayat', child: Text('Ayat (آیتِ مبارکہ)')),
+                      DropdownMenuItem(value: 'topicOfTheDay', child: Text('Topic of the Day (آج کا خاص موضوع)')),
+                    ],
+                    onChanged: (v) => setModal(() {
+                      type = v ?? 'hadith';
+                      if (type == 'topicOfTheDay') {
+                        isTopicOfTheDay = true;
+                      }
+                    }),
+                  ),
+                  const SizedBox(height: 12),
+                  if (!isTopicType) ...[
+                    SwitchListTile(
+                      title: Text(
+                        'Set as Active ${isAyatType ? 'Ayat' : 'Hadith'} Topic of the Day ⭐',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                      subtitle: Text(
+                        'Highlights this ${isAyatType ? 'Ayat' : 'Hadith'} in the "Topic of the Day" section on the mobile app.',
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                      value: isTopicOfTheDay,
+                      activeThumbColor: AppColors.primaryEmerald,
+                      onChanged: (val) => setModal(() => isTopicOfTheDay = val),
+                      contentPadding: EdgeInsets.zero,
+                    ),
                   ],
-                  onChanged: (v) => setModal(() => type = v ?? 'hadith'),
-                ),
-                const SizedBox(height: 12),
-                SwitchListTile(
-                  title: Text(
-                    'Set as Active ${type == 'ayat' ? 'Ayat' : 'Hadith'} Topic of the Day ⭐',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  SwitchListTile(
+                    title: const Text('Active Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    subtitle: const Text('Active entries are available in the daily rotation and mobile cards.', style: TextStyle(fontSize: 11)),
+                    value: isActive,
+                    activeThumbColor: AppColors.primaryEmerald,
+                    onChanged: (val) => setModal(() => isActive = val),
+                    contentPadding: EdgeInsets.zero,
                   ),
-                  subtitle: Text(
-                    'Highlights this ${type == 'ayat' ? 'Ayat' : 'Hadith'} in the "Topic of the Day" section on the mobile app.',
-                    style: const TextStyle(fontSize: 11),
-                  ),
-                  value: isTopicOfTheDay,
-                  activeThumbColor: AppColors.primaryEmerald,
-                  onChanged: (val) => setModal(() => isTopicOfTheDay = val),
-                  contentPadding: EdgeInsets.zero,
-                ),
-                SwitchListTile(
-                  title: const Text('Active Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  subtitle: const Text('Active entries are available in the daily rotation and home card.', style: TextStyle(fontSize: 11)),
-                  value: isActive,
-                  activeThumbColor: AppColors.primaryEmerald,
-                  onChanged: (val) => setModal(() => isActive = val),
-                  contentPadding: EdgeInsets.zero,
-                ),
-                const SizedBox(height: 12),
-                _field(titleC, 'Title (English)', hintText: type == 'ayat' ? 'e.g. Virtue of Sending Durood (Quran)' : 'e.g. Ten Blessings upon sending Salawat'),
-                const SizedBox(height: 12),
-                _field(titleUrC, 'Title (Urdu / اردو)', hintText: type == 'ayat' ? 'مثلاً: درود شریف کی قرآنی فضیلت' : 'مثلاً: ایک بار درود پر دس رحمتیں'),
-                const SizedBox(height: 12),
-                _field(arabicC, 'Arabic Text', maxLines: 2, hintText: 'القرآن الكريم / الحديث الشريف'),
-                const SizedBox(height: 12),
-                _field(contentC, 'Content / Translation (English)', maxLines: 3),
-                const SizedBox(height: 12),
-                _field(contentUrC, 'Content / Translation (Urdu / اردو)', maxLines: 3),
-                const SizedBox(height: 12),
-                _field(citC, 'Book / Surah Reference (English)', hintText: type == 'ayat' ? 'e.g., Surah Al-Ahzab (33:56)' : 'e.g., Sahih Muslim 408'),
-                const SizedBox(height: 12),
-                _field(citUrC, 'Book / Surah Reference (Urdu / اردو)', hintText: type == 'ayat' ? 'مثلاً: سورۃ الاحزاب (۳۳:۵۶)' : 'مثلاً: صحیح مسلم ۴۰۸'),
-                const SizedBox(height: 12),
-                _field(imgC, 'Image URL (Optional)'),
-              ]),
+                  const SizedBox(height: 12),
+
+                  // ── Dynamic Form Inputs based on Content Type ──
+                  if (isHadithType) ...[
+                    _field(titleC, 'Hadith Topic / Badge Title (English)', hintText: 'e.g. Virtue of Sending Durood on Friday'),
+                    const SizedBox(height: 12),
+                    _field(titleUrC, 'Hadith Topic / Badge Title (Urdu / اردو)', hintText: 'مثلاً: جمعۃ المبارک کے دن درود شریف کے فضائل'),
+                    const SizedBox(height: 12),
+                    _field(arabicC, 'Arabic Text (Hadith Matn)', maxLines: 2, hintText: 'الحديث الشريف'),
+                    const SizedBox(height: 12),
+                    _field(contentC, 'English Translation', maxLines: 3, hintText: 'Whoever sends blessings upon me once...'),
+                    const SizedBox(height: 12),
+                    _field(contentUrC, 'Urdu Translation / اردو ترجمہ', maxLines: 3, hintText: 'جو شخص مجھ پر ایک بار درود بھیجتا ہے...'),
+                    const SizedBox(height: 12),
+                    _field(citC, 'Reference / Book (English)', hintText: 'e.g., Sahih Muslim 408 / Sahih al-Bukhari 6357'),
+                    const SizedBox(height: 12),
+                    _field(citUrC, 'Reference / Book (Urdu / اردو)', hintText: 'مثلاً: صحیح مسلم ۴۰۸ / صحیح البخاری ۶۳۵۷'),
+                  ] else if (isAyatType) ...[
+                    _field(titleC, 'Ayah Topic / Title (English)', hintText: 'e.g. Divine Command of Salawat & Salam'),
+                    const SizedBox(height: 12),
+                    _field(titleUrC, 'Ayah Topic / Title (Urdu / اردو)', hintText: 'مثلاً: درود و سلام بھیجنے کا قرآنی حکم'),
+                    const SizedBox(height: 12),
+                    _field(arabicC, 'Arabic Text with Diacritics (Ayah Text)', maxLines: 2, hintText: 'القرآن الكريم مع اعراب'),
+                    const SizedBox(height: 12),
+                    _field(contentC, 'English Translation', maxLines: 3, hintText: 'Indeed, Allah and His angels send blessings upon the Prophet...'),
+                    const SizedBox(height: 12),
+                    _field(contentUrC, 'Urdu Translation / اردو ترجمہ', maxLines: 3, hintText: 'بے شک اللہ اور اس کے فرشتے نبی پر درود بھیجتے ہیں...'),
+                    const SizedBox(height: 12),
+                    _field(citC, 'Surah Name & Ayah Number (English)', hintText: 'e.g., Surah Al-Ahzab (33:56)'),
+                    const SizedBox(height: 12),
+                    _field(citUrC, 'Surah Name & Ayah Number (Urdu / اردو)', hintText: 'مثلاً: سورۃ الاحزاب (۳۳:۵۶)'),
+                  ] else ...[
+                    _field(titleC, 'Topic Title (English)', hintText: 'e.g. Spiritual Excellence of Constant Durood'),
+                    const SizedBox(height: 12),
+                    _field(titleUrC, 'Topic Title (Urdu / اردو)', hintText: 'مثلاً: کثرتِ درود پاک کے روحانی و ایمانی برکات'),
+                    const SizedBox(height: 12),
+                    _field(arabicC, 'Arabic Quote / Key Reference (Optional)', maxLines: 2, hintText: 'آیت یا حدیث کا عربی اقتباس (اختیاری)'),
+                    const SizedBox(height: 12),
+                    _field(contentC, 'Detailed Explanation / Summary (English)', maxLines: 4, hintText: 'Key insights and wisdom on this topic...'),
+                    const SizedBox(height: 12),
+                    _field(contentUrC, 'Detailed Explanation / Summary (Urdu / اردو)', maxLines: 4, hintText: 'موضوع کی جامع تفصیل و خلاصہ...'),
+                    const SizedBox(height: 12),
+                    _field(citC, 'Key Takeaway / Reference / Source (English)', hintText: 'e.g., Dalail al-Khayrat / Ihya Ulum al-Din'),
+                    const SizedBox(height: 12),
+                    _field(citUrC, 'Key Takeaway / Reference / Source (Urdu / اردو)', hintText: 'مثلاً: دلائل الخیرات / فضائلِ درود'),
+                  ],
+
+                  const SizedBox(height: 12),
+                  _field(imgC, 'Image URL (Optional)'),
+                ]),
+              ),
             ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            ElevatedButton(
-              onPressed: () async {
-                await AdminService.addDailyContent(DailyContentModel(
-                  id: '',
-                  type: type,
-                  title: titleC.text.trim(),
-                  titleUr: titleUrC.text.trim(),
-                  arabicText: arabicC.text.trim(),
-                  content: contentC.text.trim(),
-                  contentUr: contentUrC.text.trim(),
-                  citation: citC.text.trim(),
-                  citationUr: citUrC.text.trim(),
-                  imageUrl: imgC.text.trim(),
-                  isActive: isActive,
-                  isTopicOfTheDay: isTopicOfTheDay,
-                ));
-                if (ctx.mounted) {
-                  Navigator.pop(ctx);
-                  _snack('Daily ${type == 'ayat' ? 'Ayat' : 'Hadith'} entry saved successfully!');
-                }
-              },
-              child: const Text('Save Entry'),
-            ),
-          ],
-        ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              ElevatedButton(
+                onPressed: () async {
+                  await AdminService.addDailyContent(DailyContentModel(
+                    id: '',
+                    type: type,
+                    title: titleC.text.trim(),
+                    titleUr: titleUrC.text.trim(),
+                    arabicText: arabicC.text.trim(),
+                    content: contentC.text.trim(),
+                    contentUr: contentUrC.text.trim(),
+                    citation: citC.text.trim(),
+                    citationUr: citUrC.text.trim(),
+                    imageUrl: imgC.text.trim(),
+                    isActive: isActive,
+                    isTopicOfTheDay: isTopicType ? true : isTopicOfTheDay,
+                  ));
+                  if (ctx.mounted) {
+                    Navigator.pop(ctx);
+                    final typeLabel = isTopicType
+                        ? 'Topic of the Day'
+                        : (isAyatType ? 'Daily Ayat' : 'Daily Hadith');
+                    _snack('$typeLabel saved successfully!');
+                  }
+                },
+                child: const Text('Save Entry'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -2700,90 +2768,137 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModal) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Edit Daily Content Entry', style: AppTypography.titleMedium),
-          content: SizedBox(
-            width: _dialogWidth(context),
-            child: SingleChildScrollView(
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                DropdownButtonFormField<String>(
-                  initialValue: type,
-                  decoration: const InputDecoration(labelText: 'Content Type', border: OutlineInputBorder()),
-                  items: const [
-                    DropdownMenuItem(value: 'hadith', child: Text('Hadith (حدیثِ مبارکہ)')),
-                    DropdownMenuItem(value: 'ayat', child: Text('Ayat (آیتِ مبارکہ)')),
+        builder: (ctx, setModal) {
+          final isHadithType = type == 'hadith';
+          final isAyatType = type == 'ayat';
+          final isTopicType = type == 'topicOfTheDay' || type == 'topic_of_the_day';
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('Edit Daily Content Entry', style: AppTypography.titleMedium),
+            content: SizedBox(
+              width: _dialogWidth(context),
+              child: SingleChildScrollView(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  DropdownButtonFormField<String>(
+                    initialValue: type,
+                    decoration: const InputDecoration(labelText: 'Content Type', border: OutlineInputBorder()),
+                    items: const [
+                      DropdownMenuItem(value: 'hadith', child: Text('Hadith (حدیثِ مبارکہ)')),
+                      DropdownMenuItem(value: 'ayat', child: Text('Ayat (آیتِ مبارکہ)')),
+                      DropdownMenuItem(value: 'topicOfTheDay', child: Text('Topic of the Day (آج کا خاص موضوع)')),
+                    ],
+                    onChanged: (v) => setModal(() {
+                      type = v ?? 'hadith';
+                      if (type == 'topicOfTheDay') {
+                        isTopicOfTheDay = true;
+                      }
+                    }),
+                  ),
+                  const SizedBox(height: 12),
+                  if (!isTopicType) ...[
+                    SwitchListTile(
+                      title: Text(
+                        'Set as Active ${isAyatType ? 'Ayat' : 'Hadith'} Topic of the Day ⭐',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                      subtitle: Text(
+                        'Highlights this ${isAyatType ? 'Ayat' : 'Hadith'} in the "Topic of the Day" section on the mobile app.',
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                      value: isTopicOfTheDay,
+                      activeThumbColor: AppColors.primaryEmerald,
+                      onChanged: (val) => setModal(() => isTopicOfTheDay = val),
+                      contentPadding: EdgeInsets.zero,
+                    ),
                   ],
-                  onChanged: (v) => setModal(() => type = v ?? 'hadith'),
-                ),
-                const SizedBox(height: 12),
-                SwitchListTile(
-                  title: Text(
-                    'Set as Active ${type == 'ayat' ? 'Ayat' : 'Hadith'} Topic of the Day ⭐',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  SwitchListTile(
+                    title: const Text('Active Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    subtitle: const Text('Active entries are available in the daily rotation and mobile cards.', style: TextStyle(fontSize: 11)),
+                    value: isActive,
+                    activeThumbColor: AppColors.primaryEmerald,
+                    onChanged: (val) => setModal(() => isActive = val),
+                    contentPadding: EdgeInsets.zero,
                   ),
-                  subtitle: Text(
-                    'Highlights this ${type == 'ayat' ? 'Ayat' : 'Hadith'} in the "Topic of the Day" section on the mobile app.',
-                    style: const TextStyle(fontSize: 11),
-                  ),
-                  value: isTopicOfTheDay,
-                  activeThumbColor: AppColors.primaryEmerald,
-                  onChanged: (val) => setModal(() => isTopicOfTheDay = val),
-                  contentPadding: EdgeInsets.zero,
-                ),
-                SwitchListTile(
-                  title: const Text('Active Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  subtitle: const Text('Active entries are available in the daily rotation and home card.', style: TextStyle(fontSize: 11)),
-                  value: isActive,
-                  activeThumbColor: AppColors.primaryEmerald,
-                  onChanged: (val) => setModal(() => isActive = val),
-                  contentPadding: EdgeInsets.zero,
-                ),
-                const SizedBox(height: 12),
-                _field(titleC, 'Title (English)'),
-                const SizedBox(height: 12),
-                _field(titleUrC, 'Title (Urdu / اردو)'),
-                const SizedBox(height: 12),
-                _field(arabicC, 'Arabic Text'),
-                const SizedBox(height: 12),
-                _field(contentC, 'Content (English)', maxLines: 3),
-                const SizedBox(height: 12),
-                _field(contentUrC, 'Content (Urdu / اردو)', maxLines: 3),
-                const SizedBox(height: 12),
-                _field(citC, 'Book / Surah Reference (English)', hintText: 'e.g., Sahih Muslim 408 / Surah Al-Ahzab 33:56'),
-                const SizedBox(height: 12),
-                _field(citUrC, 'Book / Surah Reference (Urdu / اردو)', hintText: 'e.g., صحیح مسلم ۴۰۸ / سورۃ الاحزاب ۳۳:۵۶'),
-                const SizedBox(height: 12),
-                _field(imgC, 'Image URL'),
-              ]),
+                  const SizedBox(height: 12),
+
+                  // ── Dynamic Form Inputs ──
+                  if (isHadithType) ...[
+                    _field(titleC, 'Hadith Topic / Title (English)'),
+                    const SizedBox(height: 12),
+                    _field(titleUrC, 'Hadith Topic / Title (Urdu / اردو)'),
+                    const SizedBox(height: 12),
+                    _field(arabicC, 'Arabic Text (Hadith Matn)'),
+                    const SizedBox(height: 12),
+                    _field(contentC, 'English Translation', maxLines: 3),
+                    const SizedBox(height: 12),
+                    _field(contentUrC, 'Urdu Translation / اردو ترجمہ', maxLines: 3),
+                    const SizedBox(height: 12),
+                    _field(citC, 'Reference / Book (English)'),
+                    const SizedBox(height: 12),
+                    _field(citUrC, 'Reference / Book (Urdu / اردو)'),
+                  ] else if (isAyatType) ...[
+                    _field(titleC, 'Ayah Topic / Title (English)'),
+                    const SizedBox(height: 12),
+                    _field(titleUrC, 'Ayah Topic / Title (Urdu / اردو)'),
+                    const SizedBox(height: 12),
+                    _field(arabicC, 'Arabic Text with Diacritics (Ayah Text)'),
+                    const SizedBox(height: 12),
+                    _field(contentC, 'English Translation', maxLines: 3),
+                    const SizedBox(height: 12),
+                    _field(contentUrC, 'Urdu Translation / اردو ترجمہ', maxLines: 3),
+                    const SizedBox(height: 12),
+                    _field(citC, 'Surah Name & Ayah Number (English)'),
+                    const SizedBox(height: 12),
+                    _field(citUrC, 'Surah Name & Ayah Number (Urdu / اردو)'),
+                  ] else ...[
+                    _field(titleC, 'Topic Title (English)'),
+                    const SizedBox(height: 12),
+                    _field(titleUrC, 'Topic Title (Urdu / اردو)'),
+                    const SizedBox(height: 12),
+                    _field(arabicC, 'Arabic Quote / Key Reference (Optional)'),
+                    const SizedBox(height: 12),
+                    _field(contentC, 'Detailed Explanation / Summary (English)', maxLines: 4),
+                    const SizedBox(height: 12),
+                    _field(contentUrC, 'Detailed Explanation / Summary (Urdu / اردو)', maxLines: 4),
+                    const SizedBox(height: 12),
+                    _field(citC, 'Key Takeaway / Reference / Source (English)'),
+                    const SizedBox(height: 12),
+                    _field(citUrC, 'Key Takeaway / Reference / Source (Urdu / اردو)'),
+                  ],
+
+                  const SizedBox(height: 12),
+                  _field(imgC, 'Image URL (Optional)'),
+                ]),
+              ),
             ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            ElevatedButton(
-              onPressed: () async {
-                await AdminService.updateDailyContent(item.id, {
-                  'type': type,
-                  'title': titleC.text.trim(),
-                  'title_ur': titleUrC.text.trim(),
-                  'arabic_text': arabicC.text.trim(),
-                  'content': contentC.text.trim(),
-                  'content_ur': contentUrC.text.trim(),
-                  'citation': citC.text.trim(),
-                  'citation_ur': citUrC.text.trim(),
-                  'image_url': imgC.text.trim(),
-                  'is_active': isActive,
-                  'is_topic_of_the_day': isTopicOfTheDay,
-                });
-                if (ctx.mounted) {
-                  Navigator.pop(ctx);
-                  _snack('Daily content updated successfully!');
-                }
-              },
-              child: const Text('Update Entry'),
-            ),
-          ],
-        ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              ElevatedButton(
+                onPressed: () async {
+                  await AdminService.updateDailyContent(item.id, {
+                    'type': type,
+                    'title': titleC.text.trim(),
+                    'title_ur': titleUrC.text.trim(),
+                    'arabic_text': arabicC.text.trim(),
+                    'content': contentC.text.trim(),
+                    'content_ur': contentUrC.text.trim(),
+                    'citation': citC.text.trim(),
+                    'citation_ur': citUrC.text.trim(),
+                    'image_url': imgC.text.trim(),
+                    'is_active': isActive,
+                    'is_topic_of_the_day': isTopicType ? true : isTopicOfTheDay,
+                  });
+                  if (ctx.mounted) {
+                    Navigator.pop(ctx);
+                    _snack('Daily content updated successfully!');
+                  }
+                },
+                child: const Text('Update Entry'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
