@@ -307,7 +307,7 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(viewportFraction: 1.0);
+    _pageController = PageController(viewportFraction: 0.93);
   }
 
   @override
@@ -419,8 +419,12 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
                   child: PageView.builder(
                     key: ValueKey('events_pageview_$languageCode'),
                     controller: _pageController,
-                    physics: const BouncingScrollPhysics(),
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
                     pageSnapping: true,
+                    padEnds: false,
+                    clipBehavior: Clip.none,
                     itemCount: events.length,
                     onPageChanged: (idx) {
                       setState(() => _eventIndex = idx);

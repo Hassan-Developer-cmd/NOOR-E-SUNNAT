@@ -109,9 +109,12 @@ void main() {
                     SizedBox(
                       height: 175,
                       child: PageView.builder(
-                        controller: PageController(viewportFraction: 1.0),
-                        physics: const BouncingScrollPhysics(),
+                        controller: PageController(viewportFraction: 0.93),
+                        physics: const BouncingScrollPhysics(
+                          parent: AlwaysScrollableScrollPhysics(),
+                        ),
                         pageSnapping: true,
+                        padEnds: false,
                         itemCount: events.length,
                         onPageChanged: (idx) {
                           setState(() {
