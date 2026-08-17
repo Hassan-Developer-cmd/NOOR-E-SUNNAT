@@ -161,7 +161,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
                     // App Title
                     const Text(
-                      'FAIZAN E DUROOD',
+                      'NOOR E SUNNAT',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
@@ -171,9 +171,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     ),
                     const SizedBox(height: 8),
 
-                    // Arabic Calligraphy Subtitle
+                    // Arabic / Urdu Subtitle
                     Text(
-                      lp.isUrdu ? 'فیضانِ درود و سلام' : 'Sacred Salawat & Fiqh Hub',
+                      lp.isUrdu ? 'نورِ سنت و فیضانِ علم' : 'Sacred Sunnah, Salawat & Fiqh Hub',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -202,7 +202,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    lp.isUrdu ? 'درودِ پاک کا فیضان جاری ہے...' : 'Loading Faizan e Durood...',
+                    lp.isUrdu ? 'نورِ سنت کی برکات جاری ہیں...' : 'Loading NOOR E SUNNAT...',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,

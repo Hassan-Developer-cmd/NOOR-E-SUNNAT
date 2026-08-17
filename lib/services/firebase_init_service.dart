@@ -30,6 +30,8 @@ class FirebaseInitService {
   /// WITHOUT touching FirebaseAuth.instance sessions or signing out active users.
   static Future<void> _ensureAdminMetadataInFirestore(FirebaseFirestore firestore) async {
     const adminEmails = [
+      'admin@nooresunnat.com',
+      'admin.portal@nooresunnat.com',
       'admin@faizanedurood.com',
       'admin.portal@faizanedurood.com',
     ];

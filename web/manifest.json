@@ -1,11 +1,11 @@
 {
-    "name": "islamic_app",
-    "short_name": "islamic_app",
+    "name": "NOOR E SUNNAT",
+    "short_name": "NOOR E SUNNAT",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "NOOR E SUNNAT - Islamic Application & Durood Counter",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

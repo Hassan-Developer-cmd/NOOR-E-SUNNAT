@@ -2,7 +2,7 @@ class AppTranslations {
   static const Map<String, Map<String, String>> translations = {
     'en': {
       // ── General & App Shell ──
-      'app_title': 'Faizan e Durood',
+      'app_title': 'NOOR E SUNNAT',
       'welcome_greeting': 'Assalamu Alaikum',
       'guest': 'Beloved Guest',
       'sign_out': 'Sign Out',
@@ -240,7 +240,7 @@ class AppTranslations {
 
     'ur': {
       // ── General & App Shell ──
-      'app_title': 'فیضانِ درود',
+      'app_title': 'نورِ سنت',
       'welcome_greeting': 'السلام علیکم',
       'guest': 'محترم مہمان',
       'sign_out': 'لاگ آؤٹ',

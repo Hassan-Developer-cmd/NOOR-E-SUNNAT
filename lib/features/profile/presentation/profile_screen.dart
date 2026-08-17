@@ -43,7 +43,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final displayName = (user?.displayName != null && user!.displayName!.isNotEmpty)
             ? user.displayName!
             : lp.tr('user_profile_guest');
-        final email = user?.email ?? 'guest@faizanedurood.com';
+        final email = user?.email ?? 'guest@nooresunnat.com';
         final photoUrl = user?.photoURL;
         final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
 

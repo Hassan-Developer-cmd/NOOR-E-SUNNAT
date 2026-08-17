@@ -28,11 +28,11 @@ void main() async {
   await globalLanguageProvider.init();
   await FirebaseInitService.seedInitialDatabase();
   await NotificationService.initialize();
-  runApp(const FaizanEDuroodApp());
+  runApp(const NoorESunnatApp());
 }
 
-class FaizanEDuroodApp extends StatelessWidget {
-  const FaizanEDuroodApp({super.key});
+class NoorESunnatApp extends StatelessWidget {
+  const NoorESunnatApp({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -171,7 +171,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                           color: AppColors.accentGold, size: 36),
                       const SizedBox(height: 12),
                       const Text(
-                        'Faizan e Durood',
+                        'NOOR E SUNNAT',
                         style: TextStyle(
                           fontFamily: 'Outfit',
                           fontSize: 28,

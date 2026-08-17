@@ -31,7 +31,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Faizan e Durood'), findsOneWidget);
+    expect(find.text('NOOR E SUNNAT'), findsOneWidget);
     expect(find.text('Continue with Google'), findsOneWidget);
     expect(find.byType(TextField), findsNWidgets(2));
   });

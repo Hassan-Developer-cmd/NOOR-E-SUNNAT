@@ -263,20 +263,20 @@ class NotificationService {
 
     try {
       const androidDetails = AndroidNotificationDetails(
-        'faizan_e_durood_channel',
-        'Faizan-e-Durood Notifications',
+        'noor_e_sunnat_channel',
+        'NOOR E SUNNAT Notifications',
         channelDescription:
             'High priority broadcast notifications, event alerts & answers',
         importance: Importance.max,
         priority: Priority.high,
-        ticker: 'Faizan e Durood',
+        ticker: 'NOOR E SUNNAT',
         icon: '@mipmap/ic_launcher',
         enableVibration: true,
         playSound: true,
         styleInformation: BigTextStyleInformation(
           '',
           contentTitle: '',
-          summaryText: 'Faizan e Durood',
+          summaryText: 'NOOR E SUNNAT',
         ),
       );
 

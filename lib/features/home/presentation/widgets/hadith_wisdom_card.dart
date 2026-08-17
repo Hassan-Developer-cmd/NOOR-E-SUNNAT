@@ -535,7 +535,7 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
   static void _shareContent(BuildContext context, String title, String arabic,
       String content, String citation) {
     final isUrdu = globalLanguageProvider.isUrdu;
-    final sharedVia = isUrdu ? 'فیضانِ درود پاک ایپ کے ذریعے ارسال کردہ' : 'Shared via Faizan e Durood App';
+    final sharedVia = isUrdu ? 'نورِ سنت ایپ کے ذریعے ارسال کردہ' : 'Shared via NOOR E SUNNAT App';
     final textToShare =
         '$title\n\n${arabic.isNotEmpty ? "$arabic\n\n" : ""}"$content"\n\n— $citation\n\n$sharedVia';
     Clipboard.setData(ClipboardData(text: textToShare));
