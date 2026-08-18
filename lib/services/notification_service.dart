@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -185,7 +186,7 @@ class NotificationService {
     return false;
   }
 
-  /// Initializes local notifications and reads cached state for the active user.
+  /// Initializes local notifications, FCM background messaging, and reads cached state.
   static Future<void> initialize() async {
     if (_isInitialized) return;
 
@@ -193,6 +194,7 @@ class NotificationService {
       await _loadUserState();
 
       if (!kIsWeb) {
+        // 1. Configure Local Notification Settings
         const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
         const darwinInit = DarwinInitializationSettings(
           requestAlertPermission: true,
@@ -215,13 +217,61 @@ class NotificationService {
           },
         );
 
-        // Request permissions for Android 13+ (API 33)
+        // 2. Create High Importance Channel on Android
         final androidImplementation = _localNotifications
             .resolvePlatformSpecificImplementation<
                 AndroidFlutterLocalNotificationsPlugin>();
         if (androidImplementation != null) {
-          await androidImplementation.requestNotificationsPermission();
+          const channel = AndroidNotificationChannel(
+            'high_importance_channel',
+            'High Importance Notifications',
+            description: 'High priority broadcast notifications, event alerts & answers',
+            importance: Importance.max,
+            playSound: true,
+            enableVibration: true,
+          );
+          await androidImplementation.createNotificationChannel(channel);
         }
+
+        // 3. Request FCM Permissions (Android 13+ & iOS)
+        final messaging = FirebaseMessaging.instance;
+        final NotificationSettings settings = await messaging.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+          provisional: false,
+        );
+        if (kDebugMode) {
+          print('FCM Authorization Status: ${settings.authorizationStatus}');
+        }
+
+        // 4. Auto Subscribe to Global Broadcast Topic
+        try {
+          await messaging.subscribeToTopic('all_users');
+          if (kDebugMode) print('Subscribed to all_users FCM topic');
+        } catch (e) {
+          if (kDebugMode) print('FCM topic subscription error: $e');
+        }
+
+        // 5. Set Foreground Notification Presentation Options
+        await messaging.setForegroundNotificationPresentationOptions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+
+        // 6. Foreground FCM Message Listener
+        FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+          final notification = message.notification;
+          if (notification != null) {
+            showHeadsUpNotification(
+              id: message.messageId.hashCode,
+              title: notification.title ?? 'NOOR E SUNNAT Notification',
+              body: notification.body ?? '',
+              payload: message.data['id'],
+            );
+          }
+        });
       }
 
       // Listen to Auth State changes to separate notifications per user account
@@ -406,8 +456,8 @@ class NotificationService {
 
     try {
       const androidDetails = AndroidNotificationDetails(
-        'noor_e_sunnat_channel',
-        'NOOR E SUNNAT Notifications',
+        'high_importance_channel',
+        'High Importance Notifications',
         channelDescription:
             'High priority broadcast notifications, event alerts & answers',
         importance: Importance.max,

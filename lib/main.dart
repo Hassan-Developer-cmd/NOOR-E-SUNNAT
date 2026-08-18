@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -22,9 +23,21 @@ import 'services/notification_service.dart';
 
 final LanguageProvider globalLanguageProvider = LanguageProvider();
 
+/// Top-level background message handler invoked by native Android/iOS when the app is closed or in background.
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  if (kDebugMode) {
+    print('FCM Background message received: ${message.messageId}, data: ${message.data}');
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  if (!kIsWeb) {
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  }
   await globalLanguageProvider.init();
   await FirebaseInitService.seedInitialDatabase();
   await NotificationService.initialize();
