@@ -85,13 +85,6 @@ class _MasailGridScreenState extends State<MasailGridScreen> {
               ),
             ],
           ),
-          floatingActionButton: FloatingActionButton.extended(
-            backgroundColor: AppColors.primaryEmerald,
-            foregroundColor: Colors.white,
-            onPressed: () => AskQuestionSheet.show(context),
-            icon: const Icon(Icons.add_comment_rounded),
-            label: Text(lp.isUrdu ? 'سوال پوچھیں' : 'Ask Question'),
-          ),
           body: StreamBuilder<List<MasailItemModel>>(
             stream: ContentService.masailStream,
             builder: (context, snapshot) {

@@ -250,7 +250,7 @@ class _QAScreenState extends State<QAScreen> {
                             )
                           : ListView.builder(
                               physics: const BouncingScrollPhysics(),
-                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 92),
+                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                               itemCount: filtered.length,
                               itemBuilder: (context, index) {
                                 final q = filtered[index];
@@ -261,17 +261,6 @@ class _QAScreenState extends State<QAScreen> {
                   ],
                 );
               },
-            ),
-            floatingActionButton: FloatingActionButton.extended(
-              backgroundColor: AppColors.primaryEmerald,
-              foregroundColor: Colors.white,
-              elevation: 4,
-              onPressed: () => AskQuestionSheet.show(context),
-              icon: const Icon(Icons.add_comment_rounded),
-              label: Text(
-                lp.tr('ask_question'),
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
             ),
           ),
         );
