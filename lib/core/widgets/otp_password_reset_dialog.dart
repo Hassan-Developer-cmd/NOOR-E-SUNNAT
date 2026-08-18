@@ -256,7 +256,7 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
     });
 
     try {
-      final bool success = await EmailOtpService.updateUserPassword(
+      final result = await EmailOtpService.updateUserPassword(
         email: email,
         otp: _otpController.text.trim(),
         newPassword: newPassword,
@@ -265,43 +265,67 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
       if (!mounted) return;
       setState(() => _isLoading = false);
 
-      if (success) {
+      if (result.isSuccess) {
         // Invoke optional success callback
         widget.onPasswordResetSuccess?.call(email);
 
-        // Show celebration toast
-        final successToast = isUrdu
-            ? 'پاس ورڈ کامیابی سے تبدیل ہو گیا! براہ کرم لاگ ان کریں۔'
-            : 'Password reset successful! Please log in.';
+        if (result.isCloudFunctionSuccess) {
+          final successToast = isUrdu
+              ? 'پاس ورڈ کامیابی سے تبدیل ہو گیا! براہ کرم لاگ ان کریں۔'
+              : 'Password reset successful! Please log in with your new password.';
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white, size: 20),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    successToast,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      successToast,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
+              backgroundColor: AppColors.primaryEmerald,
+              duration: const Duration(seconds: 4),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            backgroundColor: AppColors.primaryEmerald,
-            duration: const Duration(seconds: 4),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
+          );
+        } else {
+          final infoToast = isUrdu
+              ? 'کلاؤڈ فنکشن ابھی فعال نہیں ہے۔ ہم نے پاس ورڈ ری سیٹ کا آفیشل لنک آپ کے ای میل پر بھیج دیا ہے۔'
+              : 'Password reset link sent to your email. Please click the link to confirm your new credentials.';
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.mark_email_read, color: Colors.white, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      infoToast,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: const Color(0xFF0F766E),
+              duration: const Duration(seconds: 5),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
 
         // Close modal returning email for pre-fill
         Navigator.pop(context, email);
       } else {
         setState(() {
-          _errorMessage = isUrdu
-              ? 'پاس ورڈ تبدیل کرنے میں ناکامی۔ او ٹی پی غلط ہے یا اس کی میعاد ختم ہو چکی ہے۔'
-              : 'Failed to update password. Invalid or expired OTP.';
+          _errorMessage = result.message;
         });
       }
     } catch (e) {

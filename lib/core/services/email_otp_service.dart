@@ -132,8 +132,8 @@ class EmailOtpService {
   }
 
   /// Updates user password in Firebase Auth using the Admin SDK Callable Cloud Function.
-  /// Falls back to direct verification and token cleanup.
-  static Future<bool> updateUserPassword({
+  /// Falls back to direct verification and official Firebase reset link.
+  static Future<PasswordUpdateResult> updateUserPassword({
     required String email,
     required String otp,
     required String newPassword,
@@ -167,7 +167,11 @@ class EmailOtpService {
           if (kDebugMode) {
             print('EmailOtpService: Password successfully updated via Firebase Admin SDK Callable Function.');
           }
-          return true;
+          return const PasswordUpdateResult(
+            isSuccess: true,
+            isCloudFunctionSuccess: true,
+            message: 'Password updated successfully in Firebase Auth.',
+          );
         }
       }
       if (kDebugMode) {
@@ -182,22 +186,55 @@ class EmailOtpService {
     // 2. Fallback Verification & Session Handling
     try {
       final isVerified = await verifyOtp(cleanEmail, cleanOtp);
-      if (!isVerified) return false;
+      if (!isVerified) {
+        return const PasswordUpdateResult(
+          isSuccess: false,
+          isCloudFunctionSuccess: false,
+          message: 'Invalid or expired OTP code.',
+        );
+      }
 
-      // If user session is active, update directly
+      // If user session is currently active, update directly
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser != null && currentUser.email?.toLowerCase() == cleanEmail) {
         await currentUser.updatePassword(newPassword);
+        await cleanupOtp(cleanEmail);
+        return const PasswordUpdateResult(
+          isSuccess: true,
+          isCloudFunctionSuccess: true,
+          message: 'Password updated successfully for current user.',
+        );
       }
 
-      // Cleanup OTP from Firestore
+      // If logged out and Cloud Function not deployed, dispatch official Google reset link
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: cleanEmail);
       await cleanupOtp(cleanEmail);
-      return true;
+      return const PasswordUpdateResult(
+        isSuccess: true,
+        isCloudFunctionSuccess: false,
+        message: 'Cloud Function is not deployed yet. A secure password reset link has been dispatched to your email.',
+      );
     } catch (e) {
       if (kDebugMode) {
         print('EmailOtpService.updateUserPassword error: $e');
       }
-      return false;
+      return PasswordUpdateResult(
+        isSuccess: false,
+        isCloudFunctionSuccess: false,
+        message: 'Error processing password reset: $e',
+      );
     }
   }
+}
+
+class PasswordUpdateResult {
+  final bool isSuccess;
+  final bool isCloudFunctionSuccess;
+  final String message;
+
+  const PasswordUpdateResult({
+    required this.isSuccess,
+    required this.isCloudFunctionSuccess,
+    required this.message,
+  });
 }
