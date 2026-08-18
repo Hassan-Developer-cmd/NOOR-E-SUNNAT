@@ -28,7 +28,9 @@ final LanguageProvider globalLanguageProvider = LanguageProvider();
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   if (kDebugMode) {
-    print('FCM Background message received: ${message.messageId}, data: ${message.data}');
+    print(
+      'FCM Background message received: ${message.messageId}, data: ${message.data}',
+    );
   }
 }
 
