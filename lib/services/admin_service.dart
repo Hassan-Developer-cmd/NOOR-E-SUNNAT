@@ -478,7 +478,7 @@ class AdminService {
   static Future<void> answerQuestion({
     required String questionId,
     required String answer,
-    required bool isPublic,
+    bool isPublic = false,
     required String answeredBy,
   }) async {
     final doc = await _firestore.collection('user_questions').doc(questionId).get();
@@ -491,7 +491,6 @@ class AdminService {
       'answer': answer.trim(),
       'answered_by': answeredBy,
       'answered_at': FieldValue.serverTimestamp(),
-      'is_public': isPublic,
       'updated_at': FieldValue.serverTimestamp(),
     });
 
@@ -512,10 +511,6 @@ class AdminService {
     } catch (e) {
       if (kDebugMode) print('AdminService.answerQuestion notification error: $e');
     }
-  }
-
-  static Future<void> deleteQuestion(String id) async {
-    await _firestore.collection('user_questions').doc(id).delete();
   }
 
   // ── User Management ─────────────────────────────────────────

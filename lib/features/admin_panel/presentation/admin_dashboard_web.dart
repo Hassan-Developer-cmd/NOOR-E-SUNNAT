@@ -2127,7 +2127,6 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 const DataColumn(label: Text('Category', style: TextStyle(fontWeight: FontWeight.bold))),
                 const DataColumn(label: Text('Question', style: TextStyle(fontWeight: FontWeight.bold))),
                 const DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
-                const DataColumn(label: Text('Public', style: TextStyle(fontWeight: FontWeight.bold))),
                 const DataColumn(label: Text('Submitted', style: TextStyle(fontWeight: FontWeight.bold))),
                 const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
               ], filtered.map((q) {
@@ -2146,12 +2145,44 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   DataCell(_statusChip(q.category.toUpperCase(), AppColors.emeraldContainer, AppColors.primaryEmerald)),
                   DataCell(
                     ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 240),
-                      child: Text(
-                        q.question,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 13),
+                      constraints: const BoxConstraints(maxWidth: 280),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            q.question,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                          if (q.isDeletedByUser) ...[
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEE2E2),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: const Color(0xFFFCA5A5)),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.info_outline, size: 11, color: Color(0xFFB91C1C)),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'User has deleted this question',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFFB91C1C),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ),
@@ -2163,36 +2194,20 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                     ),
                   ),
                   DataCell(
-                    _statusChip(
-                      q.isPublic ? 'PUBLIC' : 'PRIVATE',
-                      q.isPublic ? const Color(0xFFE0F2FE) : Colors.grey.shade200,
-                      q.isPublic ? const Color(0xFF0369A1) : Colors.grey.shade700,
-                    ),
-                  ),
-                  DataCell(
                     Text(
                       q.createdAt != null ? '${q.createdAt!.day}/${q.createdAt!.month}/${q.createdAt!.year}' : '',
                       style: const TextStyle(fontSize: 12),
                     ),
                   ),
                   DataCell(
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            isPending ? Icons.rate_review_rounded : Icons.edit_note_rounded,
-                            size: 20,
-                            color: isPending ? AppColors.accentGold : AppColors.primaryEmerald,
-                          ),
-                          tooltip: isPending ? 'Answer Question' : 'Edit Answer',
-                          onPressed: () => _showAnswerQuestionModal(context, q),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                          tooltip: 'Delete Question',
-                          onPressed: () => _confirmDelete(context, () => AdminService.deleteQuestion(q.id)),
-                        ),
-                      ],
+                    IconButton(
+                      icon: Icon(
+                        isPending ? Icons.rate_review_rounded : Icons.edit_note_rounded,
+                        size: 20,
+                        color: isPending ? AppColors.accentGold : AppColors.primaryEmerald,
+                      ),
+                      tooltip: isPending ? 'Answer Question' : 'Edit Answer',
+                      onPressed: () => _showAnswerQuestionModal(context, q),
                     ),
                   ),
                 ]);
@@ -3069,7 +3084,6 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
 
   void _showAnswerQuestionModal(BuildContext context, QuestionModel q) {
     final answerC = TextEditingController(text: q.answer ?? '');
-    bool isPublic = q.isPublic;
 
     showDialog(
       context: context,
@@ -3156,17 +3170,6 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                       border: OutlineInputBorder(),
                     ),
                   ),
-                  const SizedBox(height: 12),
-
-                  // Public Checkbox
-                  SwitchListTile(
-                    title: const Text('Make Public for all users in Knowledge Hub', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                    subtitle: const Text('Allows other users to benefit from this Q&A entry.', style: TextStyle(fontSize: 11)),
-                    value: isPublic,
-                    activeThumbColor: AppColors.primaryEmerald,
-                    onChanged: (val) => setModal(() => isPublic = val),
-                    contentPadding: EdgeInsets.zero,
-                  ),
                 ],
               ),
             ),
@@ -3188,7 +3191,6 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 await AdminService.answerQuestion(
                   questionId: q.id,
                   answer: answerC.text.trim(),
-                  isPublic: isPublic,
                   answeredBy: 'Super Admin',
                 );
                 if (ctx.mounted) {

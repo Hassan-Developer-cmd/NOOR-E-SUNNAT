@@ -13,6 +13,7 @@ class QuestionModel {
   final DateTime? answeredAt;
   final DateTime? createdAt;
   final bool isPublic;
+  final bool isDeletedByUser;
 
   const QuestionModel({
     required this.id,
@@ -27,6 +28,7 @@ class QuestionModel {
     this.answeredAt,
     this.createdAt,
     this.isPublic = false,
+    this.isDeletedByUser = false,
   });
 
   bool get isAnswered => status.toLowerCase() == 'answered';
@@ -96,6 +98,9 @@ class QuestionModel {
       answeredAt: answeredTime,
       createdAt: createdTime,
       isPublic: map['is_public'] as bool? ?? false,
+      isDeletedByUser: map['is_deleted_by_user'] as bool? ??
+          map['deleted_by_user'] as bool? ??
+          false,
     );
   }
 
@@ -111,6 +116,7 @@ class QuestionModel {
         'answered_at': answeredAt != null ? Timestamp.fromDate(answeredAt!) : null,
         'created_at': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
         'is_public': isPublic,
+        'is_deleted_by_user': isDeletedByUser,
       };
 
   QuestionModel copyWith({
@@ -126,6 +132,7 @@ class QuestionModel {
     DateTime? answeredAt,
     DateTime? createdAt,
     bool? isPublic,
+    bool? isDeletedByUser,
   }) {
     return QuestionModel(
       id: id ?? this.id,
@@ -140,6 +147,7 @@ class QuestionModel {
       answeredAt: answeredAt ?? this.answeredAt,
       createdAt: createdAt ?? this.createdAt,
       isPublic: isPublic ?? this.isPublic,
+      isDeletedByUser: isDeletedByUser ?? this.isDeletedByUser,
     );
   }
 }

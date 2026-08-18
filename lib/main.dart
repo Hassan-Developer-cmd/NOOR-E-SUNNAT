@@ -174,9 +174,9 @@ class _MainShellState extends State<MainShell> {
               );
             },
           ),
-          const QAScreen(),
           const AqaidGridScreen(),
           const MasailGridScreen(),
+          const QAScreen(),
           ProfileScreen(counterService: _counterService),
         ];
 
@@ -229,11 +229,6 @@ class _MainShellState extends State<MainShell> {
                         label: lp.tr('nav_home'),
                       ),
                       BottomNavigationBarItem(
-                        icon: const Icon(Icons.question_answer_outlined),
-                        activeIcon: const Icon(Icons.question_answer_rounded),
-                        label: lp.tr('nav_qa'),
-                      ),
-                      BottomNavigationBarItem(
                         icon: const Icon(Icons.auto_awesome_outlined),
                         activeIcon: const Icon(Icons.auto_awesome_rounded),
                         label: lp.tr('nav_aqaid'),
@@ -242,6 +237,11 @@ class _MainShellState extends State<MainShell> {
                         icon: const Icon(Icons.menu_book_outlined),
                         activeIcon: const Icon(Icons.menu_book_rounded),
                         label: lp.tr('nav_masail'),
+                      ),
+                      BottomNavigationBarItem(
+                        icon: const Icon(Icons.question_answer_outlined),
+                        activeIcon: const Icon(Icons.question_answer_rounded),
+                        label: lp.tr('nav_qa'),
                       ),
                       BottomNavigationBarItem(
                         icon: const Icon(Icons.person_outline_rounded),

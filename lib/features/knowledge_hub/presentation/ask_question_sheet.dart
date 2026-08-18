@@ -169,150 +169,158 @@ class _AskQuestionSheetState extends State<AskQuestionSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final lp = globalLanguageProvider;
-    final isUrdu = lp.isUrdu;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    return ListenableBuilder(
+      listenable: globalLanguageProvider,
+      builder: (context, _) {
+        final lp = globalLanguageProvider;
+        final isUrdu = lp.isUrdu;
+        final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + bottomInset),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Handle Bar
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+        return Directionality(
+          textDirection: lp.textDirection,
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
-            const SizedBox(height: 16),
-
-            // Header
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.emeraldContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.question_answer_rounded,
-                    color: AppColors.primaryEmerald,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        isUrdu ? 'مفتی / ایڈمن سے سوال پوچھیں' : 'Ask a Question to Admin',
-                        style: AppTypography.headingMedium.copyWith(fontSize: 17),
+            padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + bottomInset),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Handle Bar
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
                       ),
-                      Text(
-                        isUrdu ? '24 گھنٹے میں مستند جواب حاصل کریں' : 'Verified answer within 24 hours guaranteed',
-                        style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Header
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.emeraldContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.question_answer_rounded,
+                          color: AppColors.primaryEmerald,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              lp.tr('ask_question_title'),
+                              style: AppTypography.headingMedium.copyWith(fontSize: 17),
+                            ),
+                            Text(
+                              lp.tr('ask_question_subtitle'),
+                              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
-            const Divider(height: 24),
+                  const Divider(height: 24),
 
-            // Category Dropdown
-            Text(
-              isUrdu ? 'موضوع / کیٹیگری منتخب کریں' : 'Select Category',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-            ),
-            const SizedBox(height: 6),
-            DropdownButtonFormField<String>(
-              initialValue: _selectedCategory,
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                filled: true,
-                fillColor: AppColors.bgOffWhite,
-              ),
-              items: QuestionModel.supportedCategories.map((cat) {
-                return DropdownMenuItem(
-                  value: cat,
-                  child: Text(
-                    isUrdu ? '${QuestionModel.getCategoryUrdu(cat)} ($cat)' : cat,
-                    style: const TextStyle(fontSize: 14),
+                  // Category Dropdown
+                  Text(
+                    lp.tr('question_category'),
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                   ),
-                );
-              }).toList(),
-              onChanged: (val) {
-                if (val != null) setState(() => _selectedCategory = val);
-              },
-            ),
-            const SizedBox(height: 16),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedCategory,
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: AppColors.bgOffWhite,
+                    ),
+                    items: QuestionModel.supportedCategories.map((cat) {
+                      return DropdownMenuItem(
+                        value: cat,
+                        child: Text(
+                          isUrdu ? '${QuestionModel.getCategoryUrdu(cat)} ($cat)' : cat,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) setState(() => _selectedCategory = val);
+                    },
+                  ),
+                  const SizedBox(height: 16),
 
-            // Question Text Input
-            Text(
-              isUrdu ? 'اپنا سوال تفصیل سے لکھیں' : 'Your Detailed Question',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-            ),
-            const SizedBox(height: 6),
-            TextField(
-              controller: _questionController,
-              maxLines: 4,
-              textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
-              decoration: InputDecoration(
-                hintText: isUrdu
-                    ? 'مثال: نماز میں سجدہ سہو کے متعلق کیا حکم ہے؟'
-                    : 'e.g., What is the Islamic ruling regarding...',
-                hintStyle: const TextStyle(fontSize: 13, color: Colors.grey),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                filled: true,
-                fillColor: AppColors.bgOffWhite,
+                  // Question Text Input
+                  Text(
+                    lp.tr('your_question'),
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _questionController,
+                    maxLines: 4,
+                    textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
+                    decoration: InputDecoration(
+                      hintText: isUrdu
+                          ? 'مثال: نماز میں سجدہ سہو کے متعلق کیا حکم ہے؟'
+                          : 'e.g., What is the Islamic ruling regarding...',
+                      hintStyle: const TextStyle(fontSize: 13, color: Colors.grey),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: AppColors.bgOffWhite,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Submit Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryEmerald,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        elevation: 2,
+                      ),
+                      onPressed: _isSubmitting ? null : _submit,
+                      icon: _isSubmitting
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.send_rounded, size: 18),
+                      label: Text(
+                        _isSubmitting
+                            ? lp.tr('submitting_question')
+                            : lp.tr('submit_question'),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
-
-            // Submit Button
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryEmerald,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  elevation: 2,
-                ),
-                onPressed: _isSubmitting ? null : _submit,
-                icon: _isSubmitting
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Icon(Icons.send_rounded, size: 18),
-                label: Text(
-                  _isSubmitting
-                      ? (isUrdu ? 'سوال جمع ہو رہا ہے...' : 'Submitting Question...')
-                      : (isUrdu ? 'سوال ارسال کریں' : 'Submit Question'),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

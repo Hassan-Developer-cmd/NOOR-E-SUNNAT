@@ -49,7 +49,7 @@ class QuestionsService {
     return docRef.id;
   }
 
-  /// Live stream of questions submitted by a specific user.
+  /// Live stream of questions submitted by a specific user (excluding deleted ones).
   static Stream<List<QuestionModel>> getUserQuestionsStream(String userId) {
     try {
       return _firestore
@@ -59,6 +59,7 @@ class QuestionsService {
           .map((snap) {
         final list = snap.docs
             .map((doc) => QuestionModel.fromMap(doc.id, doc.data()))
+            .where((q) => !q.isDeletedByUser)
             .toList();
         list.sort((a, b) {
           final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -75,17 +76,17 @@ class QuestionsService {
     }
   }
 
-  /// Live stream of public answered questions for all users.
+  /// Live stream of all questions (legacy fallback).
   static Stream<List<QuestionModel>> get publicAnsweredQuestionsStream {
     try {
       return _firestore
           .collection('user_questions')
           .where('status', isEqualTo: 'Answered')
-          .where('is_public', isEqualTo: true)
           .snapshots()
           .map((snap) {
         final list = snap.docs
             .map((doc) => QuestionModel.fromMap(doc.id, doc.data()))
+            .where((q) => !q.isDeletedByUser)
             .toList();
         list.sort((a, b) {
           final aTime = a.answeredAt ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -102,13 +103,19 @@ class QuestionsService {
     }
   }
 
-  /// Deletes a question from Firestore by ID.
+  /// Soft deletes a user question from app view while retaining it in Admin view.
   static Future<void> deleteQuestion(String questionId) async {
     try {
-      await _firestore.collection('user_questions').doc(questionId).delete();
+      await _firestore.collection('user_questions').doc(questionId).update({
+        'is_deleted_by_user': true,
+        'deleted_at': FieldValue.serverTimestamp(),
+      });
     } catch (e) {
       if (kDebugMode) print('QuestionsService.deleteQuestion error: $e');
       rethrow;
     }
   }
+
+  /// Explicit alias for deleting user question.
+  static Future<void> deleteUserQuestion(String questionId) => deleteQuestion(questionId);
 }
