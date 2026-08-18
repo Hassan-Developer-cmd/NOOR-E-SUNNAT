@@ -368,43 +368,10 @@ class AdminService {
   }
 
   static Future<void> addDailyContent(DailyContentModel item) async {
-    final type = item.type.toLowerCase();
-    if (item.isTopicOfTheDay) {
-      // Unset previous topic of the day for the SAME TYPE only (Hadith or Ayat)
-      final snap = await _firestore
-          .collection('daily_content')
-          .where('type', isEqualTo: type)
-          .where('is_topic_of_the_day', isEqualTo: true)
-          .get();
-      final batch = _firestore.batch();
-      for (var doc in snap.docs) {
-        batch.update(doc.reference, {'is_topic_of_the_day': false});
-      }
-      await batch.commit();
-    }
     await _firestore.collection('daily_content').add(item.toMap());
   }
 
   static Future<void> updateDailyContent(String id, Map<String, dynamic> data) async {
-    if (data['is_topic_of_the_day'] == true) {
-      String? type = data['type'] as String?;
-      if (type == null) {
-        final existingDoc = await _firestore.collection('daily_content').doc(id).get();
-        type = existingDoc.data()?['type'] as String? ?? 'hadith';
-      }
-      final snap = await _firestore
-          .collection('daily_content')
-          .where('type', isEqualTo: type.toLowerCase())
-          .where('is_topic_of_the_day', isEqualTo: true)
-          .get();
-      final batch = _firestore.batch();
-      for (var doc in snap.docs) {
-        if (doc.id != id) {
-          batch.update(doc.reference, {'is_topic_of_the_day': false});
-        }
-      }
-      await batch.commit();
-    }
     await _firestore.collection('daily_content').doc(id).update({
       ...data,
       'updated_at': FieldValue.serverTimestamp(),
@@ -413,54 +380,6 @@ class AdminService {
 
   static Future<void> deleteDailyContent(String id) async {
     await _firestore.collection('daily_content').doc(id).delete();
-  }
-
-  /// Toggle active state of a single daily content entry without altering others
-  static Future<void> toggleDailyContentActive(String id, bool isActive) async {
-    await _firestore.collection('daily_content').doc(id).update({
-      'is_active': isActive,
-      'updated_at': FieldValue.serverTimestamp(),
-    });
-  }
-
-  static Future<void> setActiveDailyContent(String id) async {
-    final doc = await _firestore.collection('daily_content').doc(id).get();
-    final currentActive = doc.data()?['is_active'] as bool? ?? true;
-    await toggleDailyContentActive(id, !currentActive);
-  }
-
-  /// Sets or unsets Topic of the Day for a specific entry.
-  /// If set to true, only unsets previous Topic of the Day for the same type (Hadith vs Ayat).
-  static Future<void> setTopicOfTheDay(String id, bool isTopic, {String? type}) async {
-    if (isTopic) {
-      String itemType = type ?? '';
-      if (itemType.isEmpty) {
-        final doc = await _firestore.collection('daily_content').doc(id).get();
-        itemType = (doc.data()?['type'] as String? ?? 'hadith').toLowerCase();
-      }
-      final snap = await _firestore
-          .collection('daily_content')
-          .where('type', isEqualTo: itemType)
-          .where('is_topic_of_the_day', isEqualTo: true)
-          .get();
-      final batch = _firestore.batch();
-      for (var doc in snap.docs) {
-        if (doc.id != id) {
-          batch.update(doc.reference, {'is_topic_of_the_day': false});
-        }
-      }
-      batch.update(_firestore.collection('daily_content').doc(id), {
-        'is_topic_of_the_day': true,
-        'is_active': true,
-        'updated_at': FieldValue.serverTimestamp(),
-      });
-      await batch.commit();
-    } else {
-      await _firestore.collection('daily_content').doc(id).update({
-        'is_topic_of_the_day': false,
-        'updated_at': FieldValue.serverTimestamp(),
-      });
-    }
   }
 
 

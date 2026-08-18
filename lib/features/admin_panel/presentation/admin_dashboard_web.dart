@@ -1755,10 +1755,9 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
             ),
             _tableCard([
               const DataColumn(label: Text('Type', style: TextStyle(fontWeight: FontWeight.bold))),
-              const DataColumn(label: Text('Title', style: TextStyle(fontWeight: FontWeight.bold))),
-              const DataColumn(label: Text('Topic of the Day', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Title (EN / UR)', style: TextStyle(fontWeight: FontWeight.bold))),
+              const DataColumn(label: Text('Content / Translation', style: TextStyle(fontWeight: FontWeight.bold))),
               const DataColumn(label: Text('Book / Reference', style: TextStyle(fontWeight: FontWeight.bold))),
-              const DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
               const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
             ], items.map((d) {
               Color chipBg = AppColors.emeraldContainer;
@@ -1772,8 +1771,10 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
               } else if (d.isTopicOfTheDay) {
                 chipBg = const Color(0xFFFEF3C7);
                 chipFg = const Color(0xFF854D0E);
-                typeLabel = 'TOPIC';
+                typeLabel = 'TOPIC OF THE DAY';
               }
+
+              final summary = d.content.isNotEmpty ? d.content : d.contentUr;
 
               return DataRow(cells: [
                 DataCell(_statusChip(typeLabel, chipBg, chipFg)),
@@ -1787,42 +1788,31 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                       Text(d.titleUr, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                   ],
                 )),
-                DataCell(
-                  GestureDetector(
-                    onTap: () async {
-                      await AdminService.setTopicOfTheDay(d.id, !d.isTopicOfTheDay, type: d.type);
-                      final label = d.isAyat ? 'Ayat Topic of the Day' : (d.isHadith ? 'Hadith Topic of the Day' : 'Topic of the Day');
-                      _snack(d.isTopicOfTheDay ? '$label deactivated.' : '"${d.title.isNotEmpty ? d.title : label}" set as active $label! ⭐');
-                    },
-                    child: _statusChip(
-                      d.isTopicOfTheDay ? '⭐ ACTIVE TOPIC' : 'STANDARD',
-                      d.isTopicOfTheDay ? AppColors.goldLight : Colors.grey[200]!,
-                      d.isTopicOfTheDay ? AppColors.goldDark : Colors.grey[700]!,
-                    ),
+                DataCell(SizedBox(
+                  width: 220,
+                  child: Text(
+                    summary,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12),
                   ),
-                ),
+                )),
                 DataCell(Text(d.citation.isNotEmpty ? d.citation : d.citationUr, style: const TextStyle(fontSize: 12))),
-                DataCell(
-                  GestureDetector(
-                    onTap: () async {
-                      await AdminService.toggleDailyContentActive(d.id, !d.isActive);
-                      _snack(d.isActive ? 'Entry marked inactive.' : 'Entry activated!');
-                    },
-                    child: _statusChip(
-                      d.isActive ? 'ACTIVE' : 'INACTIVE',
-                      d.isActive ? AppColors.emeraldContainer : Colors.grey[200]!,
-                      d.isActive ? AppColors.primaryEmerald : Colors.grey[600]!,
-                    ),
-                  ),
-                ),
                 DataCell(Row(children: [
                   IconButton(
                     icon: const Icon(Icons.edit, size: 18, color: AppColors.primaryEmerald),
+                    tooltip: 'Edit Entry',
                     onPressed: () => _showEditDailyContentModal(context, d),
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                    onPressed: () => _confirmDelete(context, () => AdminService.deleteDailyContent(d.id)),
+                    tooltip: 'Delete Entry',
+                    onPressed: () => _confirmDelete(
+                      context,
+                      () => AdminService.deleteDailyContent(d.id),
+                      customTitle: 'Delete Content Entry',
+                      customMessage: 'Are you sure you want to delete this entry?',
+                    ),
                   ),
                 ])),
               ]);
@@ -2736,8 +2726,6 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     final citUrC = TextEditingController();
     final imgC = TextEditingController();
     String type = 'hadith';
-    bool isActive = true;
-    bool isTopicOfTheDay = false;
 
     showDialog(
       context: context,
@@ -2771,37 +2759,9 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                     ],
                     onChanged: (v) => setModal(() {
                       type = v ?? 'hadith';
-                      if (type == 'topicOfTheDay') {
-                        isTopicOfTheDay = true;
-                      }
                     }),
                   ),
-                  const SizedBox(height: 12),
-                  if (!isTopicType) ...[
-                    SwitchListTile(
-                      title: Text(
-                        'Set as Active ${isAyatType ? 'Ayat' : 'Hadith'} Topic of the Day ⭐',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                      ),
-                      subtitle: Text(
-                        'Highlights this ${isAyatType ? 'Ayat' : 'Hadith'} in the "Topic of the Day" section on the mobile app.',
-                        style: const TextStyle(fontSize: 11),
-                      ),
-                      value: isTopicOfTheDay,
-                      activeThumbColor: AppColors.primaryEmerald,
-                      onChanged: (val) => setModal(() => isTopicOfTheDay = val),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ],
-                  SwitchListTile(
-                    title: const Text('Active Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    subtitle: const Text('Active entries are available in the daily rotation and mobile cards.', style: TextStyle(fontSize: 11)),
-                    value: isActive,
-                    activeThumbColor: AppColors.primaryEmerald,
-                    onChanged: (val) => setModal(() => isActive = val),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
                   // ── Dynamic Form Inputs based on Content Type ──
                   if (isHadithType) ...[
@@ -2868,8 +2828,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                     citation: citC.text.trim(),
                     citationUr: citUrC.text.trim(),
                     imageUrl: imgC.text.trim(),
-                    isActive: isActive,
-                    isTopicOfTheDay: isTopicType ? true : isTopicOfTheDay,
+                    isActive: true,
+                    isTopicOfTheDay: isTopicType,
                   ));
                   if (ctx.mounted) {
                     Navigator.pop(ctx);
@@ -2898,8 +2858,6 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     final citUrC = TextEditingController(text: item.citationUr);
     final imgC = TextEditingController(text: item.imageUrl);
     String type = item.type;
-    bool isActive = item.isActive;
-    bool isTopicOfTheDay = item.isTopicOfTheDay;
 
     showDialog(
       context: context,
@@ -2926,37 +2884,9 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                     ],
                     onChanged: (v) => setModal(() {
                       type = v ?? 'hadith';
-                      if (type == 'topicOfTheDay') {
-                        isTopicOfTheDay = true;
-                      }
                     }),
                   ),
-                  const SizedBox(height: 12),
-                  if (!isTopicType) ...[
-                    SwitchListTile(
-                      title: Text(
-                        'Set as Active ${isAyatType ? 'Ayat' : 'Hadith'} Topic of the Day ⭐',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                      ),
-                      subtitle: Text(
-                        'Highlights this ${isAyatType ? 'Ayat' : 'Hadith'} in the "Topic of the Day" section on the mobile app.',
-                        style: const TextStyle(fontSize: 11),
-                      ),
-                      value: isTopicOfTheDay,
-                      activeThumbColor: AppColors.primaryEmerald,
-                      onChanged: (val) => setModal(() => isTopicOfTheDay = val),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ],
-                  SwitchListTile(
-                    title: const Text('Active Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    subtitle: const Text('Active entries are available in the daily rotation and mobile cards.', style: TextStyle(fontSize: 11)),
-                    value: isActive,
-                    activeThumbColor: AppColors.primaryEmerald,
-                    onChanged: (val) => setModal(() => isActive = val),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
                   // ── Dynamic Form Inputs ──
                   if (isHadithType) ...[
@@ -3022,8 +2952,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                     'citation': citC.text.trim(),
                     'citation_ur': citUrC.text.trim(),
                     'image_url': imgC.text.trim(),
-                    'is_active': isActive,
-                    'is_topic_of_the_day': isTopicType ? true : isTopicOfTheDay,
+                    'is_active': true,
+                    'is_topic_of_the_day': isTopicType,
                   });
                   if (ctx.mounted) {
                     Navigator.pop(ctx);

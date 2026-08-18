@@ -14,9 +14,6 @@ class HadithWisdomCard extends StatefulWidget {
 
 class _HadithWisdomCardState extends State<HadithWisdomCard> {
   int _selectedTab = 0; // 0 = Daily Hadith, 1 = Daily Ayat, 2 = Topic of the Day
-  int _hadithIndex = 0;
-  int _ayatIndex = 0;
-  int _topicIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -218,77 +215,94 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
   }
 
   Widget _buildTabContent(bool isUrdu) {
+    Stream<List<DailyContentModel>> stream;
+    DailyContentModel fallback;
     if (_selectedTab == 0) {
-      return StreamBuilder<List<DailyContentModel>>(
-        stream: ContentService.dailyHadithsStream,
-        builder: (context, snap) {
-          final list = snap.data ?? [ContentService.defaultHadith];
-          if (_hadithIndex >= list.length) _hadithIndex = 0;
-          final item = list.isNotEmpty ? list[_hadithIndex] : ContentService.defaultHadith;
-          return _buildItemCard(
-            context: context,
-            item: item,
-            currentIndex: _hadithIndex,
-            totalCount: list.length,
-            isUrdu: isUrdu,
-            onPrev: () => setState(
-                () => _hadithIndex = (_hadithIndex - 1 + list.length) % list.length),
-            onNext: () => setState(
-                () => _hadithIndex = (_hadithIndex + 1) % list.length),
-          );
-        },
-      );
+      stream = ContentService.dailyHadithsStream;
+      fallback = ContentService.defaultHadith;
     } else if (_selectedTab == 1) {
-      return StreamBuilder<List<DailyContentModel>>(
-        stream: ContentService.dailyAyatsStream,
-        builder: (context, snap) {
-          final list = snap.data ?? [ContentService.defaultAyat];
-          if (_ayatIndex >= list.length) _ayatIndex = 0;
-          final item = list.isNotEmpty ? list[_ayatIndex] : ContentService.defaultAyat;
-          return _buildItemCard(
-            context: context,
-            item: item,
-            currentIndex: _ayatIndex,
-            totalCount: list.length,
-            isUrdu: isUrdu,
-            onPrev: () => setState(
-                () => _ayatIndex = (_ayatIndex - 1 + list.length) % list.length),
-            onNext: () => setState(
-                () => _ayatIndex = (_ayatIndex + 1) % list.length),
-          );
-        },
-      );
+      stream = ContentService.dailyAyatsStream;
+      fallback = ContentService.defaultAyat;
     } else {
-      return StreamBuilder<List<DailyContentModel>>(
-        stream: ContentService.topicsOfTheDayStream,
-        builder: (context, snap) {
-          final list = snap.data ?? [ContentService.defaultHadith, ContentService.defaultAyat];
-          if (_topicIndex >= list.length) _topicIndex = 0;
-          final item = list.isNotEmpty ? list[_topicIndex] : ContentService.defaultHadith;
-          return _buildItemCard(
-            context: context,
-            item: item,
-            currentIndex: _topicIndex,
-            totalCount: list.length,
-            isUrdu: isUrdu,
-            onPrev: () => setState(
-                () => _topicIndex = (_topicIndex - 1 + list.length) % list.length),
-            onNext: () => setState(
-                () => _topicIndex = (_topicIndex + 1) % list.length),
-          );
-        },
-      );
+      stream = ContentService.topicsOfTheDayStream;
+      fallback = ContentService.defaultTopicOfTheDay;
     }
+
+    return StreamBuilder<List<DailyContentModel>>(
+      stream: stream,
+      builder: (context, snap) {
+        final list = (snap.data != null && snap.data!.isNotEmpty)
+            ? snap.data!
+            : [fallback];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (int i = 0; i < list.length; i++) ...[
+              if (i > 0)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 14),
+                  child: const Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: AppColors.borderLight,
+                  ),
+                ),
+              _buildSingleEntryItem(
+                context: context,
+                item: list[i],
+                itemIndex: i + 1,
+                totalCount: list.length,
+                isUrdu: isUrdu,
+              ),
+            ],
+            // Footer with Archive link & Count
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton.icon(
+                    onPressed: () => _showHistorySheet(context, isUrdu),
+                    icon: const Icon(Icons.collections_bookmark_rounded,
+                        size: 14, color: AppColors.primaryEmerald),
+                    label: Text(
+                      isUrdu ? 'حدیث آرکائیو / تمام دیکھیں' : 'View Archive',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryEmerald,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                  if (list.length > 1)
+                    Text(
+                      isUrdu ? '${list.length} اندراجات' : '${list.length} entries',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
-  Widget _buildItemCard({
+  Widget _buildSingleEntryItem({
     required BuildContext context,
     required DailyContentModel item,
-    required int currentIndex,
+    required int itemIndex,
     required int totalCount,
     required bool isUrdu,
-    required VoidCallback onPrev,
-    required VoidCallback onNext,
   }) {
     final title = item.getTitle(isUrdu);
     final content = item.getContent(isUrdu);
@@ -318,7 +332,7 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Entry Title Bar & Stepper Controls
+              // Entry Title Bar & Share Controls
               Row(
                 children: [
                   if (isTopic) ...[
@@ -355,6 +369,24 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
                       ),
                     ),
                   ],
+                  if (totalCount > 1) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      margin: const EdgeInsetsDirectional.only(end: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.emeraldContainer,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '#$itemIndex',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryEmerald,
+                        ),
+                      ),
+                    ),
+                  ],
                   Expanded(
                     child: Text(
                       title,
@@ -367,56 +399,16 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (totalCount > 1) ...[
-                        Tooltip(
-                          message: isUrdu ? 'پچھلا' : 'Previous',
-                          child: InkWell(
-                            onTap: onPrev,
-                            borderRadius: BorderRadius.circular(10),
-                            child: const Padding(
-                              padding: EdgeInsets.all(2),
-                              child: Icon(Icons.chevron_left_rounded, size: 17),
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 2),
-                          child: Text(
-                            '${currentIndex + 1}/$totalCount',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: AppColors.textSecondary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        Tooltip(
-                          message: isUrdu ? 'اگلا' : 'Next',
-                          child: InkWell(
-                            onTap: onNext,
-                            borderRadius: BorderRadius.circular(10),
-                            child: const Padding(
-                              padding: EdgeInsets.all(2),
-                              child: Icon(Icons.chevron_right_rounded, size: 17),
-                            ),
-                          ),
-                        ),
-                      ],
-                      Tooltip(
-                        message: isUrdu ? 'شئیر کریں' : 'Share',
-                        child: InkWell(
-                          onTap: () => _shareContent(context, title, arabic, content, citation),
-                          borderRadius: BorderRadius.circular(10),
-                          child: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                            child: Icon(Icons.share_rounded, size: 15, color: AppColors.primaryEmerald),
-                          ),
-                        ),
+                  Tooltip(
+                    message: isUrdu ? 'شئیر کریں' : 'Share',
+                    child: InkWell(
+                      onTap: () => _shareContent(context, title, arabic, content, citation),
+                      borderRadius: BorderRadius.circular(10),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        child: Icon(Icons.share_rounded, size: 15, color: AppColors.primaryEmerald),
                       ),
-                    ],
+                    ),
                   ),
                 ],
               ),
@@ -465,57 +457,38 @@ class _HadithWisdomCardState extends State<HadithWisdomCard> {
                   height: isUrdu ? 1.6 : 1.5,
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
 
-              // Footer: View Archive Button & Citation Chip
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton.icon(
-                    onPressed: () => _showHistorySheet(context, isUrdu),
-                    icon: const Icon(Icons.collections_bookmark_rounded,
-                        size: 14, color: AppColors.primaryEmerald),
-                    label: Text(
-                      isUrdu ? 'حدیث آرکائیو / تمام دیکھیں' : 'View Archive',
-                      style: const TextStyle(
+              // Citation Chip
+              if (citation.isNotEmpty) ...[
+                Align(
+                  alignment: isUrdu ? Alignment.centerLeft : Alignment.centerRight,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: isTopic ? const Color(0xFFFEF3C7) : AppColors.emeraldContainer,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isTopic
+                            ? AppColors.accentGold.withValues(alpha: 0.5)
+                            : Colors.transparent,
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      citation,
+                      textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
+                      style: TextStyle(
                         fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primaryEmerald,
+                        fontWeight: FontWeight.w600,
+                        color: isTopic ? const Color(0xFF854D0E) : AppColors.primaryEmerald,
                       ),
-                    ),
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  Flexible(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: isTopic ? const Color(0xFFFEF3C7) : AppColors.emeraldContainer,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isTopic
-                              ? AppColors.accentGold.withValues(alpha: 0.5)
-                              : Colors.transparent,
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        citation,
-                        textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: isTopic ? const Color(0xFF854D0E) : AppColors.primaryEmerald,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ],
           ),
         ),

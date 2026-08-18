@@ -58,7 +58,7 @@ class ContentService {
     isTopicOfTheDay: true,
   );
 
-  /// Live stream of active Daily Hadiths list (newest first).
+  /// Live stream of all Daily Hadiths (newest first).
   static Stream<List<DailyContentModel>> get dailyHadithsStream {
     return _firestore
         .collection('daily_content')
@@ -66,12 +66,10 @@ class ContentService {
         .map((snap) {
       final items = snap.docs
           .map((doc) => DailyContentModel.fromMap(doc.id, doc.data()))
-          .where((d) => d.isHadith && d.isActive)
+          .where((d) => d.isHadith)
           .toList();
 
       items.sort((a, b) {
-        if (a.isTopicOfTheDay && !b.isTopicOfTheDay) return -1;
-        if (!a.isTopicOfTheDay && b.isTopicOfTheDay) return 1;
         final aTime = a.createdAt ?? a.scheduledDate ?? DateTime.fromMillisecondsSinceEpoch(0);
         final bTime = b.createdAt ?? b.scheduledDate ?? DateTime.fromMillisecondsSinceEpoch(0);
         return bTime.compareTo(aTime);
@@ -84,7 +82,7 @@ class ContentService {
     });
   }
 
-  /// Live stream of active Daily Ayats list (newest first).
+  /// Live stream of all Daily Ayats (newest first).
   static Stream<List<DailyContentModel>> get dailyAyatsStream {
     return _firestore
         .collection('daily_content')
@@ -92,12 +90,10 @@ class ContentService {
         .map((snap) {
       final items = snap.docs
           .map((doc) => DailyContentModel.fromMap(doc.id, doc.data()))
-          .where((d) => d.isAyat && d.isActive)
+          .where((d) => d.isAyat)
           .toList();
 
       items.sort((a, b) {
-        if (a.isTopicOfTheDay && !b.isTopicOfTheDay) return -1;
-        if (!a.isTopicOfTheDay && b.isTopicOfTheDay) return 1;
         final aTime = a.createdAt ?? a.scheduledDate ?? DateTime.fromMillisecondsSinceEpoch(0);
         final bTime = b.createdAt ?? b.scheduledDate ?? DateTime.fromMillisecondsSinceEpoch(0);
         return bTime.compareTo(aTime);
@@ -110,7 +106,7 @@ class ContentService {
     });
   }
 
-  /// Live stream of all active Topic of the Day entries.
+  /// Live stream of all Topic of the Day entries (newest first).
   static Stream<List<DailyContentModel>> get topicsOfTheDayStream {
     return _firestore
         .collection('daily_content')
@@ -118,7 +114,7 @@ class ContentService {
         .map((snap) {
       final items = snap.docs
           .map((doc) => DailyContentModel.fromMap(doc.id, doc.data()))
-          .where((d) => d.isTopicOfTheDay && d.isActive)
+          .where((d) => d.isTopicOfTheDay)
           .toList();
 
       items.sort((a, b) {
