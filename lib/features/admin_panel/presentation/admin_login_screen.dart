@@ -105,12 +105,17 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     }
   }
 
-  void _handleForgotPassword() {
-    OtpPasswordResetDialog.show(
+  Future<void> _handleForgotPassword() async {
+    final resetEmail = await OtpPasswordResetDialog.show(
       context,
       initialEmail: _emailController.text.trim(),
       isAdminPortal: true,
     );
+    if (resetEmail != null && resetEmail.isNotEmpty && mounted) {
+      setState(() {
+        _emailController.text = resetEmail;
+      });
+    }
   }
 
   @override

@@ -45,6 +45,9 @@ class EmailOtpService {
             'passcode': otp,
             'otp': otp,
             'code': otp,
+            'from_name': 'Faizan-e-Durood Security',
+            'app_name': 'Faizan-e-Durood',
+            'subject': 'Your Verification Code: $otp',
           },
         }),
       );

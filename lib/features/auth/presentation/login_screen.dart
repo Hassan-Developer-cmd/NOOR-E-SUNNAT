@@ -279,12 +279,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                 Align(
                                   alignment: AlignmentDirectional.centerEnd,
                                   child: TextButton(
-                                    onPressed: () {
-                                      OtpPasswordResetDialog.show(
+                                    onPressed: () async {
+                                      final resetEmail = await OtpPasswordResetDialog.show(
                                         context,
                                         initialEmail: _emailController.text.trim(),
                                         isAdminPortal: false,
                                       );
+                                      if (resetEmail != null && resetEmail.isNotEmpty && mounted) {
+                                        setState(() {
+                                          _emailController.text = resetEmail;
+                                        });
+                                      }
                                     },
                                     child: const Text(
                                       'Forgot Password?',

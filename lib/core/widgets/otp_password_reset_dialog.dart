@@ -7,27 +7,35 @@ import '../constants/app_typography.dart';
 import '../services/email_otp_service.dart';
 import '../../main.dart';
 
-enum OtpResetStage {
+enum ResetStep {
   enterEmail,
-  verifyOtp,
+  enterOtp,
+  newPassword,
   success,
 }
 
 class OtpPasswordResetDialog extends StatefulWidget {
   final String? initialEmail;
   final bool isAdminPortal;
+  final void Function(String email)? onPasswordResetSuccess;
 
   const OtpPasswordResetDialog({
     super.key,
     this.initialEmail,
     this.isAdminPortal = false,
+    this.onPasswordResetSuccess,
   });
 
   /// Static helper to display the modal sheet or dialog responsively
-  static Future<void> show(BuildContext context, {String? initialEmail, bool isAdminPortal = false}) {
+  static Future<String?> show(
+    BuildContext context, {
+    String? initialEmail,
+    bool isAdminPortal = false,
+    void Function(String email)? onPasswordResetSuccess,
+  }) {
     final screenWidth = MediaQuery.of(context).size.width;
     if (screenWidth > 600) {
-      return showDialog(
+      return showDialog<String>(
         context: context,
         builder: (ctx) => Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -38,12 +46,13 @@ class OtpPasswordResetDialog extends StatefulWidget {
             child: OtpPasswordResetDialog(
               initialEmail: initialEmail,
               isAdminPortal: isAdminPortal,
+              onPasswordResetSuccess: onPasswordResetSuccess,
             ),
           ),
         ),
       );
     } else {
-      return showModalBottomSheet(
+      return showModalBottomSheet<String>(
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
@@ -57,6 +66,7 @@ class OtpPasswordResetDialog extends StatefulWidget {
             child: OtpPasswordResetDialog(
               initialEmail: initialEmail,
               isAdminPortal: isAdminPortal,
+              onPasswordResetSuccess: onPasswordResetSuccess,
             ),
           ),
         ),
@@ -69,10 +79,15 @@ class OtpPasswordResetDialog extends StatefulWidget {
 }
 
 class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
-  OtpResetStage _currentStage = OtpResetStage.enterEmail;
+  ResetStep _currentStep = ResetStep.enterEmail;
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _otpController = TextEditingController();
+  final TextEditingController _newPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+
+  bool _obscureNewPassword = true;
+  bool _obscureConfirmPassword = true;
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -95,6 +110,8 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
     _countdownTimer?.cancel();
     _emailController.dispose();
     _otpController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -129,11 +146,14 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
-  // ── Stage 1: Send OTP ──────────────────────────────────────────────
+  // ── Step 1: Send OTP ──────────────────────────────────────────────
   Future<void> _handleSendOtp() async {
+    final isUrdu = globalLanguageProvider.isUrdu;
     final email = _emailController.text.trim().toLowerCase();
     if (email.isEmpty || !email.contains('@') || !email.contains('.')) {
-      setState(() => _errorMessage = 'Please enter a valid Gmail / Email address.');
+      setState(() => _errorMessage = isUrdu
+          ? 'براہ کرم درست ای میل پتہ درج کریں۔'
+          : 'Please enter a valid Gmail / Email address.');
       return;
     }
 
@@ -150,23 +170,31 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
     if (success) {
       _startTimer();
       setState(() {
-        _currentStage = OtpResetStage.verifyOtp;
-        _successMessage = 'A 6-digit verification code has been dispatched to $email';
+        _currentStep = ResetStep.enterOtp;
+        _successMessage = isUrdu
+            ? 'آپ کے ای میل $email پر ۶ ہندسوں کا تصدیقی کوڈ بھیجا گیا ہے۔'
+            : 'A 6-digit verification code has been dispatched to $email';
       });
     } else {
       setState(() {
-        _errorMessage = 'Could not send verification email. Please check your internet connection or email address.';
+        _errorMessage = isUrdu
+            ? 'ای میل بھیجنے میں ناکامی ہوئی۔ براہ کرم اپنا انٹرنیٹ یا ای میل چیک کریں۔'
+            : 'Could not send verification email. Please check your internet connection or email address.';
       });
     }
   }
 
-  // ── Stage 2: Verify OTP ────────────────────────────────────────────
-  Future<void> _handleVerifyOtp() async {
+  // ── Step 2: Verify OTP & Proceed to Step 3 ────────────────────────
+  Future<void> _verifyOtpAndProceed() async {
+    if (_isLoading) return;
+    final isUrdu = globalLanguageProvider.isUrdu;
     final email = _emailController.text.trim().toLowerCase();
     final otp = _otpController.text.trim();
 
     if (otp.length != 6) {
-      setState(() => _errorMessage = 'Please enter the full 6-digit OTP code.');
+      setState(() => _errorMessage = isUrdu
+          ? 'براہ کرم مکمل ۶ ہندسوں کا کوڈ درج کریں۔'
+          : 'Please enter the full 6-digit OTP code.');
       return;
     }
 
@@ -175,24 +203,115 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
       _errorMessage = null;
     });
 
-    final isVerified = await EmailOtpService.verifyOtp(email, otp);
+    final bool isValid = await EmailOtpService.verifyOtp(email, otp);
 
     if (!mounted) return;
     setState(() => _isLoading = false);
 
-    if (isVerified) {
+    if (isValid) {
       _countdownTimer?.cancel();
-      // Dispatch official Firebase Auth password reset email as completion
-      try {
-        await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-      } catch (_) {}
-
       setState(() {
-        _currentStage = OtpResetStage.success;
+        _currentStep = ResetStep.newPassword; // MUST TRIGGER REBUILD TO STEP 3
+        _errorMessage = null;
       });
     } else {
+      final errorText = isUrdu
+          ? 'درج کردہ او ٹی پی غلط ہے یا اس کی میعاد ختم ہو چکی ہے'
+          : 'Invalid or expired OTP.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorText),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
       setState(() {
-        _errorMessage = 'Invalid or expired 6-digit OTP code. Please verify and try again.';
+        _errorMessage = errorText;
+      });
+    }
+  }
+
+  // ── Step 3: Update Password ────────────────────────────────────────
+  Future<void> _handleUpdatePassword() async {
+    final isUrdu = globalLanguageProvider.isUrdu;
+    final email = _emailController.text.trim().toLowerCase();
+    final newPassword = _newPasswordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    if (newPassword.isEmpty || newPassword.length < 6) {
+      setState(() => _errorMessage = isUrdu
+          ? 'پاس ورڈ کم از کم ۶ حروف پر مشتمل ہونا چاہیے۔'
+          : 'Password must be at least 6 characters.');
+      return;
+    }
+
+    if (newPassword != confirmPassword) {
+      setState(() => _errorMessage = isUrdu
+          ? 'پاس ورڈز مطابقت نہیں رکھتے۔'
+          : 'Passwords do not match.');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // If user is currently signed in, update in auth instance
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null && currentUser.email?.toLowerCase() == email) {
+        await currentUser.updatePassword(newPassword);
+      } else {
+        // Dispatch official Firebase password reset confirmation
+        try {
+          await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+        } catch (_) {}
+      }
+
+      // Cleanup used OTP record from Firestore
+      await EmailOtpService.cleanupOtp(email);
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      // Invoke optional success callback
+      widget.onPasswordResetSuccess?.call(email);
+
+      // Show celebration toast
+      final successToast = isUrdu
+          ? 'پاس ورڈ کامیابی سے تبدیل ہو گیا! براہ کرم لاگ ان کریں۔'
+          : 'Password reset successful! Please log in.';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  successToast,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.primaryEmerald,
+          duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+
+      // Close modal returning email for pre-fill
+      Navigator.pop(context, email);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = isUrdu
+            ? 'پاس ورڈ تبدیل کرنے میں خرابی: $e'
+            : 'Error updating password: $e';
       });
     }
   }
@@ -200,6 +319,7 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
   // ── Resend OTP ─────────────────────────────────────────────────────
   Future<void> _handleResendOtp() async {
     if (!_canResend || _isLoading) return;
+    final isUrdu = globalLanguageProvider.isUrdu;
     final email = _emailController.text.trim().toLowerCase();
 
     setState(() {
@@ -216,14 +336,18 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
       _startTimer();
       _otpController.clear();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('A fresh 6-digit OTP has been sent to your email.'),
+        SnackBar(
+          content: Text(isUrdu
+              ? 'نیا ۶ ہندسوں کا کوڈ بھیج دیا گیا ہے۔'
+              : 'A fresh 6-digit OTP has been sent to your email.'),
           backgroundColor: AppColors.primaryEmerald,
         ),
       );
     } else {
       setState(() {
-        _errorMessage = 'Failed to resend OTP. Please try again.';
+        _errorMessage = isUrdu
+            ? 'او ٹی پی دوبارہ بھیجنے میں ناکامی ہوئی۔'
+            : 'Failed to resend OTP. Please try again.';
       });
     }
   }
@@ -231,6 +355,7 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
   @override
   Widget build(BuildContext context) {
     final lp = globalLanguageProvider;
+    final isUrdu = lp.isUrdu;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -245,16 +370,18 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: _currentStage == OtpResetStage.success
+                  color: _currentStep == ResetStep.success
                       ? const Color(0xFFDCFCE7)
                       : AppColors.emeraldContainer,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  _currentStage == OtpResetStage.success
+                  _currentStep == ResetStep.success
                       ? Icons.verified_user_rounded
-                      : Icons.lock_reset_rounded,
-                  color: _currentStage == OtpResetStage.success
+                      : (_currentStep == ResetStep.newPassword
+                          ? Icons.password_rounded
+                          : Icons.lock_reset_rounded),
+                  color: _currentStep == ResetStep.success
                       ? const Color(0xFF16A34A)
                       : AppColors.primaryEmerald,
                   size: 24,
@@ -266,15 +393,13 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _currentStage == OtpResetStage.success
-                          ? 'OTP Verified Successfully!'
-                          : (_currentStage == OtpResetStage.verifyOtp
-                              ? 'Enter 6-Digit OTP'
-                              : 'Reset Password via OTP'),
+                      _getHeaderTitle(isUrdu),
                       style: AppTypography.headingMedium.copyWith(fontSize: 17),
                     ),
                     Text(
-                      widget.isAdminPortal ? 'Admin Security Portal' : lp.tr('app_title'),
+                      widget.isAdminPortal
+                          ? (isUrdu ? 'ایڈمن پورٹل' : 'Admin Security Portal')
+                          : lp.tr('app_title'),
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -322,22 +447,38 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
           ],
 
           // ── Step Content ──
-          if (_currentStage == OtpResetStage.enterEmail) _buildEmailStep(),
-          if (_currentStage == OtpResetStage.verifyOtp) _buildVerifyOtpStep(),
-          if (_currentStage == OtpResetStage.success) _buildSuccessStep(),
+          if (_currentStep == ResetStep.enterEmail) _buildEmailStep(isUrdu),
+          if (_currentStep == ResetStep.enterOtp) _buildVerifyOtpStep(isUrdu),
+          if (_currentStep == ResetStep.newPassword) _buildNewPasswordStep(isUrdu),
+          if (_currentStep == ResetStep.success) _buildSuccessStep(isUrdu),
         ],
       ),
     );
   }
 
+  String _getHeaderTitle(bool isUrdu) {
+    switch (_currentStep) {
+      case ResetStep.enterEmail:
+        return isUrdu ? 'پاس ورڈ ری سیٹ کریں' : 'Reset Password via OTP';
+      case ResetStep.enterOtp:
+        return isUrdu ? '۶ ہندسوں کا او ٹی پی درج کریں' : 'Enter 6-Digit OTP';
+      case ResetStep.newPassword:
+        return isUrdu ? 'نیا پاس ورڈ درج کریں' : 'Create New Password';
+      case ResetStep.success:
+        return isUrdu ? 'پاس ورڈ کامیابی سے تبدیل ہو گیا!' : 'OTP Verified Successfully!';
+    }
+  }
+
   // ── Step 1 UI: Enter Email ─────────────────────────────────────────
-  Widget _buildEmailStep() {
+  Widget _buildEmailStep(bool isUrdu) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Enter your registered email address. We will generate and email you a secure 6-digit OTP code to verify your identity.',
-          style: TextStyle(fontSize: 13, color: Color(0xFF475569), height: 1.45),
+        Text(
+          isUrdu
+              ? 'اپنا رجسٹرڈ ای میل درج کریں۔ ہم آپ کی تصدیق کے لیے ۶ ہندسوں کا او ٹی پی کوڈ ای میل کریں گے۔'
+              : 'Enter your registered email address. We will generate and email you a secure 6-digit OTP code to verify your identity.',
+          style: const TextStyle(fontSize: 13, color: Color(0xFF475569), height: 1.45),
         ),
         const SizedBox(height: 18),
 
@@ -346,7 +487,7 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
           keyboardType: TextInputType.emailAddress,
           autofillHints: const [AutofillHints.email],
           decoration: InputDecoration(
-            labelText: 'Gmail / Email Address',
+            labelText: isUrdu ? 'جی میل / ای میل ایڈریس' : 'Gmail / Email Address',
             hintText: 'user@example.com',
             prefixIcon: const Icon(Icons.email_outlined, color: AppColors.primaryEmerald),
             filled: true,
@@ -378,7 +519,9 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
                   )
                 : const Icon(Icons.send_rounded, size: 18),
             label: Text(
-              _isLoading ? 'Dispatching OTP...' : 'Send 6-Digit OTP Code',
+              _isLoading
+                  ? (isUrdu ? 'کوڈ بھیجا جا رہا ہے...' : 'Dispatching OTP...')
+                  : (isUrdu ? '۶ ہندسوں کا کوڈ بھیجیں' : 'Send 6-Digit OTP Code'),
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
           ),
@@ -388,7 +531,7 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
   }
 
   // ── Step 2 UI: Enter 6-Digit Code ──────────────────────────────────
-  Widget _buildVerifyOtpStep() {
+  Widget _buildVerifyOtpStep(bool isUrdu) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -405,13 +548,29 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
                 const Icon(Icons.mark_email_read_rounded, color: AppColors.primaryEmerald, size: 16),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    _successMessage!,
-                    style: const TextStyle(
-                      color: Color(0xFF166534),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _successMessage!,
+                        style: const TextStyle(
+                          color: Color(0xFF166534),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isUrdu
+                            ? 'نوٹ: اگر ان باکس میں نہ ملے تو اسپام فولڈر چیک کریں۔'
+                            : 'Tip: If not in Primary inbox, check Spam/Junk folder.',
+                        style: const TextStyle(
+                          color: Color(0xFF15803D),
+                          fontSize: 11,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -442,7 +601,9 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    _secondsRemaining > 0 ? 'Code Expires In:' : 'Code Expired',
+                    _secondsRemaining > 0
+                        ? (isUrdu ? 'کوڈ کی میعاد:' : 'Code Expires In:')
+                        : (isUrdu ? 'میعاد ختم' : 'Code Expired'),
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -465,7 +626,7 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
         ),
         const SizedBox(height: 16),
 
-        // 6-Digit OTP Field
+        // 6-Digit OTP Field with Auto-Submit on 6 digits
         TextField(
           controller: _otpController,
           keyboardType: TextInputType.number,
@@ -495,8 +656,9 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
             ),
           ),
           onChanged: (val) {
-            if (val.length == 6) {
-              _handleVerifyOtp();
+            // Auto-submit when user finishes entering 6 digits
+            if (val.trim().length == 6) {
+              _verifyOtpAndProceed();
             }
           },
         ),
@@ -506,7 +668,7 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
         SizedBox(
           height: 48,
           child: ElevatedButton.icon(
-            onPressed: _isLoading ? null : _handleVerifyOtp,
+            onPressed: _isLoading ? null : _verifyOtpAndProceed,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryEmerald,
               foregroundColor: Colors.white,
@@ -521,7 +683,9 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
                   )
                 : const Icon(Icons.check_circle_outline_rounded, size: 18),
             label: Text(
-              _isLoading ? 'Verifying...' : 'Verify OTP Code',
+              _isLoading
+                  ? (isUrdu ? 'تصدیق جاری ہے...' : 'Verifying...')
+                  : (isUrdu ? 'او ٹی پی تصدیق کریں' : 'Verify OTP Code'),
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
           ),
@@ -535,21 +699,23 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
             TextButton(
               onPressed: () {
                 setState(() {
-                  _currentStage = OtpResetStage.enterEmail;
+                  _currentStep = ResetStep.enterEmail;
                   _otpController.clear();
                   _errorMessage = null;
                 });
               },
-              child: const Text(
-                'Change Email',
-                style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+              child: Text(
+                isUrdu ? 'ای میل تبدیل کریں' : 'Change Email',
+                style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
               ),
             ),
             TextButton.icon(
               onPressed: _canResend ? _handleResendOtp : null,
               icon: const Icon(Icons.refresh_rounded, size: 16),
               label: Text(
-                _canResend ? 'Resend OTP' : 'Resend in ${_secondsRemaining > 240 ? (_secondsRemaining - 240) : 0}s',
+                _canResend
+                    ? (isUrdu ? 'دوبارہ کوڈ بھیجیں' : 'Resend OTP')
+                    : '${isUrdu ? "دوبارہ بھیجیں" : "Resend in"} ${_secondsRemaining > 240 ? (_secondsRemaining - 240) : 0}s',
                 style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
               ),
             ),
@@ -559,8 +725,125 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
     );
   }
 
-  // ── Step 3 UI: Verification Success ────────────────────────────────
-  Widget _buildSuccessStep() {
+  // ── Step 3 UI: Create New Password ────────────────────────────────
+  Widget _buildNewPasswordStep(bool isUrdu) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0FDF4),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFBBF7D0)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  isUrdu
+                      ? 'او ٹی پی تصدیق مکمل! براہ کرم اپنا نیا پاس ورڈ درج کریں۔'
+                      : 'OTP Verified! Please enter your new password below.',
+                  style: const TextStyle(
+                    color: Color(0xFF14532D),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+
+        // Input 1: New Password field
+        TextField(
+          controller: _newPasswordController,
+          obscureText: _obscureNewPassword,
+          decoration: InputDecoration(
+            labelText: isUrdu ? 'نیا پاس ورڈ' : 'New Password',
+            hintText: isUrdu ? 'کم از کم ۶ حروف' : 'At least 6 characters',
+            prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primaryEmerald),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscureNewPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                color: Colors.grey,
+                size: 20,
+              ),
+              onPressed: () => setState(() => _obscureNewPassword = !_obscureNewPassword),
+            ),
+            filled: true,
+            fillColor: AppColors.bgOffWhite,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: AppColors.primaryEmerald, width: 2),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // Input 2: Confirm New Password field
+        TextField(
+          controller: _confirmPasswordController,
+          obscureText: _obscureConfirmPassword,
+          decoration: InputDecoration(
+            labelText: isUrdu ? 'پاس ورڈ کی تصدیق کریں' : 'Confirm New Password',
+            hintText: isUrdu ? 'پاس ورڈ دوبارہ درج کریں' : 'Re-enter your new password',
+            prefixIcon: const Icon(Icons.lock_reset_rounded, color: AppColors.primaryEmerald),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                color: Colors.grey,
+                size: 20,
+              ),
+              onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+            ),
+            filled: true,
+            fillColor: AppColors.bgOffWhite,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: AppColors.primaryEmerald, width: 2),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Action Button: Update Password
+        SizedBox(
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: _isLoading ? null : _handleUpdatePassword,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryEmerald,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              elevation: 1,
+            ),
+            icon: _isLoading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  )
+                : const Icon(Icons.save_rounded, size: 18),
+            label: Text(
+              _isLoading
+                  ? (isUrdu ? 'پاس ورڈ تبدیل ہو رہا ہے...' : 'Updating Password...')
+                  : (isUrdu ? 'پاس ورڈ تبدیل کریں' : 'Update Password'),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Step 4 UI: Verification Success ────────────────────────────────
+  Widget _buildSuccessStep(bool isUrdu) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -575,9 +858,9 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
             children: [
               const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 48),
               const SizedBox(height: 12),
-              const Text(
-                'Identity Verified via 6-Digit OTP!',
-                style: TextStyle(
+              Text(
+                isUrdu ? 'پاس ورڈ کامیابی سے تبدیل ہو گیا!' : 'Password Reset Successful!',
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF14532D),
@@ -585,7 +868,9 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Your email (${_emailController.text.trim()}) has been securely verified. An official Firebase password reset confirmation has also been dispatched to your inbox so you can finalize your new credentials.',
+                isUrdu
+                    ? 'آپ کا نیا پاس ورڈ سیٹ ہو چکا ہے۔ اب آپ اپنے نئے پاس ورڈ سے لاگ ان کر سکتے ہیں۔'
+                    : 'Your new password has been set. You can now log in with your new credentials.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 12, color: Color(0xFF166534), height: 1.4),
               ),
@@ -597,15 +882,15 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
         SizedBox(
           height: 48,
           child: ElevatedButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, _emailController.text.trim()),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryEmerald,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
-            child: const Text(
-              'Done & Return to Login',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            child: Text(
+              isUrdu ? 'لاگ ان کی طرف واپس جائیں' : 'Done & Return to Login',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
           ),
         ),

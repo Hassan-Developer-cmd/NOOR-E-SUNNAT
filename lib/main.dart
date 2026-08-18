@@ -53,7 +53,9 @@ class NoorESunnatApp extends StatelessWidget {
           ],
           builder: (context, child) {
             return Directionality(
-              textDirection: kIsWeb ? TextDirection.ltr : globalLanguageProvider.textDirection,
+              textDirection: kIsWeb
+                  ? TextDirection.ltr
+                  : globalLanguageProvider.textDirection,
               child: child!,
             );
           },
