@@ -194,10 +194,13 @@ class _MasailGridScreenState extends State<MasailGridScreen> {
                       child: TextField(
                         controller: _searchController,
                         onChanged: (val) => setState(() => _searchQuery = val),
+                        textDirection: lp.isUrdu ? TextDirection.rtl : TextDirection.ltr,
+                        textAlign: lp.isUrdu ? TextAlign.right : TextAlign.left,
                         decoration: InputDecoration(
                           hintText: lp.isUrdu
                               ? 'نماز، وضو، زکوۃ کے مسائل تلاش کریں...'
                               : 'Search namaz, zakat, nikah rules...',
+                          hintTextDirection: lp.isUrdu ? TextDirection.rtl : TextDirection.ltr,
                           hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
                           prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF64748B), size: 20),
                           suffixIcon: _searchQuery.isNotEmpty

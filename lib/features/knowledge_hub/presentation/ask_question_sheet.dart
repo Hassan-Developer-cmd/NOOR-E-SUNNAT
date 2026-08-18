@@ -272,19 +272,36 @@ class _AskQuestionSheetState extends State<AskQuestionSheet> {
                     style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                   ),
                   const SizedBox(height: 6),
-                  TextField(
-                    controller: _questionController,
-                    maxLines: 4,
-                    textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
-                    decoration: InputDecoration(
-                      hintText: isUrdu
-                          ? 'مثال: نماز میں سجدہ سہو کے متعلق کیا حکم ہے؟'
-                          : 'e.g., What is the Islamic ruling regarding...',
-                      hintStyle: const TextStyle(fontSize: 13, color: Colors.grey),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      filled: true,
-                      fillColor: AppColors.bgOffWhite,
-                    ),
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _questionController,
+                    builder: (context, value, _) {
+                      final bool isRtl = isUrdu ||
+                          RegExp(r'[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]')
+                              .hasMatch(value.text);
+
+                      return TextField(
+                        controller: _questionController,
+                        maxLines: 4,
+                        textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+                        textAlign: isRtl ? TextAlign.right : TextAlign.left,
+                        style: TextStyle(
+                          fontSize: 14,
+                          height: 1.4,
+                          fontFamily: isRtl ? 'JameelNoori' : null,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: isUrdu
+                              ? 'مثال: نماز میں سجدہ سہو کے متعلق کیا حکم ہے؟'
+                              : 'e.g., What is the Islamic ruling regarding...',
+                          hintTextDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+                          hintStyle: const TextStyle(fontSize: 13, color: Colors.grey),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          filled: true,
+                          fillColor: AppColors.bgOffWhite,
+                          alignLabelWithHint: true,
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 20),
 

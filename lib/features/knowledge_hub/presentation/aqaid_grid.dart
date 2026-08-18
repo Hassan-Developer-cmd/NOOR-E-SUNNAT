@@ -276,10 +276,13 @@ class _AqaidGridScreenState extends State<AqaidGridScreen> {
                       child: TextField(
                         controller: _searchController,
                         onChanged: (val) => setState(() => _searchQuery = val),
+                        textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
+                        textAlign: isUrdu ? TextAlign.right : TextAlign.left,
                         decoration: InputDecoration(
                           hintText: isUrdu
                               ? 'عقائد کے موضوعات تلاش کریں...'
                               : 'Search Aqaid topics...',
+                          hintTextDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
                           hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
                           prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primaryEmerald, size: 20),
                           suffixIcon: _searchQuery.isNotEmpty

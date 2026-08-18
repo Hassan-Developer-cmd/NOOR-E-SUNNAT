@@ -165,8 +165,11 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> {
                                       controller: _searchController,
                                       onChanged: (val) =>
                                           setState(() => _searchQuery = val.trim()),
+                                      textDirection: lp.isUrdu ? TextDirection.rtl : TextDirection.ltr,
+                                      textAlign: lp.isUrdu ? TextAlign.right : TextAlign.left,
                                       decoration: InputDecoration(
                                         hintText: lp.tr('search_events_hint'),
+                                        hintTextDirection: lp.isUrdu ? TextDirection.rtl : TextDirection.ltr,
                                         hintStyle: TextStyle(
                                           fontSize: 13,
                                           color: Colors.grey.shade400,

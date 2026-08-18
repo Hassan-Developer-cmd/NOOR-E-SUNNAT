@@ -602,10 +602,13 @@ class _DailyContentArchiveSheetState extends State<_DailyContentArchiveSheet> {
               child: TextField(
                 controller: _searchController,
                 onChanged: (v) => setState(() => _searchQuery = v.trim().toLowerCase()),
+                textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
+                textAlign: isUrdu ? TextAlign.right : TextAlign.left,
                 decoration: InputDecoration(
                   hintText: isUrdu
                       ? 'تلاش کریں (حدیث، آیت، حوالہ...)'
                       : 'Search by keyword, surah, book...',
+                  hintTextDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
                   prefixIcon: const Icon(Icons.search, size: 20),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(

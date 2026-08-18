@@ -3154,7 +3154,14 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                     ),
                     child: Text(
                       q.question,
-                      style: const TextStyle(fontSize: 14, height: 1.4, fontWeight: FontWeight.w500),
+                      textDirection: _isRtlText(q.question) ? TextDirection.rtl : TextDirection.ltr,
+                      textAlign: _isRtlText(q.question) ? TextAlign.right : TextAlign.left,
+                      style: TextStyle(
+                        fontSize: 14,
+                        height: 1.4,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: _isRtlText(q.question) ? 'JameelNoori' : null,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -3162,13 +3169,12 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   // Answer Input
                   const Text('Admin Response / شرعی جواب:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                   const SizedBox(height: 6),
-                  TextField(
-                    controller: answerC,
+                  _field(
+                    answerC,
+                    'Admin Response / شرعی جواب',
                     maxLines: 5,
-                    decoration: const InputDecoration(
-                      hintText: 'Enter verified Islamic answer / reference...',
-                      border: OutlineInputBorder(),
-                    ),
+                    hintText: 'Enter verified Islamic answer / شرعی جواب یہاں درج کریں...',
+                    isRtl: true,
                   ),
                 ],
               ),
@@ -3338,16 +3344,66 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     );
   }
 
-  Widget _field(TextEditingController controller, String label, {int maxLines = 1, String? hintText}) {
-    return TextField(
-      controller: controller,
-      maxLines: maxLines,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hintText,
-        hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
-        border: const OutlineInputBorder(),
-      ),
+  bool _isRtlText(String s) {
+    if (s.isEmpty) return false;
+    final lower = s.toLowerCase();
+    if (lower.contains('urdu') ||
+        lower.contains('اردو') ||
+        lower.contains('arabic') ||
+        lower.contains('عربی') ||
+        lower.contains('matn') ||
+        lower.contains('متن') ||
+        lower.contains('ترجمہ') ||
+        lower.contains('جواب') ||
+        lower.contains('حدیث') ||
+        lower.contains('آیت') ||
+        lower.contains('تفصیل') ||
+        lower.contains('مسئلہ') ||
+        lower.contains('سوال') ||
+        lower.contains('fatwa') ||
+        lower.contains('فتاوی')) {
+      return true;
+    }
+    return RegExp(r'[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]').hasMatch(s);
+  }
+
+  Widget _field(
+    TextEditingController controller,
+    String label, {
+    int maxLines = 1,
+    String? hintText,
+    bool? isRtl,
+    TextInputType? keyboardType,
+  }) {
+    final bool configuredRtl = isRtl ?? (_isRtlText(label) || (hintText != null && _isRtlText(hintText)));
+
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (context, value, child) {
+        final bool effectiveRtl = configuredRtl || _isRtlText(value.text);
+
+        return TextField(
+          controller: controller,
+          maxLines: maxLines,
+          keyboardType: keyboardType,
+          textDirection: effectiveRtl ? TextDirection.rtl : TextDirection.ltr,
+          textAlign: effectiveRtl ? TextAlign.right : TextAlign.left,
+          style: TextStyle(
+            fontSize: 14,
+            height: 1.4,
+            fontFamily: effectiveRtl ? 'JameelNoori' : null,
+          ),
+          decoration: InputDecoration(
+            labelText: label,
+            hintText: hintText,
+            hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
+            hintTextDirection: effectiveRtl ? TextDirection.rtl : TextDirection.ltr,
+            alignLabelWithHint: maxLines > 1,
+            border: const OutlineInputBorder(),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          ),
+        );
+      },
     );
   }
 

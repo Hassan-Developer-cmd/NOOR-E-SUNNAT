@@ -136,8 +136,10 @@ class _QAScreenState extends State<QAScreen> {
                             controller: _searchController,
                             onChanged: (v) => setState(() => _searchQuery = v),
                             textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
+                            textAlign: isUrdu ? TextAlign.right : TextAlign.left,
                             decoration: InputDecoration(
                               hintText: lp.tr('search_my_questions_hint'),
+                              hintTextDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
                               hintStyle: const TextStyle(fontSize: 13, color: Colors.grey),
                               prefixIcon: const Icon(Icons.search_rounded, size: 20, color: AppColors.primaryEmerald),
                               suffixIcon: _searchQuery.isNotEmpty
