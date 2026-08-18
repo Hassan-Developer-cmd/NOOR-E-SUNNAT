@@ -1,12 +1,12 @@
 {
-    "name": "NOOR E SUNNAT",
+    "name": "NOOR E SUNNAT - Admin Portal & App",
     "short_name": "NOOR E SUNNAT",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
+    "background_color": "#064E3B",
+    "theme_color": "#064E3B",
     "description": "NOOR E SUNNAT - Islamic Application & Durood Counter",
-    "orientation": "portrait-primary",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {
