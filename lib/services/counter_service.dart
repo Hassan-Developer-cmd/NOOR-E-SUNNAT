@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import '../core/utils/streak_helper.dart';
 import 'auth_service.dart';
 
 /// Holds a snapshot of all counter values for the UI to consume.
@@ -74,7 +75,7 @@ class CounterService extends ChangeNotifier {
   void _startStreams() {
     // 1. Global counter stream
     _globalSub = globalCounterStream.listen((snap) {
-      if (snap.exists) {
+      if (snap.exists && snap.data() != null) {
         _processGlobalSnap(snap.data()!);
       }
     }, onError: (e) {
@@ -89,7 +90,7 @@ class CounterService extends ChangeNotifier {
         await AuthService.ensureUserDocExists(user);
 
         _userSub = _firestore.collection('users').doc(user.uid).snapshots().listen((snap) {
-          if (snap.exists) {
+          if (snap.exists && snap.data() != null) {
             _processUserSnap(snap.data()!);
           }
         }, onError: (e) {
@@ -109,9 +110,9 @@ class CounterService extends ChangeNotifier {
   }
 
   void _processGlobalSnap(Map<String, dynamic> data) {
-    final todayStr = _todayDateString();
+    final todayStr = StreakHelper.toCalendarDateString(DateTime.now());
     final lastReset = data['last_reset_date'];
-    final isSameDay = _isSameCalendarDay(lastReset, todayStr);
+    final isSameDay = StreakHelper.isSameDay(lastReset, todayStr);
 
     final int globalTodayCount = isSameDay ? ((data['today_count'] as num?)?.toInt() ?? 0) : 0;
     final int globalTotalCount = (data['total_count'] as num?)?.toInt() ?? 0;
@@ -125,24 +126,24 @@ class CounterService extends ChangeNotifier {
       duroodPoints: _snapshot.duroodPoints,
     ));
 
-    if (!isSameDay) {
+    if (!isSameDay && data['last_reset_date'] != null) {
       _resetGlobalTodayInFirestore(todayStr);
     }
   }
 
   void _processUserSnap(Map<String, dynamic> data) {
-    final todayStr = _todayDateString();
-    final lastActive = data['last_active_durood_date'];
-    final isSameDay = _isSameCalendarDay(lastActive, todayStr);
+    final todayStr = StreakHelper.toCalendarDateString(DateTime.now());
+    final lastActive = data['last_active_durood_date'] ??
+        data['last_active_timestamp'] ??
+        data['last_active_date'] ??
+        data['last_durood_at'];
+    final isSameDay = StreakHelper.isSameDay(lastActive, todayStr);
 
-    final int rawStreak = (data['current_streak'] as num?)?.toInt() ?? 0;
-    int effectiveStreak = rawStreak;
-    if (lastActive != null && lastActive.toString().isNotEmpty) {
-      final diff = _calendarDaysDiff(lastActive, todayStr);
-      if (diff > 1) {
-        effectiveStreak = 0;
-      }
-    }
+    final int rawStreak = ((data['current_streak'] ?? data['streak']) as num?)?.toInt() ?? 0;
+    final int effectiveStreak = StreakHelper.calculateEffectiveStreak(
+      storedStreak: rawStreak,
+      lastActiveDate: lastActive,
+    );
 
     _updateSnapshot(CounterSnapshot(
       globalTotal: _snapshot.globalTotal,
@@ -191,7 +192,7 @@ class CounterService extends ChangeNotifier {
     _pendingBuffer = 0;
 
     try {
-      final todayStr = _todayDateString();
+      final todayStr = StreakHelper.toCalendarDateString(DateTime.now());
       final batch = _firestore.batch();
 
       // 1. Global counter update with daily reset check
@@ -199,7 +200,7 @@ class CounterService extends ChangeNotifier {
       final globalSnap = await globalRef.get();
       final globalData = globalSnap.data() ?? {};
       final globalLastReset = globalData['last_reset_date'];
-      final isGlobalNewDay = globalLastReset == null || !_isSameCalendarDay(globalLastReset, todayStr);
+      final isGlobalNewDay = globalLastReset == null || !StreakHelper.isSameDay(globalLastReset, todayStr);
 
       if (isGlobalNewDay) {
         batch.set(
@@ -228,10 +229,21 @@ class CounterService extends ChangeNotifier {
         final userRef = _firestore.collection('users').doc(uid);
         final userSnap = await userRef.get();
         final data = userSnap.data() ?? {};
-        final lastActive = data['last_active_durood_date'];
+        final lastActive = data['last_active_durood_date'] ??
+            data['last_active_timestamp'] ??
+            data['last_active_date'] ??
+            data['last_durood_at'];
 
-        final streakUpdates = _calculateStreakUpdate(lastActive, data, todayStr);
-        final isUserNewDay = lastActive == null || !_isSameCalendarDay(lastActive, todayStr);
+        final currentStoredStreak = ((data['current_streak'] ?? data['streak']) as num?)?.toInt() ?? 0;
+        final longestStoredStreak = ((data['longest_streak'] ?? data['best_streak']) as num?)?.toInt() ?? currentStoredStreak;
+
+        final streakUpdates = StreakHelper.computeStreakOnDuroodRecitation(
+          currentStoredStreak: currentStoredStreak,
+          longestStoredStreak: longestStoredStreak,
+          lastActiveDate: lastActive,
+          todayDateStr: todayStr,
+        );
+        final isUserNewDay = lastActive == null || !StreakHelper.isSameDay(lastActive, todayStr);
 
         batch.set(
           userRef,
@@ -240,6 +252,8 @@ class CounterService extends ChangeNotifier {
             'personal_today_durood': isUserNewDay ? count : FieldValue.increment(count),
             'total_durood_points': FieldValue.increment(count * 2),
             'last_active_durood_date': todayStr,
+            'last_active_timestamp': FieldValue.serverTimestamp(),
+            'last_durood_at': FieldValue.serverTimestamp(),
             ...streakUpdates,
           },
           SetOptions(merge: true),
@@ -252,87 +266,6 @@ class CounterService extends ChangeNotifier {
       // Re-add to buffer so counts aren't lost on network glitch
       _pendingBuffer += count;
     }
-  }
-
-  // ── Streak Logic ────────────────────────────────────────────
-
-  Map<String, dynamic> _calculateStreakUpdate(
-      dynamic lastActiveRaw, Map<String, dynamic> userData, String todayStr) {
-    final lastActiveStr = _toCalendarDateString(lastActiveRaw);
-    if (lastActiveStr.isEmpty) {
-      return {
-        'current_streak': 1,
-        'longest_streak': 1,
-      };
-    }
-
-    if (_isSameCalendarDay(lastActiveStr, todayStr)) {
-      return {}; // Already updated streak today
-    }
-
-    final diff = _calendarDaysDiff(lastActiveStr, todayStr);
-    final currentStreak = (userData['current_streak'] as num?)?.toInt() ?? 0;
-    final longestStreak = (userData['longest_streak'] as num?)?.toInt() ?? 0;
-
-    if (diff == 1) {
-      // Consecutive calendar day
-      final newStreak = currentStreak + 1;
-      return {
-        'current_streak': newStreak,
-        'longest_streak': newStreak > longestStreak ? newStreak : longestStreak,
-      };
-    } else {
-      // Missed one or more full days: streak resets to 1 (active today)
-      return {
-        'current_streak': 1,
-      };
-    }
-  }
-
-  String _toCalendarDateString(dynamic rawDate) {
-    if (rawDate == null) return '';
-    if (rawDate is String) {
-      if (rawDate.contains('T')) {
-        return rawDate.split('T').first;
-      }
-      if (rawDate.contains(' ')) {
-        return rawDate.split(' ').first;
-      }
-      return rawDate;
-    }
-    if (rawDate is DateTime) {
-      return '${rawDate.year}-${rawDate.month.toString().padLeft(2, '0')}-${rawDate.day.toString().padLeft(2, '0')}';
-    }
-    if (rawDate is Timestamp) {
-      final dt = rawDate.toDate();
-      return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
-    }
-    return '';
-  }
-
-  bool _isSameCalendarDay(dynamic date1, dynamic date2) {
-    final s1 = _toCalendarDateString(date1);
-    final s2 = _toCalendarDateString(date2);
-    return s1.isNotEmpty && s1 == s2;
-  }
-
-  int _calendarDaysDiff(dynamic fromDate, dynamic toDate) {
-    try {
-      final s1 = _toCalendarDateString(fromDate);
-      final s2 = _toCalendarDateString(toDate);
-      final p1 = s1.split('-').map(int.parse).toList();
-      final p2 = s2.split('-').map(int.parse).toList();
-      final d1 = DateTime(p1[0], p1[1], p1[2]);
-      final d2 = DateTime(p2[0], p2[1], p2[2]);
-      return d2.difference(d1).inDays;
-    } catch (e) {
-      return 0;
-    }
-  }
-
-  String _todayDateString() {
-    final now = DateTime.now();
-    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 
   // ── Reset ───────────────────────────────────────────────────

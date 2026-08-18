@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/streak_helper.dart';
 
 class AppUser {
   final String userId;
@@ -29,12 +30,26 @@ class AppUser {
 
   factory AppUser.fromMap(Map<String, dynamic> map) {
     DateTime? activeDate;
-    final rawDate = map['last_active_durood_date'];
+    final rawDate = map['last_active_durood_date'] ??
+        map['last_active_timestamp'] ??
+        map['last_active_date'] ??
+        map['last_durood_at'];
+
     if (rawDate is Timestamp) {
       activeDate = rawDate.toDate();
     } else if (rawDate is String && rawDate.isNotEmpty) {
       activeDate = DateTime.tryParse(rawDate);
+    } else if (rawDate is int && rawDate > 0) {
+      activeDate = DateTime.fromMillisecondsSinceEpoch(rawDate);
     }
+
+    final int rawStreak = ((map['current_streak'] ?? map['streak'] ?? map['daily_streak']) as num?)?.toInt() ?? 0;
+    final int rawLongest = ((map['longest_streak'] ?? map['best_streak']) as num?)?.toInt() ?? rawStreak;
+
+    final int effectiveStreak = StreakHelper.calculateEffectiveStreak(
+      storedStreak: rawStreak,
+      lastActiveDate: rawDate ?? activeDate,
+    );
 
     return AppUser(
       userId: map['user_id'] as String? ?? map['userId'] as String? ?? '',
@@ -55,8 +70,8 @@ class AppUser {
               map['today_count']) as num?)
               ?.toInt() ??
           0,
-      currentStreak: (map['current_streak'] as num?)?.toInt() ?? 0,
-      longestStreak: (map['longest_streak'] as num?)?.toInt() ?? 0,
+      currentStreak: effectiveStreak,
+      longestStreak: rawLongest >= effectiveStreak ? rawLongest : effectiveStreak,
       totalDuroodPoints: ((map['total_durood_points'] ?? map['points']) as num?)?.toInt() ?? 0,
       lastActiveDuroodDate: activeDate,
     );
