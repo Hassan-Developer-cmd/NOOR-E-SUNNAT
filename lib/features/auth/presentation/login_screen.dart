@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/providers/language_provider.dart';
+import '../../../core/widgets/otp_password_reset_dialog.dart';
 import '../../../main.dart';
 import '../../../services/auth_service.dart';
 
@@ -98,64 +98,65 @@ class _LoginScreenState extends State<LoginScreen> {
         return Scaffold(
           backgroundColor: AppColors.bgPrimary,
           body: SafeArea(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  // ── Hero Banner Header ──
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(28, 44, 28, 36),
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Color(0xFF0A3A2A),
-                          Color(0xFF064E3B),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                      borderRadius: BorderRadius.only(
-                        bottomLeft: Radius.circular(32),
-                        bottomRight: Radius.circular(32),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        // Language Toggle (mobile only)
-                        if (!kIsWeb) ...[
-                          Align(
-                            alignment: AlignmentDirectional.topEnd,
-                            child: GestureDetector(
-                              onTap: () => lp.toggleLanguage(),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.25),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.language_rounded, size: 14, color: Colors.white),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      lp.isUrdu ? 'EN' : 'اردو',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.white,
-                                      ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      // ── Hero Banner Header ──
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.fromLTRB(28, 44, 28, 36),
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Color(0xFF0A3A2A),
+                              Color(0xFF064E3B),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(32),
+                            bottomRight: Radius.circular(32),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            // Language Toggle
+                            Align(
+                              alignment: AlignmentDirectional.topEnd,
+                              child: GestureDetector(
+                                onTap: () => lp.toggleLanguage(),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(alpha: 0.25),
                                     ),
-                                  ],
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.language_rounded, size: 14, color: Colors.white),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        lp.isUrdu ? 'EN' : 'اردو',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 20),
-                        ],
+                            const SizedBox(height: 20),
 
                         // Logo Emblem
                         Container(
@@ -273,7 +274,31 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ? lp.tr('please_enter_password')
                                     : null,
                               ),
-                              const SizedBox(height: 22),
+                              if (!_isSignUp) ...[
+                                const SizedBox(height: 4),
+                                Align(
+                                  alignment: AlignmentDirectional.centerEnd,
+                                  child: TextButton(
+                                    onPressed: () {
+                                      OtpPasswordResetDialog.show(
+                                        context,
+                                        initialEmail: _emailController.text.trim(),
+                                        isAdminPortal: false,
+                                      );
+                                    },
+                                    child: const Text(
+                                      'Forgot Password?',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.primaryEmerald,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ] else
+                                const SizedBox(height: 22),
 
                               // Email Auth Button
                               SizedBox(
@@ -368,9 +393,11 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
+  },
+);
   }
 
   Widget _buildGoogleSignInButton(LanguageProvider lp) {

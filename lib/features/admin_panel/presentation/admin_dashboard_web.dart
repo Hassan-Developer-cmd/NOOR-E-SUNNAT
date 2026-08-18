@@ -39,12 +39,14 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
   String _selectedEventStatus = 'all';
   String _selectedQuestionStatus = 'all';
   String _selectedDailyContentType = 'all';
+  bool _showMobileSearch = false;
   final TextEditingController _searchController = TextEditingController();
 
   void _switchTab(int index) {
     setState(() {
       _selectedNavIndex = index;
       _searchQuery = '';
+      _showMobileSearch = false;
       _searchController.clear();
       _selectedMasailCategory = 'all';
       _selectedAqaidCategory = 'all';
@@ -132,99 +134,151 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                       // Top Bar
                       Container(
                         height: 64,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: EdgeInsets.symmetric(horizontal: screenWidth < 600 ? 8 : 16),
                         decoration: const BoxDecoration(
                           color: Colors.white,
                           border: Border(bottom: BorderSide(color: AppColors.borderLight)),
                         ),
-                        child: Row(
-                          children: [
-                            if (!isDesktop)
-                              Builder(
-                                builder: (ctx) => IconButton(
-                                  icon: const Icon(Icons.menu, color: AppColors.primaryEmerald),
-                                  onPressed: () => Scaffold.of(ctx).openDrawer(),
-                                ),
-                              ),
-                            Expanded(
-                              child: Text(
-                                navItems[_selectedNavIndex],
-                                style: AppTypography.headingMedium.copyWith(
-                                  fontSize: screenWidth < 600 ? 16 : 20,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              width: screenWidth < 600 ? 120 : 200,
-                              height: 38,
-                              child: TextField(
-                                controller: _searchController,
-                                onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
-                                decoration: InputDecoration(
-                                  hintText: lp.tr('search_records'),
-                                  prefixIcon: const Icon(Icons.search, size: 18),
-                                  suffixIcon: _searchQuery.isNotEmpty
-                                      ? IconButton(
-                                          icon: const Icon(Icons.clear, size: 16),
-                                          onPressed: () {
-                                            _searchController.clear();
-                                            setState(() => _searchQuery = '');
-                                          },
-                                        )
-                                      : null,
-                                  contentPadding: EdgeInsets.zero,
-                                  filled: true,
-                                  fillColor: AppColors.bgOffWhite,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                    borderSide: BorderSide.none,
+                        child: (_showMobileSearch && screenWidth < 600)
+                            ? Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.arrow_back, color: AppColors.primaryEmerald),
+                                    onPressed: () => setState(() => _showMobileSearch = false),
                                   ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-
-                            // Language Switcher
-                            GestureDetector(
-                              onTap: () => lp.toggleLanguage(),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryEmerald.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: AppColors.primaryEmerald.withValues(alpha: 0.3)),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.language_rounded, size: 14, color: AppColors.primaryEmerald),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      lp.isUrdu ? 'EN' : 'اردو',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.primaryEmerald,
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _searchController,
+                                      autofocus: true,
+                                      onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
+                                      decoration: InputDecoration(
+                                        hintText: lp.tr('search_records'),
+                                        prefixIcon: const Icon(Icons.search, size: 18),
+                                        suffixIcon: _searchQuery.isNotEmpty
+                                            ? IconButton(
+                                                icon: const Icon(Icons.clear, size: 16),
+                                                onPressed: () {
+                                                  _searchController.clear();
+                                                  setState(() => _searchQuery = '');
+                                                },
+                                              )
+                                            : null,
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                                        filled: true,
+                                        fillColor: AppColors.bgOffWhite,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(20),
+                                          borderSide: BorderSide.none,
+                                        ),
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
+                                  ),
+                                ],
+                              )
+                            : Row(
+                                children: [
+                                  if (!isDesktop)
+                                    Builder(
+                                      builder: (ctx) => IconButton(
+                                        icon: const Icon(Icons.menu, color: AppColors.primaryEmerald),
+                                        onPressed: () => Scaffold.of(ctx).openDrawer(),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                      ),
+                                    ),
+                                  Expanded(
+                                    child: Text(
+                                      navItems[_selectedNavIndex],
+                                      style: AppTypography.headingMedium.copyWith(
+                                        fontSize: screenWidth < 600 ? 15 : 20,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
 
-                            const CircleAvatar(
-                              radius: 18,
-                              backgroundColor: AppColors.primaryEmerald,
-                              child: Text(
-                                'A',
-                                style: TextStyle(color: AppColors.accentGold, fontWeight: FontWeight.bold),
+                                  // Search on mobile (icon toggle) vs desktop (inline field)
+                                  if (screenWidth < 600) ...[
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.search,
+                                        color: _searchQuery.isNotEmpty
+                                            ? AppColors.accentGold
+                                            : AppColors.primaryEmerald,
+                                        size: 22,
+                                      ),
+                                      onPressed: () => setState(() => _showMobileSearch = true),
+                                      tooltip: lp.tr('search_records'),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                    ),
+                                    const SizedBox(width: 4),
+                                  ] else ...[
+                                    SizedBox(
+                                      width: screenWidth < 900 ? 140 : 200,
+                                      height: 38,
+                                      child: TextField(
+                                        controller: _searchController,
+                                        onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
+                                        decoration: InputDecoration(
+                                          hintText: lp.tr('search_records'),
+                                          prefixIcon: const Icon(Icons.search, size: 18),
+                                          suffixIcon: _searchQuery.isNotEmpty
+                                              ? IconButton(
+                                                  icon: const Icon(Icons.clear, size: 16),
+                                                  onPressed: () {
+                                                    _searchController.clear();
+                                                    setState(() => _searchQuery = '');
+                                                  },
+                                                )
+                                              : null,
+                                          contentPadding: EdgeInsets.zero,
+                                          filled: true,
+                                          fillColor: AppColors.bgOffWhite,
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(20),
+                                            borderSide: BorderSide.none,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                  ],
+
+                                  // Admin Avatar Profile Pill
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryEmerald.withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(18),
+                                      border: Border.all(color: AppColors.primaryEmerald.withValues(alpha: 0.2)),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 13,
+                                          backgroundColor: AppColors.primaryEmerald,
+                                          child: Text(
+                                            'A',
+                                            style: TextStyle(color: AppColors.accentGold, fontWeight: FontWeight.bold, fontSize: 11),
+                                          ),
+                                        ),
+                                        SizedBox(width: 6),
+                                        Text(
+                                          'Admin',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.primaryEmerald,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
-                        ),
                       ),
                       // Body
                       Expanded(
@@ -366,56 +420,110 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
           const SizedBox(height: 28),
         ],
         // Section Title & Actions
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                _selectedNavIndex == 0
-                    ? 'Users Leaderboard'
-                    : (_selectedNavIndex == 6
-                        ? 'Manage User Questions & Q&A'
-                        : 'Manage ${_navItems[_selectedNavIndex]}'),
-                style: AppTypography.headingMedium,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+        if (screenWidth < 700) ...[
+          Text(
+            _selectedNavIndex == 0
+                ? 'Users Leaderboard'
+                : (_selectedNavIndex == 6
+                    ? 'Manage User Questions & Q&A'
+                    : 'Manage ${_navItems[_selectedNavIndex]}'),
+            style: AppTypography.headingMedium.copyWith(fontSize: 18),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: _isSeeding
+                    ? null
+                    : () async {
+                        setState(() => _isSeeding = true);
+                        await FirestoreSeeder.checkAndSeedFirestore();
+                        if (mounted) {
+                          setState(() => _isSeeding = false);
+                          _snack('Firestore Data Check Complete: All collections verified.');
+                        }
+                      },
+                icon: _isSeeding
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryEmerald),
+                      )
+                    : const Icon(Icons.cloud_upload_outlined, size: 16),
+                label: Text(_isSeeding ? 'Verifying...' : 'Verify Firestore', style: const TextStyle(fontSize: 12)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primaryEmerald,
+                  side: const BorderSide(color: AppColors.primaryEmerald),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            OutlinedButton.icon(
-              onPressed: _isSeeding
-                  ? null
-                  : () async {
-                      setState(() => _isSeeding = true);
-                      await FirestoreSeeder.checkAndSeedFirestore();
-                      if (mounted) {
-                        setState(() => _isSeeding = false);
-                        _snack('Firestore Data Check Complete: All collections verified.');
-                      }
-                    },
-              icon: _isSeeding
-                  ? const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryEmerald),
-                    )
-                  : const Icon(Icons.cloud_upload_outlined, size: 18),
-              label: Text(_isSeeding ? 'Verifying...' : 'Verify / Seed Firestore'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primaryEmerald,
-                side: const BorderSide(color: AppColors.primaryEmerald),
-              ),
-            ),
-            if (_selectedNavIndex != 0 && _selectedNavIndex != 6 && _selectedNavIndex != 7) ...[
-              const SizedBox(width: 12),
-              ElevatedButton.icon(
-                onPressed: () => _showAddModal(context),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add New Entry'),
-              ),
+              if (_selectedNavIndex != 0 && _selectedNavIndex != 6 && _selectedNavIndex != 7)
+                ElevatedButton.icon(
+                  onPressed: () => _showAddModal(context),
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('Add Entry', style: TextStyle(fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryEmerald,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
             ],
-          ],
-        ),
+          ),
+        ] else ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  _selectedNavIndex == 0
+                      ? 'Users Leaderboard'
+                      : (_selectedNavIndex == 6
+                          ? 'Manage User Questions & Q&A'
+                          : 'Manage ${_navItems[_selectedNavIndex]}'),
+                  style: AppTypography.headingMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 12),
+              OutlinedButton.icon(
+                onPressed: _isSeeding
+                    ? null
+                    : () async {
+                        setState(() => _isSeeding = true);
+                        await FirestoreSeeder.checkAndSeedFirestore();
+                        if (mounted) {
+                          setState(() => _isSeeding = false);
+                          _snack('Firestore Data Check Complete: All collections verified.');
+                        }
+                      },
+                icon: _isSeeding
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryEmerald),
+                      )
+                    : const Icon(Icons.cloud_upload_outlined, size: 18),
+                label: Text(_isSeeding ? 'Verifying...' : 'Verify / Seed Firestore'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primaryEmerald,
+                  side: const BorderSide(color: AppColors.primaryEmerald),
+                ),
+              ),
+              if (_selectedNavIndex != 0 && _selectedNavIndex != 6 && _selectedNavIndex != 7) ...[
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: () => _showAddModal(context),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Add New Entry'),
+                ),
+              ],
+            ],
+          ),
+        ],
         const SizedBox(height: 16),
         _buildDataSection(),
       ],
@@ -783,6 +891,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     return StreamBuilder<List<EventModel>>(
       stream: AdminService.eventsStream,
       builder: (context, snap) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isDesktop = screenWidth > 900;
         if (snap.connectionState == ConnectionState.waiting) {
           return const Center(
             child: Padding(
@@ -928,234 +1038,257 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                     BoxShadow(color: AppColors.shadowColor, blurRadius: 8, offset: Offset(0, 2)),
                   ],
                 ),
-                child: Column(
-                  children: [
-                    // Table Header Bar
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                        border: Border(bottom: BorderSide(color: AppColors.borderLight)),
-                      ),
-                      child: Row(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minWidth: 800),
+                    child: SizedBox(
+                      width: screenWidth > 848 ? (screenWidth - (isDesktop ? 308 : 48)) : 800,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SizedBox(width: 160, child: Text(globalLanguageProvider.tr('col_arrangement'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: Color(0xFF64748B)))),
-                          Expanded(flex: 3, child: Text(globalLanguageProvider.tr('col_title_location'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: Color(0xFF64748B)))),
-                          Expanded(flex: 2, child: Text(globalLanguageProvider.tr('col_datetime'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: Color(0xFF64748B)))),
-                          Expanded(flex: 2, child: Text(globalLanguageProvider.tr('col_status'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: Color(0xFF64748B)))),
-                          SizedBox(width: 90, child: Text(globalLanguageProvider.tr('col_actions'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: Color(0xFF64748B)))),
-                        ],
-                      ),
-                    ),
-
-
-                    // Interactive Reorderable List of Events
-                    ReorderableListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      buildDefaultDragHandles: false,
-                      itemCount: filtered.length,
-                      onReorderItem: (oldIndex, newIndex) => _onEventReordered(allEvents, filtered, oldIndex, newIndex),
-                      itemBuilder: (context, index) {
-
-                        final e = filtered[index];
-                        final overallRank = allEvents.indexOf(e) + 1;
-                        final displayRank = e.order > 0 ? e.order : overallRank;
-
-                        return Container(
-                          key: ValueKey('event_${e.id}'),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          decoration: const BoxDecoration(
-                            border: Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
+                          // Table Header Bar
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                              border: Border(bottom: BorderSide(color: AppColors.borderLight)),
+                            ),
+                            child: const Row(
+                              children: [
+                                SizedBox(width: 140, child: Text('ARRANGEMENT', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: Color(0xFF64748B)))),
+                                SizedBox(width: 240, child: Text('EVENT TITLE & LOCATION', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: Color(0xFF64748B)))),
+                                SizedBox(width: 160, child: Text('DATE & TIME', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: Color(0xFF64748B)))),
+                                SizedBox(width: 140, child: Text('STATUS', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: Color(0xFF64748B)))),
+                                SizedBox(width: 120, child: Text('ACTIONS', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: Color(0xFF64748B)))),
+                              ],
+                            ),
                           ),
-                          child: Row(
-                            children: [
-                              // Arrangement # and Drag Controls
-                              SizedBox(
-                                width: 160,
+
+
+                          // Interactive Reorderable List of Events
+                          ReorderableListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            buildDefaultDragHandles: false,
+                            itemCount: filtered.length,
+                            onReorderItem: (oldIndex, newIndex) => _onEventReordered(allEvents, filtered, oldIndex, newIndex),
+                            itemBuilder: (context, index) {
+
+                              final e = filtered[index];
+                              final overallRank = allEvents.indexOf(e) + 1;
+                              final displayRank = e.order > 0 ? e.order : overallRank;
+
+                              return Container(
+                                key: ValueKey('event_${e.id}'),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                decoration: const BoxDecoration(
+                                  border: Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
+                                ),
                                 child: Row(
                                   children: [
-                                    // Drag Grab Handle
-                                    ReorderableDragStartListener(
-                                      index: index,
-                                      child: MouseRegion(
-                                        cursor: SystemMouseCursors.grab,
-                                        child: Container(
-                                          padding: const EdgeInsets.all(6),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFF1F5F9),
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: const Icon(Icons.drag_indicator_rounded, size: 18, color: Color(0xFF64748B)),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-
-                                    // Arrangement Position Badge with Click-to-Edit
-                                    InkWell(
-                                      onTap: () => _showSetArrangementDialog(e, displayRank, allEvents.length, allEvents),
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Tooltip(
-                                        message: 'Click to set specific position number',
-                                        child: _buildEventArrangementBadge(displayRank),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-
-                                    // Quick Up / Down step buttons
-                                    Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        InkWell(
-                                          onTap: index > 0
-                                              ? () => _onEventReordered(allEvents, filtered, index, index - 1)
-                                              : null,
-                                          borderRadius: BorderRadius.circular(4),
-                                          child: Icon(
-                                            Icons.keyboard_arrow_up_rounded,
-                                            size: 16,
-                                            color: index > 0 ? AppColors.primaryEmerald : Colors.grey.shade300,
-                                          ),
-                                        ),
-                                        InkWell(
-                                          onTap: index < filtered.length - 1
-                                              ? () => _onEventReordered(allEvents, filtered, index, index + 1)
-                                              : null,
-                                          borderRadius: BorderRadius.circular(4),
-                                          child: Icon(
-                                            Icons.keyboard_arrow_down_rounded,
-                                            size: 16,
-                                            color: index < filtered.length - 1 ? AppColors.primaryEmerald : Colors.grey.shade300,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-
-                                ),
-                              ),
-
-                              // Event Title and Location
-                              Expanded(
-                                flex: 3,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      e.title,
-                                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                                    ),
-                                    if (e.titleUr.isNotEmpty)
-                                      Text(
-                                        e.titleUr,
-                                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                                      ),
-                                    if (e.location.isNotEmpty)
-                                      Row(
-                                        mainAxisSize: MainAxisSize.min,
+                                    // Column 1: Arrangement # and Drag Controls (140px)
+                                    SizedBox(
+                                      width: 140,
+                                      child: Row(
                                         children: [
-                                          const Icon(Icons.location_on_outlined, size: 12, color: Color(0xFF64748B)),
-                                          const SizedBox(width: 4),
-                                          Flexible(
-                                            child: Text(
-                                              e.location,
-                                              style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                                              overflow: TextOverflow.ellipsis,
+                                          // Drag Grab Handle
+                                          ReorderableDragStartListener(
+                                            index: index,
+                                            child: MouseRegion(
+                                              cursor: SystemMouseCursors.grab,
+                                              child: Container(
+                                                padding: const EdgeInsets.all(6),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFF1F5F9),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: const Icon(Icons.drag_indicator_rounded, size: 18, color: Color(0xFF64748B)),
+                                              ),
                                             ),
+                                          ),
+                                          const SizedBox(width: 8),
+
+                                          // Arrangement Position Badge with Click-to-Edit
+                                          InkWell(
+                                            onTap: () => _showSetArrangementDialog(e, displayRank, allEvents.length, allEvents),
+                                            borderRadius: BorderRadius.circular(12),
+                                            child: Tooltip(
+                                              message: 'Click to set specific position number',
+                                              child: _buildEventArrangementBadge(displayRank),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+
+                                          // Quick Up / Down step buttons
+                                          Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              InkWell(
+                                                onTap: index > 0
+                                                    ? () => _onEventReordered(allEvents, filtered, index, index - 1)
+                                                    : null,
+                                                borderRadius: BorderRadius.circular(4),
+                                                child: Icon(
+                                                  Icons.keyboard_arrow_up_rounded,
+                                                  size: 16,
+                                                  color: index > 0 ? AppColors.primaryEmerald : Colors.grey.shade300,
+                                                ),
+                                              ),
+                                              InkWell(
+                                                onTap: index < filtered.length - 1
+                                                    ? () => _onEventReordered(allEvents, filtered, index, index + 1)
+                                                    : null,
+                                                borderRadius: BorderRadius.circular(4),
+                                                child: Icon(
+                                                  Icons.keyboard_arrow_down_rounded,
+                                                  size: 16,
+                                                  color: index < filtered.length - 1 ? AppColors.primaryEmerald : Colors.grey.shade300,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ],
                                       ),
-                                  ],
-                                ),
-                              ),
-
-                              // Date & Time
-                              Expanded(
-                                flex: 2,
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.calendar_today_outlined, size: 13, color: Color(0xFF64748B)),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: Text(
-                                        e.dateTime,
-                                        style: const TextStyle(fontSize: 12, color: Color(0xFF334155)),
-                                      ),
                                     ),
-                                  ],
-                                ),
-                              ),
 
-                              // Status Dropdown
-                              Expanded(
-                                flex: 2,
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: e.statusBgColor,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: e.statusFgColor.withValues(alpha: 0.3)),
-                                    ),
-                                    child: DropdownButtonHideUnderline(
-                                      child: DropdownButton<String>(
-                                        value: EventModel.supportedStatuses.contains(e.status) ? e.status : 'Coming Soon',
-                                        icon: Icon(Icons.arrow_drop_down, color: e.statusFgColor, size: 18),
-                                        isDense: true,
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                          color: e.statusFgColor,
-                                        ),
-                                        items: EventModel.supportedStatuses.map((s) {
-                                          return DropdownMenuItem<String>(
-                                            value: s,
-                                            child: Text(
-                                              s.toUpperCase(),
-                                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                    // Column 2: Event Title and Location (240px)
+                                    SizedBox(
+                                      width: 240,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(right: 12),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              e.title,
+                                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
-                                          );
-                                        }).toList(),
-                                        onChanged: (newStatus) async {
-                                          if (newStatus != null && newStatus != e.status) {
-                                            await AdminService.updateEventStatus(e.id, newStatus, currentEvent: e);
-                                            _snack('Event status updated to $newStatus! Notification emitted.');
-                                          }
-                                        },
+                                            if (e.titleUr.isNotEmpty)
+                                              Text(
+                                                e.titleUr,
+                                                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            if (e.location.isNotEmpty) ...[
+                                              const SizedBox(height: 2),
+                                              Row(
+                                                children: [
+                                                  const Icon(Icons.location_on_outlined, size: 12, color: Color(0xFF64748B)),
+                                                  const SizedBox(width: 4),
+                                                  Expanded(
+                                                    child: Text(
+                                                      e.location,
+                                                      style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ),
-                              ),
 
-                              // Edit & Delete Actions
-                              SizedBox(
-                                width: 90,
-                                child: Row(
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.edit, size: 18, color: AppColors.primaryEmerald),
-                                      tooltip: 'Edit event details & order',
-                                      onPressed: () => _showEditEventModal(context, e),
+                                    // Column 3: Date & Time (160px)
+                                    SizedBox(
+                                      width: 160,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(right: 12),
+                                        child: Row(
+                                          children: [
+                                            const Icon(Icons.calendar_today_outlined, size: 13, color: Color(0xFF64748B)),
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              child: Text(
+                                                e.dateTime,
+                                                style: const TextStyle(fontSize: 12, color: Color(0xFF334155)),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                                      tooltip: 'Delete event',
-                                      onPressed: () => _confirmDelete(context, () => AdminService.deleteEvent(e.id)),
+
+                                    // Column 4: Status Dropdown (140px)
+                                    SizedBox(
+                                      width: 140,
+                                      child: Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: e.statusBgColor,
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(color: e.statusFgColor.withValues(alpha: 0.3)),
+                                          ),
+                                          child: DropdownButtonHideUnderline(
+                                            child: DropdownButton<String>(
+                                              value: EventModel.supportedStatuses.contains(e.status) ? e.status : 'Coming Soon',
+                                              icon: Icon(Icons.arrow_drop_down, color: e.statusFgColor, size: 18),
+                                              isDense: true,
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                                color: e.statusFgColor,
+                                              ),
+                                              items: EventModel.supportedStatuses.map((s) {
+                                                return DropdownMenuItem<String>(
+                                                  value: s,
+                                                  child: Text(
+                                                    s.toUpperCase(),
+                                                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                                  ),
+                                                );
+                                              }).toList(),
+                                              onChanged: (newStatus) async {
+                                                if (newStatus != null && newStatus != e.status) {
+                                                  await AdminService.updateEventStatus(e.id, newStatus, currentEvent: e);
+                                                  _snack('Event status updated to $newStatus! Notification emitted.');
+                                                }
+                                              },
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                    // Column 5: Edit & Delete Actions (120px)
+                                    SizedBox(
+                                      width: 120,
+                                      child: Row(
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(Icons.edit, size: 18, color: AppColors.primaryEmerald),
+                                            tooltip: 'Edit event details & order',
+                                            onPressed: () => _showEditEventModal(context, e),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                            tooltip: 'Delete event',
+                                            onPressed: () => _confirmDelete(context, () => AdminService.deleteEvent(e.id)),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 ),
-                              ),
-                            ],
+                              );
+                            },
                           ),
-                        );
-                      },
+                        ],
+                      ),
                     ),
-                  ],
+                  ),
                 ),
               ),
           ],
@@ -1739,8 +1872,11 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Controls Bar
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 Text(
                   'Total Broadcast Notifications (${allDocs.length})',
@@ -3171,11 +3307,18 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
 
   double _dialogWidth(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
-    return w > 600 ? 520.0 : w * 0.90;
+    return w > 600 ? 520.0 : (w - 32).clamp(280.0, 520.0);
   }
 
   Widget _tableCard(List<DataColumn> columns, List<DataRow> rows) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final double minTableWidth = columns.length >= 7
+        ? 900.0
+        : (columns.length >= 6
+            ? 840.0
+            : (columns.length >= 5
+                ? 800.0
+                : (screenWidth < 600 ? 650.0 : 0.0)));
 
     return Card(
       elevation: 1,
@@ -3189,7 +3332,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
             physics: const BouncingScrollPhysics(),
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                minWidth: screenWidth < 600 ? 550 : 0,
+                minWidth: minTableWidth,
               ),
               child: DataTable(
                 headingRowColor: WidgetStateProperty.all(AppColors.bgOffWhite),

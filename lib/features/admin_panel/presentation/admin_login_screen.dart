@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/widgets/otp_password_reset_dialog.dart';
 import '../../../main.dart';
 
 class AdminLoginScreen extends StatefulWidget {
@@ -104,33 +105,12 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     }
   }
 
-  Future<void> _handleForgotPassword() async {
-    final email = _emailController.text.trim();
-    if (email.isEmpty || !email.contains('@')) {
-      setState(() => _errorMessage = 'Please enter your admin email above to receive a password reset link.');
-      return;
-    }
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-    try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Password reset email sent to $email. Please check your inbox.'),
-            backgroundColor: AppColors.primaryEmerald,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _errorMessage = 'Could not send reset email: $e');
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+  void _handleForgotPassword() {
+    OtpPasswordResetDialog.show(
+      context,
+      initialEmail: _emailController.text.trim(),
+      isAdminPortal: true,
+    );
   }
 
   @override
@@ -138,6 +118,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     final lp = globalLanguageProvider;
     final screenWidth = MediaQuery.of(context).size.width;
     final isWide = screenWidth > 700;
+
+    final isSmall = screenWidth < 400;
 
     return Scaffold(
       backgroundColor: AppColors.bgOffWhite,
@@ -152,15 +134,15 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                 end: Alignment.bottomRight,
               ),
             ),
-            height: isWide ? 320 : 220,
+            height: isWide ? 320 : (isSmall ? 180 : 220),
           ),
 
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
                 padding: EdgeInsets.symmetric(
-                  horizontal: isWide ? 24 : 20,
-                  vertical: 32,
+                  horizontal: isWide ? 24 : (isSmall ? 12 : 20),
+                  vertical: isSmall ? 16 : 32,
                 ),
                 child: Column(
                   children: [
@@ -190,13 +172,37 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 32),
-                    ] else
+                    ] else ...[
+                      const SizedBox(height: 8),
+                      const Text(
+                        'NOOR E SUNNAT',
+                        style: TextStyle(
+                          fontFamily: 'Outfit',
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Admin Management Portal',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                       const SizedBox(height: 16),
+                    ],
 
                     // Login Card
                     Container(
                       constraints: const BoxConstraints(maxWidth: 440),
-                      padding: const EdgeInsets.all(32),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isSmall ? 18 : (isWide ? 32 : 24),
+                        vertical: isSmall ? 22 : 32,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(24),
