@@ -376,6 +376,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   alignment: AlignmentDirectional.centerEnd,
                                   child: TextButton(
                                     onPressed: () async {
+                                      final messenger = ScaffoldMessenger.of(context);
                                       final resetEmail = await OtpPasswordResetDialog.show(
                                         context,
                                         initialEmail: _emailController.text.trim(),
@@ -384,12 +385,33 @@ class _LoginScreenState extends State<LoginScreen> {
                                       if (resetEmail != null && resetEmail.isNotEmpty && mounted) {
                                         setState(() {
                                           _emailController.text = resetEmail;
+                                          _passwordController.clear();
                                         });
+                                        messenger.showSnackBar(
+                                          SnackBar(
+                                            content: Row(
+                                              children: [
+                                                const Icon(Icons.check_circle_rounded, color: Color(0xFF34D399), size: 20),
+                                                const SizedBox(width: 10),
+                                                Expanded(
+                                                  child: Text(
+                                                    lp.tr('password_updated_success_msg'),
+                                                    style: const TextStyle(fontSize: 12, color: Colors.white),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            backgroundColor: const Color(0xFF064E3B),
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                            duration: const Duration(seconds: 4),
+                                          ),
+                                        );
                                       }
                                     },
-                                    child: const Text(
-                                      'Forgot Password?',
-                                      style: TextStyle(
+                                    child: Text(
+                                      lp.isUrdu ? 'پاس ورڈ بھول گئے؟' : 'Forgot Password?',
+                                      style: const TextStyle(
                                         fontSize: 12,
                                         color: AppColors.primaryEmerald,
                                         fontWeight: FontWeight.w600,

@@ -115,6 +115,13 @@ class AppTypography {
     letterSpacing: -0.2,
   );
 
+  static const TextStyle headingSmall = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
+    color: AppColors.textPrimary,
+    letterSpacing: -0.2,
+  );
+
   static const TextStyle titleMedium = TextStyle(
     fontSize: 15,
     fontWeight: FontWeight.w600,
