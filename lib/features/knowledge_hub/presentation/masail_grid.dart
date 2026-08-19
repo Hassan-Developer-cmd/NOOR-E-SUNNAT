@@ -391,59 +391,125 @@ class _HadithWisdomBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lp = globalLanguageProvider;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFDFBF7),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFF3E8D5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return ListenableBuilder(
+      listenable: globalLanguageProvider,
+      builder: (context, _) {
+        final lp = globalLanguageProvider;
+        final isUrdu = lp.isUrdu;
+
+        final headerTitle = isUrdu ? 'حدیثِ حکمت 📖' : 'Hadith of Wisdom 📖';
+        const arabicText = 'طَلَبُ الْعِلْمِ فَرِيضَةٌ عَلَىٰ كُلِّ مُسْلِمٍ';
+        final translation = isUrdu
+            ? 'دین کا علم حاصل کرنا ہر مسلمان پر فرض ہے۔'
+            : 'Seeking sacred Islamic knowledge is an obligation upon every Muslim.';
+        final reference = isUrdu ? '— سنن ابن ماجہ' : '— Sunan Ibn Majah';
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFDFBF7),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFF3E8D5)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFB45309).withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment:
+                isUrdu ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.auto_stories_rounded, color: Color(0xFFB45309), size: 18),
-              const SizedBox(width: 8),
+              // Header Row
+              Row(
+                mainAxisAlignment:
+                    isUrdu ? MainAxisAlignment.end : MainAxisAlignment.start,
+                textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
+                children: [
+                  const Icon(
+                    Icons.auto_stories_rounded,
+                    color: Color(0xFFB45309),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    headerTitle,
+                    textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFFB45309),
+                      fontFamily: isUrdu ? 'UrduFont' : null,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Arabic Calligraphy Text Box
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFCF9EE),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFFDE68A).withValues(alpha: 0.6),
+                  ),
+                ),
+                child: const Text(
+                  arabicText,
+                  textAlign: TextAlign.center,
+                  textDirection: TextDirection.rtl,
+                  style: TextStyle(
+                    fontFamily: 'Amiri',
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF78350F),
+                    height: 1.6,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Localized Translation Text
               Text(
-                lp.isUrdu ? 'فرمانِ مصطفیٰ ﷺ' : 'Hadith of Wisdom',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFB45309),
+                translation,
+                textAlign: isUrdu ? TextAlign.right : TextAlign.left,
+                textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
+                style: TextStyle(
+                  fontSize: isUrdu ? 14 : 13,
+                  height: isUrdu ? 1.5 : 1.4,
+                  color: const Color(0xFF334155),
+                  fontWeight: FontWeight.w500,
+                  fontFamily: isUrdu ? 'UrduFont' : null,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Reference
+              Align(
+                alignment:
+                    isUrdu ? Alignment.centerLeft : Alignment.centerRight,
+                child: Text(
+                  reference,
+                  textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontStyle: isUrdu ? FontStyle.normal : FontStyle.italic,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF78350F),
+                    fontFamily: isUrdu ? 'UrduFont' : null,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            lp.isUrdu
-                ? 'علمِ دین حاصل کرنا ہر مسلمان مرد اور عورت پر فرض ہے۔'
-                : 'Seeking sacred Islamic knowledge is an obligation upon every Muslim.',
-            style: const TextStyle(
-              fontSize: 13,
-              height: 1.4,
-              color: Color(0xFF334155),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: Text(
-              lp.isUrdu ? '— سنن ابن ماجہ' : '— Sunan Ibn Majah',
-              style: const TextStyle(
-                fontSize: 11,
-                fontStyle: FontStyle.italic,
-                color: Color(0xFF78350F),
-              ),
-            ),
-          ),
-
-        ],
-      ),
+        );
+      },
     );
   }
 }
