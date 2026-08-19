@@ -5,6 +5,7 @@ import '../../../core/constants/app_typography.dart';
 import '../../../core/models/event_model.dart';
 import '../../../main.dart';
 import '../../../services/events_service.dart';
+import '../../home/presentation/widgets/event_card.dart';
 
 class UpcomingEventsScreen extends StatefulWidget {
   const UpcomingEventsScreen({super.key});
@@ -566,56 +567,103 @@ class _DetailedEventCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Banner Header with Status and Title
-              Container(
+              SizedBox(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: event.gradientColors,
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                height: 120,
+                child: Stack(
+                  fit: StackFit.expand,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.22),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            statusLabel,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              letterSpacing: 0.3,
+                    // 1. High-Resolution Islamic Background
+                    Image.network(
+                      (event.imageUrl != null && event.imageUrl!.trim().isNotEmpty)
+                          ? event.imageUrl!.trim()
+                          : EventCard.getThemedEventImage(
+                              '${event.title} ${event.titleUr}',
+                              '${event.description} ${event.descriptionUr}',
                             ),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: event.gradientColors,
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
                         ),
-                        const Icon(
-                          Icons.event_available_rounded,
-                          color: Colors.white70,
-                          size: 18,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      event.getTitle(isUrdu),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        height: 1.3,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    ),
+
+                    // 2. Dual-Tone Gradient Overlay
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.35),
+                            Colors.black.withValues(alpha: 0.85),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // 3. Banner Content
+                    Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.22),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.35),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  statusLabel,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ),
+                              const Icon(
+                                Icons.event_available_rounded,
+                                color: Colors.white70,
+                                size: 18,
+                              ),
+                            ],
+                          ),
+                          Text(
+                            event.getTitle(isUrdu),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              height: 1.3,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black87,
+                                  blurRadius: 4,
+                                  offset: Offset(0, 1.5),
+                                ),
+                              ],
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

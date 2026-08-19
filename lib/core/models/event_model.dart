@@ -19,6 +19,7 @@ class EventModel {
   final String status;
   final String description;
   final String descriptionUr;
+  final String? imageUrl;
   final int order;
   final List<Map<String, dynamic>> statusHistory;
   final String? lastNotifiedStatus;
@@ -36,6 +37,7 @@ class EventModel {
     required this.status,
     required this.description,
     this.descriptionUr = '',
+    this.imageUrl,
     this.order = 0,
     this.statusHistory = const [],
     this.lastNotifiedStatus,
@@ -76,6 +78,7 @@ class EventModel {
     String? status,
     String? description,
     String? descriptionUr,
+    String? imageUrl,
     int? order,
     List<Map<String, dynamic>>? statusHistory,
     String? lastNotifiedStatus,
@@ -93,6 +96,7 @@ class EventModel {
       status: status ?? this.status,
       description: description ?? this.description,
       descriptionUr: descriptionUr ?? this.descriptionUr,
+      imageUrl: imageUrl ?? this.imageUrl,
       order: order ?? this.order,
       statusHistory: statusHistory ?? this.statusHistory,
       lastNotifiedStatus: lastNotifiedStatus ?? this.lastNotifiedStatus,
@@ -173,6 +177,7 @@ class EventModel {
       status: map['status'] as String? ?? 'Coming Soon',
       description: map['description'] as String? ?? '',
       descriptionUr: map['description_ur'] as String? ?? '',
+      imageUrl: map['image_url'] as String? ?? map['imageUrl'] as String?,
       order: (map['order'] as num?)?.toInt() ?? (map['arrangement_index'] as num?)?.toInt() ?? 0,
       statusHistory: history,
       lastNotifiedStatus: map['last_notified_status'] as String?,
@@ -191,6 +196,7 @@ class EventModel {
         'status': status,
         'description': description,
         'description_ur': descriptionUr,
+        'image_url': imageUrl,
         'order': order,
         'status_history': statusHistory,
         'last_notified_status': lastNotifiedStatus ?? status,

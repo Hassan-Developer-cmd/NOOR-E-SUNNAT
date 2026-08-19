@@ -320,6 +320,7 @@ class _CounterScreenState extends State<CounterScreen> {
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Row(
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
                                         const Icon(Icons.flag_rounded, color: AppColors.accentGold, size: 20),
                                         const SizedBox(width: 8),
@@ -333,20 +334,29 @@ class _CounterScreenState extends State<CounterScreen> {
                                         ),
                                       ],
                                     ),
-                                    InkWell(
-                                      onTap: () => _showSetGoalDialog(context),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.emeraldContainer,
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Text(
-                                          '${snap.personalToday} / $_dailyTargetGoal',
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.primaryEmerald,
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: InkWell(
+                                        onTap: () => _showSetGoalDialog(context),
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.emeraldContainer,
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            child: Text(
+                                              '${_formatCount(snap.personalToday)} / ${_formatCount(_dailyTargetGoal)}',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.primaryEmerald,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -412,6 +422,25 @@ class _CounterScreenState extends State<CounterScreen> {
         },
       ),
     );
+  }
+
+  String _formatCount(int val) {
+    final absVal = val.abs();
+    if (absVal >= 1000000000000) {
+      final formatted = (val / 1000000000000).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '');
+      return '${formatted}T';
+    } else if (absVal >= 1000000000) {
+      final formatted = (val / 1000000000).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '');
+      return '${formatted}B';
+    } else if (absVal >= 1000000) {
+      final formatted = (val / 1000000).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '');
+      return '${formatted}M';
+    } else if (absVal >= 100000) {
+      final formatted = (val / 1000).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '');
+      return '${formatted}K';
+    } else {
+      return _fmt(val);
+    }
   }
 
   String _fmt(int val) => val.toString().replaceAllMapped(
