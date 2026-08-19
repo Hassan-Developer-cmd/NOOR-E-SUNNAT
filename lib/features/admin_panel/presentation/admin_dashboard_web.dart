@@ -12,6 +12,7 @@ import '../../../core/models/app_user.dart';
 import '../../../core/utils/firestore_seeder.dart';
 import '../../../services/admin_service.dart';
 import '../../../core/providers/language_provider.dart';
+import '../../home/presentation/widgets/event_card.dart';
 import '../../../main.dart';
 
 
@@ -2438,7 +2439,13 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     final locUrC = TextEditingController(text: event.locationUr);
     final descC = TextEditingController(text: event.description);
     final descUrC = TextEditingController(text: event.descriptionUr);
-    final imageUrlC = TextEditingController(text: event.imageUrl ?? '');
+    final initialImg = (event.imageUrl != null && event.imageUrl!.trim().isNotEmpty)
+        ? event.imageUrl!.trim()
+        : EventCard.getThemedEventImage(
+            '${event.title} ${event.titleUr}',
+            '${event.description} ${event.descriptionUr}',
+          );
+    final imageUrlC = TextEditingController(text: initialImg);
     final orderC = TextEditingController(text: event.order > 0 ? event.order.toString() : '');
     String status = EventModel.supportedStatuses.contains(event.status) ? event.status : 'Coming Soon';
 
