@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'firebase_options.dart';
 import 'core/constants/app_colors.dart';
 import 'core/constants/app_theme.dart';
@@ -34,12 +35,48 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   }
 }
 
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
+const AndroidNotificationChannel highImportanceChannel = AndroidNotificationChannel(
+  'high_importance_channel', // id
+  'High Importance Notifications', // title
+  description: 'This channel is used for important notifications.',
+  importance: Importance.max,
+  playSound: true,
+  enableVibration: true,
+);
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   if (!kIsWeb) {
+    // 1. Register Background Handler
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+    // 2. Setup Android Notification Channel
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(highImportanceChannel);
+
+    // 3. Request Permissions for Foreground/Background
+    await FirebaseMessaging.instance.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+      provisional: false,
+    );
+
+    // 4. Foreground presentation options for iOS/Android
+    await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
   }
+
   await globalLanguageProvider.init();
   await FirebaseInitService.seedInitialDatabase();
   await NotificationService.initialize();
