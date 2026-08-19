@@ -12,6 +12,7 @@
 .swiftpm/
 migrate_working_dir/
 .firebase/
+.kotlin/
 node_modules/
 **/node_modules/
 
