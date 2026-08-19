@@ -12,7 +12,6 @@ import 'widgets/durood_summary_card.dart';
 import 'widgets/gamification_bar.dart';
 import 'widgets/hadith_wisdom_card.dart';
 import 'widgets/notifications_sheet.dart';
-import 'widgets/home_welcome_banner.dart';
 import '../../../services/notification_service.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -32,6 +31,7 @@ class HomeScreen extends StatelessWidget {
       listenable: globalLanguageProvider,
       builder: (context, _) {
         final lp = globalLanguageProvider;
+        final languageCode = lp.locale.languageCode;
         final firebaseUser = FirebaseAuth.instance.currentUser;
         final displayName = firebaseUser?.displayName ?? lp.tr('guest');
         final photoUrl = firebaseUser?.photoURL;
@@ -49,66 +49,120 @@ class HomeScreen extends StatelessWidget {
                 surfaceTintColor: Colors.transparent,
                 flexibleSpace: FlexibleSpaceBar(
                   collapseMode: CollapseMode.parallax,
-                  background: Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [AppColors.emeraldDeep, AppColors.primaryEmerald],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
-                    padding: const EdgeInsets.fromLTRB(20, 56, 20, 20),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                lp.tr('welcome_greeting'),
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.white.withValues(alpha: 0.65),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                displayName,
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                  letterSpacing: -0.3,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // 1. Deep Emerald Base Gradient
+                      Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Color(0xFF064E3B), // Deep Emerald
+                              Color(0xFF0B5D44), // Rich Islamic Green
                             ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        // Avatar
-                        CircleAvatar(
-                          radius: 22,
-                          backgroundColor: Colors.white.withValues(alpha: 0.15),
-                          backgroundImage:
-                              photoUrl != null ? NetworkImage(photoUrl) : null,
-                          child: photoUrl == null
-                              ? Text(
-                                  initial,
-                                  style: const TextStyle(
-                                    color: AppColors.goldBright,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 18,
-                                  ),
-                                )
-                              : null,
+                      ),
+
+                      // 2. Spiritual Masjid an-Nabawi High-Res Background with Soft Light Overlay
+                      Opacity(
+                        opacity: 0.26,
+                        child: Image.network(
+                          'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?q=80&w=1080&auto=format&fit=crop',
+                          fit: BoxFit.cover,
+                          alignment: Alignment.center,
+                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                         ),
-                      ],
-                    ),
+                      ),
+
+                      // 3. Subtle Dark Gradient Overlay for Maximum Text & Icon Crispness
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.2),
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.4),
+                            ],
+                            stops: const [0.0, 0.45, 1.0],
+                          ),
+                        ),
+                      ),
+
+                      // 4. Header Foreground Content (User Greeting, Name, Avatar)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 56, 20, 20),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    lp.tr('welcome_greeting'),
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.white.withValues(alpha: 0.85),
+                                      fontWeight: FontWeight.w500,
+                                      shadows: const [
+                                        Shadow(
+                                          color: Colors.black45,
+                                          blurRadius: 4,
+                                          offset: Offset(0, 1),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    displayName,
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                      letterSpacing: -0.3,
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.black54,
+                                          blurRadius: 6,
+                                          offset: Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            // Avatar
+                            CircleAvatar(
+                              radius: 22,
+                              backgroundColor: Colors.white.withValues(alpha: 0.2),
+                              backgroundImage:
+                                  photoUrl != null ? NetworkImage(photoUrl) : null,
+                              child: photoUrl == null
+                                  ? Text(
+                                      initial,
+                                      style: const TextStyle(
+                                        color: AppColors.goldBright,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 18,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 actions: [
@@ -201,12 +255,6 @@ class HomeScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    // ── Hero Welcome Banner ──
-                    HomeWelcomeBanner(
-                      userName: displayName,
-                      isUrdu: lp.isUrdu,
-                    ),
-
                     // Gamification Row & Durood Summary Card wrapped with StreamBuilder for live launch streaming
                     StreamBuilder<CounterSnapshot>(
                       stream: counterService.snapshotStream,
