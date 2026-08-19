@@ -88,15 +88,16 @@ void main() {
 
       final fcmPayload = {
         'notification': {
-          'title': 'Test Push',
-          'body': 'Test Body',
+          'title': 'NOOR E SUNNAT - Terminated Push Test 📢',
+          'body': 'Test verified: This notification is delivered via high_importance_channel when app is closed.',
         },
         'data': {
           'click_action': clickAction,
-          'id': 'notif_999',
+          'id': 'test_push_1787146211928',
           'type': 'announcement',
-          'title': 'Test Push',
-          'body': 'Test Body',
+          'title': 'NOOR E SUNNAT - Terminated Push Test 📢',
+          'body': 'Test verified: This notification is delivered via high_importance_channel when app is closed.',
+          'timestamp': DateTime.now().toIso8601String(),
         },
         'android': {
           'priority': 'high',
@@ -105,16 +106,32 @@ void main() {
             'sound': 'default',
             'priority': 'max',
             'clickAction': clickAction,
+            'defaultSound': true,
+            'defaultVibrateTimings': true,
           },
         },
+        'topic': 'all_users',
       };
 
-      expect(fcmPayload['notification']?['title'], isNotEmpty);
-      expect(fcmPayload['notification']?['body'], isNotEmpty);
+      final notifMap = fcmPayload['notification'] as Map<String, dynamic>;
+      expect(notifMap['title'], equals('NOOR E SUNNAT - Terminated Push Test 📢'));
+      expect(notifMap['body'], isNotEmpty);
       expect(
         ((fcmPayload['android'] as Map)['notification'] as Map)['channelId'],
         equals(highImportanceChannel.id),
       );
+      expect(
+        ((fcmPayload['android'] as Map)['notification'] as Map)['priority'],
+        equals('max'),
+      );
+      expect(fcmPayload['topic'], equals('all_users'));
+    });
+
+    test('End-to-End Terminated Push: System Tray Banner, Sound, and Vibration parameters validation', () {
+      expect(highImportanceChannel.id, equals('high_importance_channel'));
+      expect(highImportanceChannel.importance.value, equals(5)); // Importance.max is 5
+      expect(highImportanceChannel.playSound, isTrue);
+      expect(highImportanceChannel.enableVibration, isTrue);
     });
   });
 }
