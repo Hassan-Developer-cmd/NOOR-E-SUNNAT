@@ -17,7 +17,7 @@ void main() {
     );
 
     expect(find.text('Admin Portal Access'), findsOneWidget);
-    expect(find.text('Sign In as Admin'), findsOneWidget);
+    expect(find.text('Sign In as Admin'), findsWidgets);
     expect(find.byType(TextField), findsNWidgets(2));
   });
 
