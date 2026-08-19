@@ -573,7 +573,7 @@ class _DetailedEventCard extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // 1. High-Resolution Islamic Background
+                    // 1. High-Resolution Islamic / Custom Admin Background
                     Image.network(
                       (event.imageUrl != null && event.imageUrl!.trim().isNotEmpty)
                           ? event.imageUrl!.trim()
@@ -582,12 +582,35 @@ class _DetailedEventCard extends StatelessWidget {
                               '${event.description} ${event.descriptionUr}',
                             ),
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: event.gradientColors,
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          color: const Color(0xFF064E3B),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white.withValues(alpha: 0.6),
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                  : null,
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (_, __, ___) => Image.network(
+                        EventCard.getThemedEventImage(
+                          '${event.title} ${event.titleUr}',
+                          '${event.description} ${event.descriptionUr}',
+                        ),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: event.gradientColors,
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
                           ),
                         ),
                       ),

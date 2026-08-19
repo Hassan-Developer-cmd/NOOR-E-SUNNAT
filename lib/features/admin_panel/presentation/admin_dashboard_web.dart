@@ -2291,6 +2291,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     final locUrC = TextEditingController();
     final descC = TextEditingController();
     final descUrC = TextEditingController();
+    final imageUrlC = TextEditingController();
     final orderC = TextEditingController();
     String status = 'Coming Soon';
 
@@ -2318,6 +2319,66 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 const SizedBox(height: 12),
                 _field(descUrC, 'Description (Urdu / اردو)', maxLines: 2),
                 const SizedBox(height: 12),
+                _field(
+                  imageUrlC,
+                  'Image URL (Direct Link) / تصویر کا لنک',
+                  hintText: 'https://images.unsplash.com/... or any image link',
+                ),
+                const SizedBox(height: 8),
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: imageUrlC,
+                  builder: (context, val, _) {
+                    final url = val.text.trim();
+                    if (url.isEmpty) return const SizedBox.shrink();
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      height: 110,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.borderLight),
+                        color: const Color(0xFF064E3B),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Image.network(
+                              url,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Center(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.broken_image_rounded, color: Colors.white70, size: 18),
+                                    SizedBox(width: 8),
+                                    Text('Invalid Image URL', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'Preview',
+                                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
                 _field(orderC, 'Arrangement Order # (Optional)', hintText: 'e.g. 1 for top priority, or leave blank to append at end'),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
@@ -2340,6 +2401,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   return;
                 }
                 final assignedOrder = int.tryParse(orderC.text.trim()) ?? 0;
+                final customImg = imageUrlC.text.trim().isEmpty ? null : imageUrlC.text.trim();
                 await AdminService.addEvent(EventModel(
                   id: '',
                   title: titleC.text.trim(),
@@ -2350,6 +2412,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   status: status,
                   description: descC.text.trim(),
                   descriptionUr: descUrC.text.trim().isEmpty ? descC.text.trim() : descUrC.text.trim(),
+                  imageUrl: customImg,
                   order: assignedOrder,
                 ));
                 if (ctx.mounted) {
@@ -2373,6 +2436,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     final locUrC = TextEditingController(text: event.locationUr);
     final descC = TextEditingController(text: event.description);
     final descUrC = TextEditingController(text: event.descriptionUr);
+    final imageUrlC = TextEditingController(text: event.imageUrl ?? '');
     final orderC = TextEditingController(text: event.order > 0 ? event.order.toString() : '');
     String status = EventModel.supportedStatuses.contains(event.status) ? event.status : 'Coming Soon';
 
@@ -2400,6 +2464,66 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 const SizedBox(height: 12),
                 _field(descUrC, 'Description (Urdu / اردو)', maxLines: 2),
                 const SizedBox(height: 12),
+                _field(
+                  imageUrlC,
+                  'Image URL (Direct Link) / تصویر کا لنک',
+                  hintText: 'https://images.unsplash.com/... or any image link',
+                ),
+                const SizedBox(height: 8),
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: imageUrlC,
+                  builder: (context, val, _) {
+                    final url = val.text.trim();
+                    if (url.isEmpty) return const SizedBox.shrink();
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      height: 110,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.borderLight),
+                        color: const Color(0xFF064E3B),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Image.network(
+                              url,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Center(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.broken_image_rounded, color: Colors.white70, size: 18),
+                                    SizedBox(width: 8),
+                                    Text('Invalid Image URL', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'Preview',
+                                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
                 _field(orderC, 'Arrangement Order # (Position in app)', hintText: 'e.g., 1 for Top, 2 for Second...'),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
@@ -2417,15 +2541,18 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
             ElevatedButton(
               onPressed: () async {
+                final customImg = imageUrlC.text.trim().isEmpty ? null : imageUrlC.text.trim();
                 final Map<String, dynamic> updateMap = {
-                  'title': titleC.text,
-                  'title_ur': titleUrC.text,
-                  'date_time': dateC.text,
-                  'location': locC.text,
-                  'location_ur': locUrC.text,
-                  'description': descC.text,
-                  'description_ur': descUrC.text,
+                  'title': titleC.text.trim(),
+                  'title_ur': titleUrC.text.trim(),
+                  'date_time': dateC.text.trim(),
+                  'location': locC.text.trim(),
+                  'location_ur': locUrC.text.trim(),
+                  'description': descC.text.trim(),
+                  'description_ur': descUrC.text.trim(),
                   'status': status,
+                  'image_url': customImg,
+                  'imageUrl': customImg,
                 };
                 final parsedOrder = int.tryParse(orderC.text.trim());
                 if (parsedOrder != null && parsedOrder > 0) {

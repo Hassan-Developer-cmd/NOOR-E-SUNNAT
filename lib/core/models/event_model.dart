@@ -157,6 +157,12 @@ class EventModel {
     }
   }
 
+  String get date => dateTime;
+  String get badgeText => status;
+
+  factory EventModel.fromFirestore(Map<String, dynamic> data, String id) =>
+      EventModel.fromMap(id, data);
+
   factory EventModel.fromMap(String id, Map<String, dynamic> map) {
     // Parse status history
     List<Map<String, dynamic>> history = [];
@@ -167,17 +173,20 @@ class EventModel {
           .toList();
     }
 
+    final rawDate = map['date_time'] ?? map['dateTime'] ?? map['date'] ?? '';
+    final rawImage = map['image_url'] ?? map['imageUrl'] ?? map['image'];
+
     return EventModel(
       id: id,
       title: map['title'] as String? ?? '',
       titleUr: map['title_ur'] as String? ?? '',
-      dateTime: map['date_time'] as String? ?? '',
+      dateTime: rawDate as String? ?? '',
       location: map['location'] as String? ?? '',
       locationUr: map['location_ur'] as String? ?? '',
-      status: map['status'] as String? ?? 'Coming Soon',
+      status: map['status'] as String? ?? map['badgeText'] as String? ?? 'Coming Soon',
       description: map['description'] as String? ?? '',
       descriptionUr: map['description_ur'] as String? ?? '',
-      imageUrl: map['image_url'] as String? ?? map['imageUrl'] as String?,
+      imageUrl: rawImage as String?,
       order: (map['order'] as num?)?.toInt() ?? (map['arrangement_index'] as num?)?.toInt() ?? 0,
       statusHistory: history,
       lastNotifiedStatus: map['last_notified_status'] as String?,
@@ -191,12 +200,15 @@ class EventModel {
         'title': title,
         'title_ur': titleUr,
         'date_time': dateTime,
+        'date': dateTime,
         'location': location,
         'location_ur': locationUr,
         'status': status,
+        'badgeText': status,
         'description': description,
         'description_ur': descriptionUr,
         'image_url': imageUrl,
+        'imageUrl': imageUrl,
         'order': order,
         'status_history': statusHistory,
         'last_notified_status': lastNotifiedStatus ?? status,
