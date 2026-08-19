@@ -74,12 +74,7 @@ class HomeScreen extends StatelessWidget {
                           fit: BoxFit.cover,
                           alignment: Alignment.center,
                           filterQuality: FilterQuality.medium,
-                          errorBuilder: (_, __, ___) => Image.asset(
-                            'assets/WhatsApp Image 2026-08-19 at 5.21.07 PM.jpeg',
-                            fit: BoxFit.cover,
-                            alignment: Alignment.center,
-                            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                          ),
+                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                         ),
                       ),
 

@@ -6,12 +6,17 @@
 -keep class io.flutter.** { *; }
 -keep class io.flutter.plugins.** { *; }
 
+# Google Play Core & Deferred Components Suppression
+-dontwarn com.google.android.play.core.**
+-dontwarn io.flutter.embedding.engine.deferredcomponents.**
+
 # Firebase Core & Firestore
 -dontwarn com.google.firebase.**
 -keep class com.google.firebase.** { *; }
 
 # Flutter Local Notifications
 -keep class com.dexterous.flutterlocalnotifications.** { *; }
+-dontwarn com.dexterous.flutterlocalnotifications.**
 
 # Google Play Services & Sign-In
 -keep class com.google.android.gms.** { *; }
