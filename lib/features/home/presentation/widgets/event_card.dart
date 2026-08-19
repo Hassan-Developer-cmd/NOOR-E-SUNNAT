@@ -123,14 +123,16 @@ class EventCard extends StatelessWidget {
                   child: Image.network(
                     imageUrl,
                     fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    filterQuality: FilterQuality.medium,
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
                       return Container(
-                        color: const Color(0xFF064E3B),
+                        color: const Color(0xFF0F3E2E),
                         child: Center(
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white.withValues(alpha: 0.6),
+                            color: Colors.white38,
                             value: loadingProgress.expectedTotalBytes != null
                                 ? loadingProgress.cumulativeBytesLoaded /
                                     loadingProgress.expectedTotalBytes!
@@ -139,12 +141,14 @@ class EventCard extends StatelessWidget {
                         ),
                       );
                     },
-                    errorBuilder: (_, __, ___) => Image.network(
+                    errorBuilder: (context, error, stackTrace) => Image.network(
                       getThemedEventImage(
                         '${event.title} ${event.titleUr}',
                         '${event.description} ${event.descriptionUr}',
                       ),
                       fit: BoxFit.cover,
+                      alignment: Alignment.center,
+                      filterQuality: FilterQuality.medium,
                       errorBuilder: (_, __, ___) => Container(
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(

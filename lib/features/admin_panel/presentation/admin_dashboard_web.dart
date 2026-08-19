@@ -2337,7 +2337,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: AppColors.borderLight),
-                        color: const Color(0xFF064E3B),
+                        color: const Color(0xFF0F3E2E),
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
@@ -2347,6 +2347,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                             Image.network(
                               url,
                               fit: BoxFit.cover,
+                              alignment: Alignment.center,
+                              filterQuality: FilterQuality.medium,
                               errorBuilder: (_, __, ___) => const Center(
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -2482,7 +2484,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: AppColors.borderLight),
-                        color: const Color(0xFF064E3B),
+                        color: const Color(0xFF0F3E2E),
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
@@ -2492,6 +2494,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                             Image.network(
                               url,
                               fit: BoxFit.cover,
+                              alignment: Alignment.center,
+                              filterQuality: FilterQuality.medium,
                               errorBuilder: (_, __, ___) => const Center(
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,

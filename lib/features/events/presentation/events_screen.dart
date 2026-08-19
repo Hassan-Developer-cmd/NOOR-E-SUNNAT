@@ -582,28 +582,28 @@ class _DetailedEventCard extends StatelessWidget {
                               '${event.description} ${event.descriptionUr}',
                             ),
                       fit: BoxFit.cover,
+                      alignment: Alignment.center,
+                      filterQuality: FilterQuality.medium,
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
                         return Container(
-                          color: const Color(0xFF064E3B),
-                          child: Center(
+                          color: const Color(0xFF0F3E2E),
+                          child: const Center(
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white.withValues(alpha: 0.6),
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                  : null,
+                              color: Colors.white38,
                             ),
                           ),
                         );
                       },
-                      errorBuilder: (_, __, ___) => Image.network(
+                      errorBuilder: (context, error, stackTrace) => Image.network(
                         EventCard.getThemedEventImage(
                           '${event.title} ${event.titleUr}',
                           '${event.description} ${event.descriptionUr}',
                         ),
                         fit: BoxFit.cover,
+                        alignment: Alignment.center,
+                        filterQuality: FilterQuality.medium,
                         errorBuilder: (_, __, ___) => Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
