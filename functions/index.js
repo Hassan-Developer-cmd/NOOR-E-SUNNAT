@@ -6,84 +6,120 @@ if (!admin.apps.length) {
 }
 
 /**
- * Callable Cloud Function: updateUserPasswordWithOtp
+ * HTTP / Callable Cloud Function: updateUserPasswordWithOtp
  * Verifies the 6-digit OTP token in Firestore and updates the user's password in Firebase Auth using Admin SDK.
+ * Supports both direct REST HTTP requests (with CORS) and Firebase Callable SDK requests.
  */
-exports.updateUserPasswordWithOtp = functions.https.onCall(async (data, context) => {
-  const { email, otp, newPassword } = data || {};
+exports.updateUserPasswordWithOtp = functions.https.onRequest(async (req, res) => {
+  // Enable CORS
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-  if (!email || !otp || !newPassword) {
-    throw new functions.https.HttpsError(
-      "invalid-argument",
-      "Missing required fields: email, otp, or newPassword."
-    );
+  if (req.method === "OPTIONS") {
+    return res.status(204).send("");
   }
 
-  const cleanEmail = email.toLowerCase().trim();
-
-  if (newPassword.length < 6) {
-    throw new functions.https.HttpsError(
-      "invalid-argument",
-      "Password must be at least 6 characters long."
-    );
+  if (req.method !== "POST") {
+    return res.status(405).json({
+      success: false,
+      error: "Method not allowed. Use POST.",
+    });
   }
 
-  // 1. Verify OTP in Firestore
-  const otpDoc = await admin.firestore().collection("password_resets").doc(cleanEmail).get();
-  if (!otpDoc.exists) {
-    throw new functions.https.HttpsError("not-found", "OTP reset request not found.");
-  }
-
-  const otpData = otpDoc.data();
-  const nowMillis = Date.now();
-
-  let expiresMillis = 0;
-  if (otpData.expiresAt) {
-    if (typeof otpData.expiresAt.toMillis === "function") {
-      expiresMillis = otpData.expiresAt.toMillis();
-    } else if (otpData.expiresAt instanceof Date) {
-      expiresMillis = otpData.expiresAt.getTime();
-    } else if (typeof otpData.expiresAt === "string") {
-      expiresMillis = new Date(otpData.expiresAt).getTime();
-    }
-  }
-
-  if (
-    otpData.otp.toString().trim() !== otp.toString().trim() ||
-    !otpData.verified ||
-    expiresMillis < nowMillis
-  ) {
-    throw new functions.https.HttpsError(
-      "permission-denied",
-      "Invalid or expired OTP verification token."
-    );
-  }
-
-  // 2. Fetch User UID by Email and Update Password in Firebase Auth
   try {
-    const userRecord = await admin.auth().getUserByEmail(cleanEmail);
+    const body = (req.body && req.body.data) ? req.body.data : (req.body || {});
+    const { email, otp, newPassword } = body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields: email, otp, or newPassword.",
+      });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const cleanOtp = otp.toString().trim();
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: "Password must be at least 6 characters long.",
+      });
+    }
+
+    // 1. Verify OTP in Firestore
+    const otpDoc = await admin.firestore().collection("password_resets").doc(cleanEmail).get();
+    if (!otpDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        error: "OTP reset request not found or expired.",
+      });
+    }
+
+    const otpData = otpDoc.data();
+    const nowMillis = Date.now();
+
+    let expiresMillis = 0;
+    if (otpData.expiresAt) {
+      if (typeof otpData.expiresAt.toMillis === "function") {
+        expiresMillis = otpData.expiresAt.toMillis();
+      } else if (otpData.expiresAt instanceof Date) {
+        expiresMillis = otpData.expiresAt.getTime();
+      } else if (typeof otpData.expiresAt === "string") {
+        expiresMillis = new Date(otpData.expiresAt).getTime();
+      }
+    }
+
+    if (
+      otpData.otp.toString().trim() !== cleanOtp ||
+      !otpData.verified ||
+      expiresMillis < nowMillis
+    ) {
+      return res.status(403).json({
+        success: false,
+        error: "Invalid or expired OTP verification token.",
+      });
+    }
+
+    // 2. Fetch User UID by Email and Update Password in Firebase Auth
+    let userRecord;
+    try {
+      userRecord = await admin.auth().getUserByEmail(cleanEmail);
+    } catch (userErr) {
+      if (userErr.code === "auth/user-not-found") {
+        return res.status(404).json({
+          success: false,
+          error: "No Firebase Auth user account found with this email address.",
+        });
+      }
+      throw userErr;
+    }
+
     await admin.auth().updateUser(userRecord.uid, {
       password: newPassword,
     });
-  } catch (authError) {
-    if (authError.code === "auth/user-not-found") {
-      throw new functions.https.HttpsError("not-found", "No user found with this email address.");
-    }
-    throw new functions.https.HttpsError(
-      "internal",
-      authError.message || "Failed to update user password."
-    );
+
+    // 3. Delete the used OTP record from Firestore
+    try {
+      await admin.firestore().collection("password_resets").doc(cleanEmail).delete();
+    } catch (_) {}
+
+    return res.status(200).json({
+      result: {
+        success: true,
+        message: "Password updated successfully in Firebase Auth",
+      },
+      success: true,
+      message: "Password updated successfully in Firebase Auth",
+    });
+  } catch (err) {
+    console.error("updateUserPasswordWithOtp error:", err);
+    return res.status(500).json({
+      success: false,
+      error: err.message || "Internal server error updating password.",
+    });
   }
-
-  // 3. Delete the used OTP record
-  try {
-    await admin.firestore().collection("password_resets").doc(cleanEmail).delete();
-  } catch (_) {}
-
-  return {
-    success: true,
-    message: "Password updated successfully in Firebase Auth",
-  };
 });
 
 /**
@@ -146,4 +182,3 @@ exports.sendBroadcastNotification = functions.firestore
       return null;
     }
   });
-

@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../firebase_options.dart';
 
 class EmailOtpService {
   static const String serviceId = 'service_vgjbxj8';
@@ -42,7 +41,7 @@ class EmailOtpService {
             'user_name': displayName,
             'name': displayName,
             'app_name': 'Islamic App',
-            'reply_to': verifiedReplyTo, // Verified reply-to address
+            'reply_to': verifiedReplyTo,
             'from_name': 'Islamic App',
             'subject': 'Welcome to Islamic App | Assalamu Alaikum',
           },
@@ -184,7 +183,8 @@ class EmailOtpService {
     } catch (_) {}
   }
 
-  /// Updates user password in Firebase Auth using Admin SDK Cloud Function, REST API, or Auth session.
+  /// Updates user password in Firebase Auth using the Admin SDK Cloud Function.
+  /// Strictly requires successful backend execution so the real credential changes immediately.
   static Future<PasswordUpdateResult> updateUserPassword({
     required String email,
     required String otp,
@@ -206,7 +206,7 @@ class EmailOtpService {
       }
     }
 
-    // 1. Try Firebase Callable Cloud Function (Admin SDK)
+    // 1. Execute Backend Cloud Function with Firebase Admin SDK
     try {
       final callableUrl = Uri.parse(
         'https://us-central1-islamic-app-ed1ed.cloudfunctions.net/updateUserPasswordWithOtp',
@@ -223,15 +223,18 @@ class EmailOtpService {
             'otp': cleanOtp,
             'newPassword': newPassword,
           },
+          'email': cleanEmail,
+          'otp': cleanOtp,
+          'newPassword': newPassword,
         }),
-      ).timeout(const Duration(seconds: 8));
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
         if (decoded is Map && (decoded['result']?['success'] == true || decoded['success'] == true)) {
           await cleanupOtp(cleanEmail);
           if (kDebugMode) {
-            print('EmailOtpService: Password successfully updated via Firebase Admin SDK Callable Function.');
+            print('EmailOtpService: Password successfully updated via Firebase Admin SDK Cloud Function.');
           }
           return const PasswordUpdateResult(
             isSuccess: true,
@@ -240,43 +243,20 @@ class EmailOtpService {
           );
         }
       }
+
       if (kDebugMode) {
         print('EmailOtpService: Cloud Function status ${response.statusCode}: ${response.body}');
       }
-    } catch (e) {
-      if (kDebugMode) {
-        print('EmailOtpService: Cloud function attempt error ($e). Proceeding with fallback handler.');
-      }
-    }
 
-    // 2. Try Firebase Auth REST API (Identity Toolkit)
-    try {
-      final apiKey = DefaultFirebaseOptions.web.apiKey;
-      final resetUrl = Uri.parse(
-        'https://identitytoolkit.googleapis.com/v1/accounts:resetPassword?key=$apiKey',
-      );
+      String errorMsg = 'Failed to update password in Firebase Auth.';
+      try {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map && decoded['error'] != null) {
+          errorMsg = decoded['error'].toString();
+        }
+      } catch (_) {}
 
-      final response = await http.post(
-        resetUrl,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': cleanEmail,
-          'newPassword': newPassword,
-        }),
-      ).timeout(const Duration(seconds: 5));
-
-      if (response.statusCode == 200) {
-        await cleanupOtp(cleanEmail);
-        return const PasswordUpdateResult(
-          isSuccess: true,
-          isCloudFunctionSuccess: true,
-          message: 'Password updated successfully via Firebase Identity Toolkit.',
-        );
-      }
-    } catch (_) {}
-
-    // 3. Fallback: If user session is currently active, update directly
-    try {
+      // If active session exists, update directly as fallback
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser != null && currentUser.email?.toLowerCase() == cleanEmail) {
         await currentUser.updatePassword(newPassword);
@@ -284,28 +264,40 @@ class EmailOtpService {
         return const PasswordUpdateResult(
           isSuccess: true,
           isCloudFunctionSuccess: true,
-          message: 'Password updated successfully for current user.',
+          message: 'Password updated successfully for current session.',
         );
       }
-    } catch (_) {}
 
-    // 4. Fallback: Dispatch official Firebase reset email link so user is never locked out
-    try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: cleanEmail);
-      await cleanupOtp(cleanEmail);
-      return const PasswordUpdateResult(
-        isSuccess: true,
+      return PasswordUpdateResult(
+        isSuccess: false,
         isCloudFunctionSuccess: false,
-        message: 'A secure password reset confirmation has also been dispatched to your email.',
+        message: response.statusCode == 404
+            ? 'Firebase Cloud Function not yet deployed. Please deploy functions ("firebase deploy --only functions") to enable password updates.'
+            : errorMsg,
       );
     } catch (e) {
       if (kDebugMode) {
         print('EmailOtpService.updateUserPassword error: $e');
       }
+
+      // If user session is active, try updating directly
+      try {
+        final currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser != null && currentUser.email?.toLowerCase() == cleanEmail) {
+          await currentUser.updatePassword(newPassword);
+          await cleanupOtp(cleanEmail);
+          return const PasswordUpdateResult(
+            isSuccess: true,
+            isCloudFunctionSuccess: true,
+            message: 'Password updated successfully for current user.',
+          );
+        }
+      } catch (_) {}
+
       return PasswordUpdateResult(
         isSuccess: false,
         isCloudFunctionSuccess: false,
-        message: 'Error processing password reset: $e',
+        message: 'Could not connect to password reset service: $e',
       );
     }
   }
