@@ -66,14 +66,20 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ),
 
-                      // 2. Spiritual Masjid an-Nabawi High-Res Background with Soft Light Overlay
+                      // 2. Spiritual Masjid an-Nabawi Asset Background with Soft Light Overlay
                       Opacity(
-                        opacity: 0.26,
-                        child: Image.network(
-                          'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?q=80&w=1080&auto=format&fit=crop',
+                        opacity: 0.28,
+                        child: Image.asset(
+                          'assets/images/masjid_nabawi_header.jpeg',
                           fit: BoxFit.cover,
                           alignment: Alignment.center,
-                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                          filterQuality: FilterQuality.medium,
+                          errorBuilder: (_, __, ___) => Image.asset(
+                            'assets/WhatsApp Image 2026-08-19 at 5.21.07 PM.jpeg',
+                            fit: BoxFit.cover,
+                            alignment: Alignment.center,
+                            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                          ),
                         ),
                       ),
 
