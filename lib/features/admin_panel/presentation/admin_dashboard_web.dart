@@ -1155,44 +1155,73 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                                       ),
                                     ),
 
-                                    // Column 2: Event Title and Location (240px)
+                                    // Column 2: Event Thumbnail + Title & Location (260px)
                                     SizedBox(
-                                      width: 240,
+                                      width: 260,
                                       child: Padding(
                                         padding: const EdgeInsets.only(right: 12),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                        child: Row(
                                           children: [
-                                            Text(
-                                              e.title,
-                                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            if (e.titleUr.isNotEmpty)
-                                              Text(
-                                                e.titleUr,
-                                                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
+                                            // Event Thumbnail
+                                            ClipRRect(
+                                              borderRadius: BorderRadius.circular(8),
+                                              child: Container(
+                                                width: 44,
+                                                height: 44,
+                                                color: const Color(0xFF0F3E2E),
+                                                child: Image.network(
+                                                  (e.imageUrl != null && e.imageUrl!.trim().isNotEmpty)
+                                                      ? e.imageUrl!.trim()
+                                                      : EventCard.getThemedEventImage(
+                                                          '${e.title} ${e.titleUr}',
+                                                          '${e.description} ${e.descriptionUr}',
+                                                        ),
+                                                  fit: BoxFit.cover,
+                                                  alignment: Alignment.center,
+                                                  errorBuilder: (_, __, ___) => const Center(
+                                                    child: Icon(Icons.event, color: Colors.white60, size: 20),
+                                                  ),
+                                                ),
                                               ),
-                                            if (e.location.isNotEmpty) ...[
-                                              const SizedBox(height: 2),
-                                              Row(
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                mainAxisAlignment: MainAxisAlignment.center,
                                                 children: [
-                                                  const Icon(Icons.location_on_outlined, size: 12, color: Color(0xFF64748B)),
-                                                  const SizedBox(width: 4),
-                                                  Expanded(
-                                                    child: Text(
-                                                      e.location,
-                                                      style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                                  Text(
+                                                    e.title,
+                                                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                                    maxLines: 2,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                  if (e.titleUr.isNotEmpty)
+                                                    Text(
+                                                      e.titleUr,
+                                                      style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                                                      maxLines: 1,
                                                       overflow: TextOverflow.ellipsis,
                                                     ),
-                                                  ),
+                                                  if (e.location.isNotEmpty) ...[
+                                                    const SizedBox(height: 2),
+                                                    Row(
+                                                      children: [
+                                                        const Icon(Icons.location_on_outlined, size: 12, color: Color(0xFF64748B)),
+                                                        const SizedBox(width: 4),
+                                                        Expanded(
+                                                          child: Text(
+                                                            e.location,
+                                                            style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                                            overflow: TextOverflow.ellipsis,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
                                                 ],
                                               ),
-                                            ],
+                                            ),
                                           ],
                                         ),
                                       ),
