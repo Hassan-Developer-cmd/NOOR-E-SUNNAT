@@ -584,46 +584,84 @@ class _OtpPasswordResetDialogState extends State<OtpPasswordResetDialog> {
         ),
         const SizedBox(height: 20),
 
-        // 6 Discrete Styled PIN Input Boxes
-        Directionality(
-          textDirection: TextDirection.ltr,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(6, (index) => _buildSinglePinBox(index)),
+        // 6 Discrete Styled PIN Input Boxes (Responsive FittedBox)
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Directionality(
+            textDirection: TextDirection.ltr,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                6,
+                (index) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: _buildSinglePinBox(index),
+                ),
+              ),
+            ),
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 18),
 
-        // Resend Timer & Button
+        // Resend Timer & Change Email Row (Overflow-Proof)
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            TextButton.icon(
-              onPressed: () {
-                setState(() {
-                  _stage = ResetDialogStage.inputEmail;
-                });
-              },
-              icon: const Icon(Icons.edit_outlined, size: 14, color: AppColors.primaryEmerald),
-              label: Text(
-                lp.tr('change_email'),
-                style: const TextStyle(fontSize: 12, color: AppColors.primaryEmerald, fontWeight: FontWeight.w600),
+            Flexible(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () {
+                  setState(() {
+                    _stage = ResetDialogStage.inputEmail;
+                  });
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.edit_outlined, size: 14, color: AppColors.primaryEmerald),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          lp.tr('change_email'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.primaryEmerald,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
+            const SizedBox(width: 8),
             if (_resendCountdown > 0)
               Text(
                 '${lp.tr('resend_code_in')} ${_resendCountdown}s',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
               )
             else
-              TextButton(
-                onPressed: _isLoading ? null : _handleResendOtp,
-                child: Text(
-                  lp.tr('resend_otp_btn'),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.primaryEmerald,
-                    fontWeight: FontWeight.bold,
+              InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: _isLoading ? null : _handleResendOtp,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
+                  child: Text(
+                    lp.tr('resend_otp_btn'),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.primaryEmerald,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
