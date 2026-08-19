@@ -12,6 +12,7 @@ import 'widgets/durood_summary_card.dart';
 import 'widgets/gamification_bar.dart';
 import 'widgets/hadith_wisdom_card.dart';
 import 'widgets/notifications_sheet.dart';
+import 'widgets/home_welcome_banner.dart';
 import '../../../services/notification_service.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -200,6 +201,12 @@ class HomeScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
+                    // ── Hero Welcome Banner ──
+                    HomeWelcomeBanner(
+                      userName: displayName,
+                      isUrdu: lp.isUrdu,
+                    ),
+
                     // Gamification Row & Durood Summary Card wrapped with StreamBuilder for live launch streaming
                     StreamBuilder<CounterSnapshot>(
                       stream: counterService.snapshotStream,
