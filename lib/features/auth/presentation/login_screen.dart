@@ -184,6 +184,44 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _handleForgotPassword() async {
+    final lp = globalLanguageProvider;
+    final isUrdu = lp.isUrdu;
+    final resetEmail = await OtpPasswordResetDialog.show(
+      context,
+      initialEmail: _emailController.text.trim(),
+      isAdminPortal: false,
+    );
+    if (resetEmail != null && resetEmail.isNotEmpty && mounted) {
+      setState(() {
+        _emailController.text = resetEmail;
+        _passwordController.clear();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.mark_email_read_rounded, color: Color(0xFF34D399), size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  isUrdu
+                      ? "پاس ورڈ ری سیٹ کا لنک آپ کی ای میل پر بھیج دیا گیا ہے"
+                      : "Password reset link has been sent to your email.",
+                  style: const TextStyle(fontSize: 12, color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF064E3B),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -254,273 +292,240 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 20),
 
-                        // Logo Emblem
-                        Container(
-                          width: 76,
-                          height: 76,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppColors.goldBright.withValues(alpha: 0.5),
-                              width: 2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.goldBright.withValues(alpha: 0.15),
-                                blurRadius: 16,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.shield_moon_rounded,
-                            size: 38,
-                            color: AppColors.goldBright,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        Text(
-                          lp.tr('app_title'),
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          lp.tr('greeting_banner'),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.white.withValues(alpha: 0.8),
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // ── Form Body Card ──
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _isSignUp ? lp.tr('sign_up') : lp.tr('sign_in'),
-                          style: AppTypography.headingLarge,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _isSignUp
-                              ? lp.tr('login_subtitle_signup')
-                              : lp.tr('login_subtitle_signin'),
-                          style: AppTypography.bodyMedium,
-                        ),
-                        const SizedBox(height: 24),
-
-                        // ── Form Fields ──
-                        Form(
-                          key: _formKey,
-                          child: Column(
-                            children: [
-                              if (_isSignUp) ...[
-                                _buildField(
-                                  controller: _nameController,
-                                  hint: lp.tr('full_name'),
-                                  icon: Icons.person_outline_rounded,
-                                  validator: (v) => (_isSignUp && (v == null || v.trim().isEmpty))
-                                      ? lp.tr('please_enter_name')
-                                      : null,
+                            // Logo Emblem
+                            Container(
+                              width: 76,
+                              height: 76,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: AppColors.goldBright.withValues(alpha: 0.5),
+                                  width: 2,
                                 ),
-                                const SizedBox(height: 14),
-                              ],
-                              _buildField(
-                                controller: _emailController,
-                                hint: lp.tr('email'),
-                                icon: Icons.mail_outline_rounded,
-                                keyboardType: TextInputType.emailAddress,
-                                validator: (v) =>
-                                    (v == null || v.trim().isEmpty || !v.contains('@'))
-                                        ? lp.tr('please_enter_email')
-                                        : null,
-                              ),
-                              const SizedBox(height: 14),
-                              _buildField(
-                                controller: _passwordController,
-                                hint: lp.tr('password'),
-                                icon: Icons.lock_outline_rounded,
-                                obscure: _obscurePassword,
-                                suffixIcon: IconButton(
-                                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                                  icon: Icon(
-                                    _obscurePassword
-                                        ? Icons.visibility_off_outlined
-                                        : Icons.visibility_outlined,
-                                    size: 20,
-                                    color: AppColors.textMuted,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.goldBright.withValues(alpha: 0.15),
+                                    blurRadius: 16,
+                                    spreadRadius: 2,
                                   ),
-                                ),
-                                validator: (v) => (v == null || v.trim().length < 6)
-                                    ? lp.tr('please_enter_password')
-                                    : null,
+                                ],
                               ),
-                              if (!_isSignUp) ...[
-                                const SizedBox(height: 4),
-                                Align(
-                                  alignment: AlignmentDirectional.centerEnd,
-                                  child: TextButton(
-                                    onPressed: () async {
-                                      final messenger = ScaffoldMessenger.of(context);
-                                      final resetEmail = await OtpPasswordResetDialog.show(
-                                        context,
-                                        initialEmail: _emailController.text.trim(),
-                                        isAdminPortal: false,
-                                      );
-                                      if (resetEmail != null && resetEmail.isNotEmpty && mounted) {
-                                        setState(() {
-                                          _emailController.text = resetEmail;
-                                          _passwordController.clear();
-                                        });
-                                        messenger.showSnackBar(
-                                          SnackBar(
-                                            content: Row(
-                                              children: [
-                                                const Icon(Icons.check_circle_rounded, color: Color(0xFF34D399), size: 20),
-                                                const SizedBox(width: 10),
-                                                Expanded(
-                                                  child: Text(
-                                                    lp.tr('password_updated_success_msg'),
-                                                    style: const TextStyle(fontSize: 12, color: Colors.white),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            backgroundColor: const Color(0xFF064E3B),
-                                            behavior: SnackBarBehavior.floating,
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                            duration: const Duration(seconds: 4),
-                                          ),
-                                        );
-                                      }
-                                    },
-                                    child: Text(
-                                      lp.isUrdu ? 'پاس ورڈ بھول گئے؟' : 'Forgot Password?',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.primaryEmerald,
-                                        fontWeight: FontWeight.w600,
+                              child: const Icon(
+                                Icons.shield_moon_rounded,
+                                size: 38,
+                                color: AppColors.goldBright,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            Text(
+                              lp.tr('app_title'),
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              lp.tr('greeting_banner'),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.white.withValues(alpha: 0.8),
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // ── Form Body Card ──
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _isSignUp ? lp.tr('sign_up') : lp.tr('sign_in'),
+                              style: AppTypography.headingLarge,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _isSignUp
+                                  ? lp.tr('login_subtitle_signup')
+                                  : lp.tr('login_subtitle_signin'),
+                              style: AppTypography.bodyMedium,
+                            ),
+                            const SizedBox(height: 24),
+
+                            // ── Form Fields ──
+                            Form(
+                              key: _formKey,
+                              child: Column(
+                                children: [
+                                  if (_isSignUp) ...[
+                                    _buildField(
+                                      controller: _nameController,
+                                      hint: lp.tr('full_name'),
+                                      icon: Icons.person_outline_rounded,
+                                      validator: (v) => (_isSignUp && (v == null || v.trim().isEmpty))
+                                          ? lp.tr('please_enter_name')
+                                          : null,
+                                    ),
+                                    const SizedBox(height: 14),
+                                  ],
+                                  _buildField(
+                                    controller: _emailController,
+                                    hint: lp.tr('email'),
+                                    icon: Icons.mail_outline_rounded,
+                                    keyboardType: TextInputType.emailAddress,
+                                    validator: (v) =>
+                                        (v == null || v.trim().isEmpty || !v.contains('@'))
+                                            ? lp.tr('please_enter_email')
+                                            : null,
+                                  ),
+                                  const SizedBox(height: 14),
+                                  _buildField(
+                                    controller: _passwordController,
+                                    hint: lp.tr('password'),
+                                    icon: Icons.lock_outline_rounded,
+                                    obscure: _obscurePassword,
+                                    suffixIcon: IconButton(
+                                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                                      icon: Icon(
+                                        _obscurePassword
+                                            ? Icons.visibility_off_outlined
+                                            : Icons.visibility_outlined,
+                                        size: 20,
+                                        color: AppColors.textMuted,
                                       ),
                                     ),
+                                    validator: (v) => (v == null || v.trim().length < 6)
+                                        ? lp.tr('please_enter_password')
+                                        : null,
                                   ),
-                                ),
-                                const SizedBox(height: 12),
-                              ] else
-                                const SizedBox(height: 22),
-
-                              // Email Auth Button
-                              SizedBox(
-                                width: double.infinity,
-                                height: 52,
-                                child: ElevatedButton(
-                                  onPressed: (_loading || _googleLoading) ? null : _handleEmailAuth,
-                                  child: _loading
-                                      ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2.5,
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  if (!_isSignUp) ...[
+                                    const SizedBox(height: 4),
+                                    Align(
+                                      alignment: AlignmentDirectional.centerEnd,
+                                      child: TextButton(
+                                        onPressed: _handleForgotPassword,
+                                        child: Text(
+                                          lp.isUrdu ? 'پاس ورڈ بھول گئے؟' : 'Forgot Password?',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.primaryEmerald,
+                                            fontWeight: FontWeight.w600,
                                           ),
-                                        )
-                                      : Text(_isSignUp ? lp.tr('sign_up') : lp.tr('sign_in')),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                  ] else
+                                    const SizedBox(height: 22),
 
-                        const SizedBox(height: 16),
-
-                        // Toggle Sign In / Sign Up
-                        Center(
-                          child: GestureDetector(
-                            onTap: () => setState(() {
-                              _isSignUp = !_isSignUp;
-                              _formKey.currentState?.reset();
-                            }),
-                            child: RichText(
-                              text: TextSpan(
-                                style: AppTypography.bodySmall,
-                                children: [
-                                  TextSpan(
-                                    text: _isSignUp
-                                        ? lp.tr('already_have_account_prefix')
-                                        : lp.tr('dont_have_account_prefix'),
-                                  ),
-                                  TextSpan(
-                                    text: _isSignUp ? lp.tr('sign_in') : lp.tr('sign_up'),
-                                    style: const TextStyle(
-                                      color: AppColors.primaryEmerald,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 12,
+                                  // Email Auth Button
+                                  SizedBox(
+                                    width: double.infinity,
+                                    height: 52,
+                                    child: ElevatedButton(
+                                      onPressed: (_loading || _googleLoading) ? null : _handleEmailAuth,
+                                      child: _loading
+                                          ? const SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2.5,
+                                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                              ),
+                                            )
+                                          : Text(_isSignUp ? lp.tr('sign_up') : lp.tr('sign_in')),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          ),
-                        ),
 
-                        const SizedBox(height: 24),
+                            const SizedBox(height: 16),
 
-                        // Divider
-                        Row(
-                          children: [
-                            const Expanded(child: Divider(color: AppColors.borderLight)),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                            // Toggle Sign In / Sign Up
+                            Center(
+                              child: GestureDetector(
+                                onTap: () => setState(() {
+                                  _isSignUp = !_isSignUp;
+                                  _formKey.currentState?.reset();
+                                }),
+                                child: RichText(
+                                  text: TextSpan(
+                                    style: AppTypography.bodySmall,
+                                    children: [
+                                      TextSpan(
+                                        text: _isSignUp
+                                            ? lp.tr('already_have_account_prefix')
+                                            : lp.tr('dont_have_account_prefix'),
+                                      ),
+                                      TextSpan(
+                                        text: _isSignUp ? lp.tr('sign_in') : lp.tr('sign_up'),
+                                        style: const TextStyle(
+                                          color: AppColors.primaryEmerald,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            // Divider
+                            Row(
+                              children: [
+                                const Expanded(child: Divider(color: AppColors.borderLight)),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  child: Text(
+                                    lp.tr('or_divider'),
+                                    style: AppTypography.caption,
+                                  ),
+                                ),
+                                const Expanded(child: Divider(color: AppColors.borderLight)),
+                              ],
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // ── Official Premium Google Sign-In Button ──
+                            _buildGoogleSignInButton(lp),
+
+                            const SizedBox(height: 24),
+
+                            // Terms & Privacy Footer
+                            Center(
                               child: Text(
-                                lp.tr('or_divider'),
+                                lp.tr('terms_privacy'),
+                                textAlign: TextAlign.center,
                                 style: AppTypography.caption,
                               ),
                             ),
-                            const Expanded(child: Divider(color: AppColors.borderLight)),
                           ],
                         ),
-
-                        const SizedBox(height: 20),
-
-                        // ── Official Premium Google Sign-In Button ──
-                        _buildGoogleSignInButton(lp),
-
-                        const SizedBox(height: 24),
-
-                        // Terms & Privacy Footer
-                        Center(
-                          child: Text(
-                            lp.tr('terms_privacy'),
-                            textAlign: TextAlign.center,
-                            style: AppTypography.caption,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
-  },
-);
   }
 
   Widget _buildGoogleSignInButton(LanguageProvider lp) {

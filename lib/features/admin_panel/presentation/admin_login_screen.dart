@@ -106,6 +106,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   }
 
   Future<void> _handleForgotPassword() async {
+    final lp = globalLanguageProvider;
+    final isUrdu = lp.isUrdu;
     final resetEmail = await OtpPasswordResetDialog.show(
       context,
       initialEmail: _emailController.text.trim(),
@@ -116,6 +118,28 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         _emailController.text = resetEmail;
         _passwordController.clear();
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.mark_email_read_rounded, color: Color(0xFF34D399), size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  isUrdu
+                      ? "پاس ورڈ ری سیٹ کا لنک آپ کی ای میل پر بھیج دیا گیا ہے"
+                      : "Password reset link has been sent to your email.",
+                  style: const TextStyle(fontSize: 12, color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF064E3B),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 4),
+        ),
+      );
     }
   }
 
@@ -124,7 +148,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     final lp = globalLanguageProvider;
     final screenWidth = MediaQuery.of(context).size.width;
     final isWide = screenWidth > 700;
-
     final isSmall = screenWidth < 400;
 
     return Scaffold(
@@ -441,7 +464,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                                             color: Colors.white,
                                           ),
                                         ),
-                                ),
+                                 ),
                               ),
                               const SizedBox(height: 20),
 
