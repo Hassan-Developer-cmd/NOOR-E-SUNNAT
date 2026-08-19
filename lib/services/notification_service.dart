@@ -455,21 +455,21 @@ class NotificationService {
     if (kIsWeb) return;
 
     try {
-      const androidDetails = AndroidNotificationDetails(
+      final androidDetails = AndroidNotificationDetails(
         'high_importance_channel',
         'High Importance Notifications',
         channelDescription:
             'High priority broadcast notifications, event alerts & answers',
         importance: Importance.max,
         priority: Priority.high,
-        ticker: 'NOOR E SUNNAT',
+        ticker: 'Islamic App',
         icon: '@mipmap/ic_launcher',
         enableVibration: true,
         playSound: true,
         styleInformation: BigTextStyleInformation(
-          '',
-          contentTitle: '',
-          summaryText: 'NOOR E SUNNAT',
+          body,
+          contentTitle: title,
+          summaryText: 'Islamic App',
         ),
       );
 
@@ -481,7 +481,7 @@ class NotificationService {
         presentList: true,
       );
 
-      const notificationDetails = NotificationDetails(
+      final notificationDetails = NotificationDetails(
         android: androidDetails,
         iOS: iosDetails,
       );
@@ -496,6 +496,16 @@ class NotificationService {
     } catch (e) {
       if (kDebugMode) print('NotificationService.showHeadsUpNotification error: $e');
     }
+  }
+
+  /// Triggers an immediate native status-bar heads-up notification when Welcome Email is dispatched.
+  static Future<void> showWelcomeNotification() async {
+    await showHeadsUpNotification(
+      id: 777001,
+      title: 'خوش آمدید! / Welcome!',
+      body: 'Assalamu Alaikum! Welcome to Islamic App. A confirmation email has been sent to your Gmail inbox.',
+      payload: 'welcome_email_dispatched',
+    );
   }
 
   /// Live stream of notifications strictly filtered for the active user.

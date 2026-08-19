@@ -200,6 +200,8 @@ class AppTranslations {
       'sign_in_as_admin': 'Sign In as Admin',
       'return_to_user_app': 'Return to User App',
       'terms_privacy': 'By continuing, you agree to our Terms & Privacy Policy',
+      'welcome_email_toast_title': 'Welcome Email Sent!',
+      'welcome_email_toast_body': 'Welcome email sent! Please check your Gmail Inbox (or Updates tab).',
 
       // ── Profile & Settings ──
       'profile_settings': 'Profile & Settings',
@@ -450,6 +452,8 @@ class AppTranslations {
       'sign_in_as_admin': 'بطور ایڈمن داخل ہوں',
       'return_to_user_app': 'صارف ایپ پر واپس جائیں',
       'terms_privacy': 'جاری رکھ کر آپ ہماری شرائط اور پرائیویسی پالیسی سے اتفاق کرتے ہیں',
+      'welcome_email_toast_title': 'خوش آمدید کا ای میل بھیج دیا گیا ہے!',
+      'welcome_email_toast_body': 'خوش آمدید کا ای میل آپ کے ان باکس میں بھیج دیا گیا ہے۔ براہ کرم اپنا جی میل ان باکس یا اپ ڈیٹس ٹیب چیک کریں۔',
 
       // ── Profile & Settings ──
       'profile_settings': 'پروفائل و ترتیبات',

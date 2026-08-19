@@ -5,6 +5,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import '../core/models/app_user.dart';
 
+class GoogleSignInResult {
+  final User? user;
+  final bool isNewUser;
+
+  const GoogleSignInResult({
+    required this.user,
+    required this.isNewUser,
+  });
+}
+
 class AuthService {
   static final _auth = FirebaseAuth.instance;
   static final _firestore = FirebaseFirestore.instance;
@@ -73,9 +83,10 @@ class AuthService {
   }
 
   /// Sign in with Google. Creates Firestore user doc on first sign-in.
-  static Future<User?> signInWithGoogle() async {
+  /// Returns a [GoogleSignInResult] indicating the user and whether it is a new registration.
+  static Future<GoogleSignInResult> signInWithGoogle() async {
     final googleUser = await _googleSignIn.signIn();
-    if (googleUser == null) return null; // cancelled
+    if (googleUser == null) return const GoogleSignInResult(user: null, isNewUser: false);
 
     final googleAuth = await googleUser.authentication;
     final credential = GoogleAuthProvider.credential(
@@ -84,11 +95,13 @@ class AuthService {
     );
 
     final result = await _auth.signInWithCredential(credential);
+    bool isNew = result.additionalUserInfo?.isNewUser ?? false;
     if (result.user != null) {
       await _saveSessionLocally(result.user!);
-      await _createUserDocIfNeeded(result.user!);
+      final wasCreated = await _createUserDocIfNeeded(result.user!);
+      if (wasCreated) isNew = true;
     }
-    return result.user;
+    return GoogleSignInResult(user: result.user, isNewUser: isNew);
   }
 
   /// Sign in with Email and Password.
@@ -142,7 +155,8 @@ class AuthService {
 
   /// Creates the Firestore user doc only if it doesn't exist yet.
   /// If doc already exists, preserves existing Durood totals and updates metadata using SetOptions(merge: true).
-  static Future<void> _createUserDocIfNeeded(User firebaseUser, {String? customName}) async {
+  /// Returns true if newly created, false if already existed.
+  static Future<bool> _createUserDocIfNeeded(User firebaseUser, {String? customName}) async {
     final docRef = _firestore.collection('users').doc(firebaseUser.uid);
     final snap = await docRef.get();
     if (!snap.exists) {
@@ -163,6 +177,7 @@ class AuthService {
       );
       await docRef.set(newUser.toInitialMap(), SetOptions(merge: true));
       if (kDebugMode) print('AuthService: New user doc created for ${firebaseUser.uid}');
+      return true;
     } else {
       // Document ALREADY exists: DO NOT overwrite existing Durood numbers!
       final data = snap.data() ?? {};
@@ -183,6 +198,7 @@ class AuthService {
         await docRef.set(updates, SetOptions(merge: true));
       }
       if (kDebugMode) print('AuthService: Existing user doc preserved for ${firebaseUser.uid}');
+      return false;
     }
   }
 

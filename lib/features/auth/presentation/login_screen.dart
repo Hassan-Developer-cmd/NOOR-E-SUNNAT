@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/providers/language_provider.dart';
+import '../../../core/services/email_otp_service.dart';
 import '../../../core/widgets/otp_password_reset_dialog.dart';
 import '../../../main.dart';
 import '../../../services/auth_service.dart';
+import '../../../services/notification_service.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback onLoginSuccess;
@@ -39,16 +41,95 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  void _showWelcomeSnackbar() {
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFF10B981), width: 1.5),
+              ),
+              child: const Icon(
+                Icons.mark_email_read_rounded,
+                color: Color(0xFF34D399),
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    globalLanguageProvider.tr('welcome_email_toast_title'),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13.5,
+                      color: Colors.white,
+                      letterSpacing: 0.1,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    globalLanguageProvider.tr('welcome_email_toast_body'),
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: Colors.white.withValues(alpha: 0.9),
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF064E3B),
+        behavior: SnackBarBehavior.floating,
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: const Color(0xFF10B981).withValues(alpha: 0.4),
+            width: 1.2,
+          ),
+        ),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        duration: const Duration(seconds: 5),
+      ),
+    );
+  }
+
   Future<void> _handleEmailAuth() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
     try {
       if (_isSignUp) {
-        await AuthService.signUpWithEmailAndPassword(
-          _emailController.text,
+        final email = _emailController.text.trim();
+        final name = _nameController.text.trim();
+        final user = await AuthService.signUpWithEmailAndPassword(
+          email,
           _passwordController.text,
-          username: _nameController.text,
+          username: name,
         );
+        if (user != null) {
+          // 1. Dispatch Spam-Proof Welcome Email via EmailJS
+          EmailOtpService.sendWelcomeEmail(
+            email: email,
+            name: name,
+          );
+          // 2. Trigger instant native status-bar heads-up notification
+          NotificationService.showWelcomeNotification();
+          // 3. Show stylish bottom Snackbar
+          if (mounted) _showWelcomeSnackbar();
+        }
       } else {
         await AuthService.signInWithEmailAndPassword(
           _emailController.text,
@@ -72,8 +153,23 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleGoogleSignIn() async {
     setState(() => _googleLoading = true);
     try {
-      final user = await AuthService.signInWithGoogle();
-      if (user != null && mounted) widget.onLoginSuccess();
+      final authResult = await AuthService.signInWithGoogle();
+      if (authResult.user != null) {
+        if (authResult.isNewUser && authResult.user!.email != null) {
+          final email = authResult.user!.email!;
+          final name = authResult.user!.displayName ?? '';
+          // 1. Dispatch Spam-Proof Welcome Email via EmailJS
+          EmailOtpService.sendWelcomeEmail(
+            email: email,
+            name: name,
+          );
+          // 2. Trigger instant native status-bar heads-up notification
+          NotificationService.showWelcomeNotification();
+          // 3. Show stylish bottom Snackbar
+          if (mounted) _showWelcomeSnackbar();
+        }
+        if (mounted) widget.onLoginSuccess();
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -406,7 +502,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildGoogleSignInButton(LanguageProvider lp) {
-
     return Container(
       width: double.infinity,
       height: 52,
