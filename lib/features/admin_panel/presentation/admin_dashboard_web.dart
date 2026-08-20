@@ -2230,14 +2230,33 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                     ),
                   ),
                   DataCell(
-                    IconButton(
-                      icon: Icon(
-                        isPending ? Icons.rate_review_rounded : Icons.edit_note_rounded,
-                        size: 20,
-                        color: isPending ? AppColors.accentGold : AppColors.primaryEmerald,
-                      ),
-                      tooltip: isPending ? 'Answer Question' : 'Edit Answer',
-                      onPressed: () => _showAnswerQuestionModal(context, q),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            isPending ? Icons.rate_review_rounded : Icons.edit_note_rounded,
+                            size: 20,
+                            color: isPending ? AppColors.accentGold : AppColors.primaryEmerald,
+                          ),
+                          tooltip: isPending ? 'Answer Question' : 'Edit Answer',
+                          onPressed: () => _showAnswerQuestionModal(context, q),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.delete_outline_rounded,
+                            size: 20,
+                            color: Colors.red,
+                          ),
+                          tooltip: 'Delete Question',
+                          onPressed: () => _confirmDelete(
+                            context,
+                            () => AdminService.deleteQuestion(q.id),
+                            customTitle: 'Delete Question',
+                            customMessage: 'Are you sure you want to delete this question from the portal? This action cannot be undone.',
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ]);
@@ -3348,6 +3367,20 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
             ),
           ),
           actions: [
+            TextButton.icon(
+              icon: const Icon(Icons.delete_outline_rounded, size: 16, color: Colors.red),
+              label: const Text('Delete Question', style: TextStyle(color: Colors.red)),
+              onPressed: () {
+                Navigator.pop(ctx);
+                _confirmDelete(
+                  context,
+                  () => AdminService.deleteQuestion(q.id),
+                  customTitle: 'Delete Question',
+                  customMessage: 'Are you sure you want to delete this question from the portal? This action cannot be undone.',
+                );
+              },
+            ),
+            const Spacer(),
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
             ElevatedButton.icon(
               icon: const Icon(Icons.send_rounded, size: 16),

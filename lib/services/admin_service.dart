@@ -516,6 +516,11 @@ class AdminService {
     }
   }
 
+  /// Permanently deletes a user question from Firestore.
+  static Future<void> deleteQuestion(String questionId) async {
+    await _firestore.collection('user_questions').doc(questionId).delete();
+  }
+
   // ── User Management ─────────────────────────────────────────
 
   static Stream<List<AppUser>> get usersStream {
