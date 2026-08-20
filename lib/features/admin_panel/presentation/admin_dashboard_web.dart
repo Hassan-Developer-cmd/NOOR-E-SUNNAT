@@ -1178,7 +1178,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                                                         ),
                                                   fit: BoxFit.cover,
                                                   alignment: Alignment.center,
-                                                  errorBuilder: (_, __, ___) => const Center(
+                                                  errorBuilder: (context, error, stackTrace) => const Center(
                                                     child: Icon(Icons.event, color: Colors.white60, size: 20),
                                                   ),
                                                 ),
@@ -2379,7 +2379,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                               fit: BoxFit.cover,
                               alignment: Alignment.center,
                               filterQuality: FilterQuality.medium,
-                              errorBuilder: (_, __, ___) => const Center(
+                              errorBuilder: (context, error, stackTrace) => const Center(
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -2532,7 +2532,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                               fit: BoxFit.cover,
                               alignment: Alignment.center,
                               filterQuality: FilterQuality.medium,
-                              errorBuilder: (_, __, ___) => const Center(
+                              errorBuilder: (context, error, stackTrace) => const Center(
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [

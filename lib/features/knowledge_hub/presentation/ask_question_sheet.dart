@@ -13,6 +13,7 @@ class AskQuestionSheet extends StatefulWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const AskQuestionSheet(),
     );
@@ -178,16 +179,22 @@ class _AskQuestionSheetState extends State<AskQuestionSheet> {
 
         return Directionality(
           textDirection: lp.textDirection,
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + bottomInset),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+          child: Padding(
+            padding: EdgeInsets.only(bottom: bottomInset),
+            child: Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.85,
+              ),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsetsDirectional.fromSTEB(20, 16, 20, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Handle Bar
                   Center(
@@ -332,12 +339,14 @@ class _AskQuestionSheetState extends State<AskQuestionSheet> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
           ),
-        );
-      },
+        ),
+      );
+    },
     );
   }
 }

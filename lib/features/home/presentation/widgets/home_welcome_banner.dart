@@ -64,7 +64,7 @@ class HomeWelcomeBanner extends StatelessWidget {
                 child: Image.network(
                   'https://images.unsplash.com/photo-1564769625905-50e93615e769?q=80&w=600&auto=format&fit=crop',
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const Center(
+                  errorBuilder: (context, error, stackTrace) => const Center(
                     child: Icon(
                       Icons.mosque_rounded,
                       size: 110,

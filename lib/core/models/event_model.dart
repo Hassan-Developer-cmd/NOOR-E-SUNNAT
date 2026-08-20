@@ -173,23 +173,42 @@ class EventModel {
           .toList();
     }
 
-    final rawDate = map['date_time'] ?? map['dateTime'] ?? map['date'] ?? '';
+    // Safely parse date string whether it's a Timestamp, DateTime, String, or num
+    String parseDateString(dynamic raw) {
+      if (raw == null) return '';
+      if (raw is Timestamp) {
+        final dt = raw.toDate();
+        return '${dt.day}/${dt.month}/${dt.year}';
+      }
+      if (raw is DateTime) {
+        return '${raw.day}/${raw.month}/${raw.year}';
+      }
+      return raw.toString().trim();
+    }
+
+    final rawDate = map['date_time'] ?? map['dateTime'] ?? map['date'];
     final rawImage = map['image_url'] ?? map['imageUrl'] ?? map['image'];
+
+    int parseOrder(dynamic raw) {
+      if (raw is num) return raw.toInt();
+      if (raw is String) return int.tryParse(raw) ?? 0;
+      return 0;
+    }
 
     return EventModel(
       id: id,
-      title: map['title'] as String? ?? '',
-      titleUr: map['title_ur'] as String? ?? '',
-      dateTime: rawDate as String? ?? '',
-      location: map['location'] as String? ?? '',
-      locationUr: map['location_ur'] as String? ?? '',
-      status: map['status'] as String? ?? map['badgeText'] as String? ?? 'Coming Soon',
-      description: map['description'] as String? ?? '',
-      descriptionUr: map['description_ur'] as String? ?? '',
-      imageUrl: rawImage as String?,
-      order: (map['order'] as num?)?.toInt() ?? (map['arrangement_index'] as num?)?.toInt() ?? 0,
+      title: map['title']?.toString() ?? '',
+      titleUr: map['title_ur']?.toString() ?? '',
+      dateTime: parseDateString(rawDate),
+      location: map['location']?.toString() ?? '',
+      locationUr: map['location_ur']?.toString() ?? '',
+      status: map['status']?.toString() ?? map['badgeText']?.toString() ?? 'Coming Soon',
+      description: map['description']?.toString() ?? '',
+      descriptionUr: map['description_ur']?.toString() ?? '',
+      imageUrl: rawImage?.toString(),
+      order: parseOrder(map['order'] ?? map['arrangement_index']),
       statusHistory: history,
-      lastNotifiedStatus: map['last_notified_status'] as String?,
+      lastNotifiedStatus: map['last_notified_status']?.toString(),
       lastNotificationSentAt: map['last_notification_sent_at'],
       createdAt: map['created_at'],
       updatedAt: map['updated_at'],

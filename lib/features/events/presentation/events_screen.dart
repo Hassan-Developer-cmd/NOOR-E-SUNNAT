@@ -91,13 +91,23 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> {
           ),
           body: SafeArea(
             bottom: false,
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 720),
-                child: StreamBuilder<List<EventModel>>(
+            child: Directionality(
+              textDirection: lp.textDirection,
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: StreamBuilder<List<EventModel>>(
                   stream: EventsService.eventsStream,
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
+                    if (snapshot.hasError) {
+                      return _buildErrorState(
+                        isUrdu: isUrdu,
+                        error: snapshot.error,
+                      );
+                    }
+
+                    if (snapshot.connectionState == ConnectionState.waiting &&
+                        !snapshot.hasData) {
                       return const Center(
                         child: CircularProgressIndicator(
                           color: AppColors.primaryEmerald,
@@ -144,7 +154,7 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> {
                           // Search & Filter Header
                           SliverToBoxAdapter(
                             child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+                              padding: const EdgeInsetsDirectional.fromSTEB(16, 14, 16, 8),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -256,7 +266,7 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> {
                             )
                           else
                             SliverPadding(
-                              padding: EdgeInsets.fromLTRB(16, 6, 16, bottomInset + 40),
+                              padding: EdgeInsetsDirectional.fromSTEB(16, 6, 16, bottomInset + 40),
                               sliver: SliverList(
                                 delegate: SliverChildBuilderDelegate(
                                   (context, index) {
@@ -282,8 +292,9 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> {
               ),
             ),
           ),
-        );
-      },
+        ),
+      );
+    },
     );
   }
 
@@ -322,6 +333,61 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> {
     );
   }
 
+  Widget _buildErrorState({required bool isUrdu, required Object? error}) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 76,
+              height: 76,
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.error_outline_rounded,
+                size: 38,
+                color: Colors.redAccent,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              isUrdu ? 'پروگرام لوڈ کرنے میں مسئلہ پیش آیا' : 'Unable to load events',
+              textAlign: TextAlign.center,
+              style: AppTypography.headingMedium.copyWith(fontSize: 17),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              isUrdu
+                  ? 'برائے مہربانی اپنا انٹرنیٹ کنکشن چیک کریں اور دوبارہ کوشش کریں۔'
+                  : 'Please check your internet connection and try again.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13, color: Colors.grey, height: 1.4),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryEmerald,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              ),
+              onPressed: () => setState(() {}),
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: Text(
+                isUrdu ? 'دوبارہ کوشش کریں' : 'Try Again',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildEmptyState({required bool isUrdu, required bool hasFilter}) {
     final lp = globalLanguageProvider;
 
@@ -334,7 +400,7 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> {
             Container(
               width: 76,
               height: 76,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.emeraldContainer,
                 shape: BoxShape.circle,
               ),
@@ -394,133 +460,146 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.all(22),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
+      builder: (ctx) => Directionality(
+        textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: EdgeInsetsDirectional.fromSTEB(
+            22,
+            22,
+            22,
+            22 + MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: event.statusBgColor,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      _statusLabel(event.status, isUrdu),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: event.statusFgColor,
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsetsDirectional.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: event.statusBgColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        _statusLabel(event.status, isUrdu),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: event.statusFgColor,
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 20),
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                event.getTitle(isUrdu),
-                style: AppTypography.headingMedium.copyWith(fontSize: 19),
-              ),
-              const SizedBox(height: 16),
-              _DetailRow(
-                icon: Icons.calendar_today_rounded,
-                iconColor: AppColors.primaryEmerald,
-                text: event.dateTime,
-              ),
-              const SizedBox(height: 10),
-              _DetailRow(
-                icon: Icons.location_on_rounded,
-                iconColor: AppColors.accentGold,
-                text: event.getLocation(isUrdu),
-              ),
-              if (event.getDescription(isUrdu).isNotEmpty) ...[
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 14),
-                  child: Divider(height: 1, color: AppColors.borderLight),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 10),
                 Text(
-                  isUrdu ? 'تفصیلات و معلومات:' : 'Event Description:',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                    color: AppColors.textPrimary,
-                  ),
+                  event.getTitle(isUrdu),
+                  style: AppTypography.headingMedium.copyWith(fontSize: 19),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  event.getDescription(isUrdu),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                    height: 1.5,
-                  ),
+                const SizedBox(height: 16),
+                _DetailRow(
+                  icon: Icons.calendar_today_rounded,
+                  iconColor: AppColors.primaryEmerald,
+                  text: event.dateTime,
                 ),
-              ],
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.copy_rounded, size: 16),
-                  label: Text(
-                    isUrdu ? 'پروگرام کی معلومات کاپی کریں' : 'Copy Invitation Details',
+                const SizedBox(height: 10),
+                _DetailRow(
+                  icon: Icons.location_on_rounded,
+                  iconColor: AppColors.accentGold,
+                  text: event.getLocation(isUrdu),
+                ),
+                if (event.getDescription(isUrdu).isNotEmpty) ...[
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                    child: Divider(height: 1, color: AppColors.borderLight),
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryEmerald,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  Text(
+                    isUrdu ? 'تفصیلات و معلومات:' : 'Event Description:',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      color: AppColors.textPrimary,
                     ),
                   ),
-                  onPressed: () {
-                    final shareText = '''
+                  const SizedBox(height: 6),
+                  Text(
+                    event.getDescription(isUrdu),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.copy_rounded, size: 16),
+                    label: Text(
+                      isUrdu ? 'پروگرام کی معلومات کاپی کریں' : 'Copy Invitation Details',
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryEmerald,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      final shareText = '''
 🕌 ${event.getTitle(isUrdu)}
 📅 ${event.dateTime}
 📍 ${event.getLocation(isUrdu)}
 ${event.getDescription(isUrdu).isNotEmpty ? "\n📝 ${event.getDescription(isUrdu)}" : ""}
 ''';
-                    Clipboard.setData(ClipboardData(text: shareText.trim()));
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          isUrdu
-                              ? 'پروگرام کی تفصیلات کاپی ہو گئیں!'
-                              : 'Event details copied to clipboard!',
+                      Clipboard.setData(ClipboardData(text: shareText.trim()));
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            isUrdu
+                                ? 'پروگرام کی تفصیلات کاپی ہو گئیں!'
+                                : 'Event details copied to clipboard!',
+                          ),
+                          duration: const Duration(seconds: 2),
                         ),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         ),
       ),
@@ -545,7 +624,7 @@ class _DetailedEventCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
+      margin: const EdgeInsetsDirectional.only(bottom: 14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -604,7 +683,7 @@ class _DetailedEventCard extends StatelessWidget {
                         fit: BoxFit.cover,
                         alignment: Alignment.center,
                         filterQuality: FilterQuality.medium,
-                        errorBuilder: (_, __, ___) => Container(
+                        errorBuilder: (context, error, stackTrace) => Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: event.gradientColors,
@@ -632,7 +711,7 @@ class _DetailedEventCard extends StatelessWidget {
 
                     // 3. Banner Content
                     Padding(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsetsDirectional.all(14),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -641,7 +720,7 @@ class _DetailedEventCard extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                padding: const EdgeInsetsDirectional.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withValues(alpha: 0.22),
                                   borderRadius: BorderRadius.circular(20),
@@ -694,7 +773,7 @@ class _DetailedEventCard extends StatelessWidget {
 
               // Details Body
               Padding(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsetsDirectional.all(14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -792,7 +871,7 @@ class _DetailRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 2),
+          padding: const EdgeInsetsDirectional.only(top: 2),
           child: Icon(icon, size: 15, color: iconColor),
         ),
         const SizedBox(width: 8),

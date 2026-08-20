@@ -31,7 +31,6 @@ class HomeScreen extends StatelessWidget {
       listenable: globalLanguageProvider,
       builder: (context, _) {
         final lp = globalLanguageProvider;
-        final languageCode = lp.locale.languageCode;
         final firebaseUser = FirebaseAuth.instance.currentUser;
         final displayName = firebaseUser?.displayName ?? lp.tr('guest');
         final photoUrl = firebaseUser?.photoURL;
@@ -74,7 +73,7 @@ class HomeScreen extends StatelessWidget {
                           fit: BoxFit.cover,
                           alignment: Alignment.center,
                           filterQuality: FilterQuality.medium,
-                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                          errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                         ),
                       ),
 
@@ -378,7 +377,24 @@ class _UpcomingEventsSection extends StatelessWidget {
         return StreamBuilder<List<EventModel>>(
           stream: EventsService.eventsStream,
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
+            if (snapshot.hasError) {
+              return Container(
+                height: 100,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.borderLight),
+                ),
+                child: Text(
+                  lp.tr('no_upcoming_events'),
+                  style: AppTypography.bodyMedium,
+                ),
+              );
+            }
+
+            if (snapshot.connectionState == ConnectionState.waiting &&
+                !snapshot.hasData) {
               return const SizedBox(
                 height: 180,
                 child: Center(

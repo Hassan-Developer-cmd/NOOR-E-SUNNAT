@@ -8,13 +8,21 @@ class EventsService {
   /// Live stream of events directly from Firestore with administrator arrangement ordering.
   static Stream<List<EventModel>> get eventsStream {
     return _firestore.collection('events').snapshots().map((snap) {
-      final list = snap.docs
-          .map((doc) => EventModel.fromMap(doc.id, doc.data()))
-          .toList();
+      final List<EventModel> list = [];
+      for (final doc in snap.docs) {
+        try {
+          final data = doc.data();
+          list.add(EventModel.fromMap(doc.id, data));
+        } catch (e) {
+          if (kDebugMode) {
+            print('EventsService: Error parsing event document ${doc.id}: $e');
+          }
+        }
+      }
 
       // Priority fallback ranking: Ongoing/Live (0), Featured (1), Coming Soon (2), Completed (3), Cancelled (4)
       int statusRank(String s) {
-        switch (s.toLowerCase()) {
+        switch (s.toLowerCase().trim()) {
           case 'ongoing':
             return 0;
           case 'featured':
@@ -28,6 +36,17 @@ class EventsService {
           default:
             return 2;
         }
+      }
+
+      DateTime parseSafeDate(dynamic raw) {
+        if (raw == null) return DateTime.fromMillisecondsSinceEpoch(0);
+        if (raw is Timestamp) return raw.toDate();
+        if (raw is DateTime) return raw;
+        if (raw is int) return DateTime.fromMillisecondsSinceEpoch(raw);
+        if (raw is String) {
+          return DateTime.tryParse(raw) ?? DateTime.fromMillisecondsSinceEpoch(0);
+        }
+        return DateTime.fromMillisecondsSinceEpoch(0);
       }
 
       list.sort((a, b) {
@@ -49,14 +68,8 @@ class EventsService {
         if (rankA != rankB) return rankA.compareTo(rankB);
 
         // 3. Tertiary fallback: Creation time (newest first)
-        final aCreated = a.createdAt;
-        final bCreated = b.createdAt;
-        final DateTime aTime = aCreated is Timestamp
-            ? aCreated.toDate()
-            : (aCreated is String ? DateTime.tryParse(aCreated) ?? DateTime.fromMillisecondsSinceEpoch(0) : DateTime.fromMillisecondsSinceEpoch(0));
-        final DateTime bTime = bCreated is Timestamp
-            ? bCreated.toDate()
-            : (bCreated is String ? DateTime.tryParse(bCreated) ?? DateTime.fromMillisecondsSinceEpoch(0) : DateTime.fromMillisecondsSinceEpoch(0));
+        final DateTime aTime = parseSafeDate(a.createdAt);
+        final DateTime bTime = parseSafeDate(b.createdAt);
         return bTime.compareTo(aTime);
       });
 
