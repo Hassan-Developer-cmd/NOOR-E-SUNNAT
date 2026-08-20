@@ -414,7 +414,26 @@ class AdminService {
     });
   }
 
-  static Future<void> sendNotification({
+  /// Retrieves configured FCM Server Key from Firestore app_config.
+  static Future<String?> getFcmServerKey() async {
+    try {
+      final doc = await _firestore.collection('app_config').doc('fcm_settings').get();
+      if (doc.exists && doc.data() != null) {
+        return doc.data()!['server_key'] as String?;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Saves FCM Server Key in Firestore app_config.
+  static Future<void> saveFcmServerKey(String key) async {
+    await _firestore.collection('app_config').doc('fcm_settings').set({
+      'server_key': key.trim(),
+      'updated_at': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  static Future<String> sendNotification({
     required String title,
     required String body,
     String? titleUr,
@@ -441,15 +460,62 @@ class AdminService {
       data['event_id'] = eventId;
     }
 
-    // 1. Write to Firestore notifications collection
+    // 1. Write to Firestore notifications collection (for in-app notification center)
     final docRef = await _firestore.collection('notifications').add(data);
 
-    // 2. Direct FCM Cloud Function HTTP Bridge (triggers Google FCM network push immediately)
+    String fcmResult = 'saved_to_database';
+
+    // 2. Direct FCM Legacy REST API Trigger (Sends direct Google FCM push to /topics/all_users)
+    final serverKey = await getFcmServerKey();
+    if (serverKey != null && serverKey.isNotEmpty) {
+      try {
+        final fcmUrl = Uri.parse('https://fcm.googleapis.com/fcm/send');
+        final fcmRes = await http.post(
+          fcmUrl,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'key=$serverKey',
+          },
+          body: jsonEncode({
+            'to': '/topics/$target',
+            'priority': 'high',
+            'notification': {
+              'title': cleanTitle,
+              'body': cleanBody,
+              'sound': 'default',
+              'android_channel_id': 'high_importance_channel',
+            },
+            'data': {
+              'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+              'id': docRef.id,
+              'type': type,
+              'title': cleanTitle,
+              'body': cleanBody,
+              'route': '/home',
+              'eventId': eventId ?? '',
+            },
+          }),
+        );
+        if (kDebugMode) {
+          print('Direct FCM REST response: ${fcmRes.statusCode} ${fcmRes.body}');
+        }
+        if (fcmRes.statusCode == 200) {
+          fcmResult = 'fcm_sent_success';
+        } else {
+          fcmResult = 'fcm_failed_${fcmRes.statusCode}';
+        }
+      } catch (e) {
+        if (kDebugMode) print('Direct FCM REST error: $e');
+        fcmResult = 'fcm_error';
+      }
+    }
+
+    // 3. Parallel Cloud Function HTTP Endpoint Trigger (Fallback)
     try {
       final url = Uri.parse(
         'https://us-central1-islamic-app-ed1ed.cloudfunctions.net/sendFCMBroadcastHttp',
       );
-      final res = await http.post(
+      await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
@@ -461,12 +527,9 @@ class AdminService {
           'eventId': eventId ?? '',
         }),
       );
-      if (kDebugMode) {
-        print('FCM HTTP broadcast response: ${res.statusCode} ${res.body}');
-      }
-    } catch (e) {
-      if (kDebugMode) print('FCM HTTP broadcast warning: $e');
-    }
+    } catch (_) {}
+
+    return fcmResult;
   }
 
   static Future<void> deleteNotification(String id) async {
@@ -558,7 +621,41 @@ class AdminService {
 
         await _firestore.collection('notifications').add(notifData);
 
-        // Direct 1-to-1 FCM HTTP Bridge Trigger
+        // Direct 1-to-1 FCM Legacy REST Dispatch (if server key configured)
+        final serverKey = await getFcmServerKey();
+        if (serverKey != null && serverKey.isNotEmpty) {
+          try {
+            final targetRecipient = (question.fcmToken != null && question.fcmToken!.isNotEmpty)
+                ? question.fcmToken!
+                : '/topics/user_${question.userId}';
+
+            await http.post(
+              Uri.parse('https://fcm.googleapis.com/fcm/send'),
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'key=$serverKey',
+              },
+              body: jsonEncode({
+                'to': targetRecipient,
+                'priority': 'high',
+                'notification': {
+                  'title': 'آپ کے سوال کا جواب دے دیا گیا ہے / Question Answered',
+                  'body': 'علمائے کرام نے آپ کے سوال کا جواب فراہم کر دیا ہے۔ دیکھنے کے لیے ٹیپ کریں۔',
+                  'sound': 'default',
+                  'android_channel_id': 'high_importance_channel',
+                },
+                'data': {
+                  'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+                  'type': 'question_answered',
+                  'route': '/qna',
+                  'questionId': questionId,
+                },
+              }),
+            );
+          } catch (_) {}
+        }
+
+        // Direct 1-to-1 FCM HTTP Bridge Trigger (Fallback)
         try {
           final url = Uri.parse(
             'https://us-central1-islamic-app-ed1ed.cloudfunctions.net/sendFCMBroadcastHttp',
