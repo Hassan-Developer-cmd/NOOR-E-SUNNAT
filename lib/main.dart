@@ -109,36 +109,36 @@ void main() async {
     // 1. Register Background Handler
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-    // 2. Setup Android Notification Channel
-    await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.createNotificationChannel(highImportanceChannel);
-
-    // 3. Request Permissions for Foreground/Background
-    await FirebaseMessaging.instance.requestPermission(
+    // 2. Request Notification Permissions for Foreground/Background
+    final messaging = FirebaseMessaging.instance;
+    await messaging.requestPermission(
       alert: true,
       badge: true,
       sound: true,
       provisional: false,
     );
 
-    // 4. Foreground presentation options for iOS/Android
-    await FirebaseMessaging.instance
-        .setForegroundNotificationPresentationOptions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-
-    // 5. Explicitly Subscribe to all_users broadcast topic on boot
+    // 3. Force Topic Subscription on startup
     try {
-      await FirebaseMessaging.instance.subscribeToTopic('all_users');
+      await messaging.subscribeToTopic('all_users');
       if (kDebugMode) print('Subscribed to all_users topic on boot');
     } catch (e) {
       if (kDebugMode) print('Error subscribing to all_users topic: $e');
     }
+
+    // 4. Setup Android Notification Channel
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(highImportanceChannel);
+
+    // 5. Foreground presentation options for iOS/Android
+    await messaging.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
   }
 
   await globalLanguageProvider.init();
