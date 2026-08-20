@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import '../core/models/event_model.dart';
 import '../core/models/masail_model.dart';
 import '../core/models/aqaid_model.dart';
@@ -421,11 +423,16 @@ class AdminService {
     String type = 'broadcast',
     String? eventId,
   }) async {
+    final cleanTitle = title.trim();
+    final cleanBody = body.trim();
+    final cleanTitleUr = (titleUr != null && titleUr.trim().isNotEmpty) ? titleUr.trim() : cleanTitle;
+    final cleanBodyUr = (bodyUr != null && bodyUr.trim().isNotEmpty) ? bodyUr.trim() : cleanBody;
+
     final data = <String, dynamic>{
-      'title': title.trim(),
-      'title_ur': (titleUr != null && titleUr.trim().isNotEmpty) ? titleUr.trim() : title.trim(),
-      'body': body.trim(),
-      'body_ur': (bodyUr != null && bodyUr.trim().isNotEmpty) ? bodyUr.trim() : body.trim(),
+      'title': cleanTitle,
+      'title_ur': cleanTitleUr,
+      'body': cleanBody,
+      'body_ur': cleanBodyUr,
       'target': target,
       'type': type,
       'sent_at': FieldValue.serverTimestamp(),
@@ -433,7 +440,33 @@ class AdminService {
     if (eventId != null && eventId.isNotEmpty) {
       data['event_id'] = eventId;
     }
-    await _firestore.collection('notifications').add(data);
+
+    // 1. Write to Firestore notifications collection
+    final docRef = await _firestore.collection('notifications').add(data);
+
+    // 2. Direct FCM Cloud Function HTTP Bridge (triggers Google FCM network push immediately)
+    try {
+      final url = Uri.parse(
+        'https://us-central1-islamic-app-ed1ed.cloudfunctions.net/sendFCMBroadcastHttp',
+      );
+      final res = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'title': cleanTitle,
+          'body': cleanBody,
+          'target': target,
+          'type': type,
+          'id': docRef.id,
+          'eventId': eventId ?? '',
+        }),
+      );
+      if (kDebugMode) {
+        print('FCM HTTP broadcast response: ${res.statusCode} ${res.body}');
+      }
+    } catch (e) {
+      if (kDebugMode) print('FCM HTTP broadcast warning: $e');
+    }
   }
 
   static Future<void> deleteNotification(String id) async {
@@ -466,6 +499,9 @@ class AdminService {
         return bTime.compareTo(aTime); // Newest first
       });
       return list;
+    }).handleError((e) {
+      if (kDebugMode) print('AdminService.questionsStream error: $e');
+      return <QuestionModel>[];
     });
   }
 
@@ -521,6 +557,25 @@ class AdminService {
         }
 
         await _firestore.collection('notifications').add(notifData);
+
+        // Direct 1-to-1 FCM HTTP Bridge Trigger
+        try {
+          final url = Uri.parse(
+            'https://us-central1-islamic-app-ed1ed.cloudfunctions.net/sendFCMBroadcastHttp',
+          );
+          await http.post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'title': 'آپ کے سوال کا جواب دے دیا گیا ہے / Question Answered',
+              'body': 'علمائے کرام نے آپ کے سوال کا جواب فراہم کر دیا ہے۔ دیکھنے کے لیے ٹیپ کریں۔',
+              'target': question.userId,
+              'fcmToken': question.fcmToken,
+              'type': 'question_answered',
+              'questionId': questionId,
+            }),
+          );
+        } catch (_) {}
       }
     } catch (e) {
       if (kDebugMode) print('AdminService.answerQuestion notification error: $e');

@@ -28,7 +28,9 @@ final LanguageProvider globalLanguageProvider = LanguageProvider();
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
   } catch (_) {}
 
   if (kDebugMode) {
@@ -41,11 +43,13 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // immediately render a native heads-up system tray notification using high_importance_channel
   if (message.notification == null && message.data.isNotEmpty) {
     try {
-      final title = message.data['title'] ??
+      final title =
+          message.data['title'] ??
           message.data['title_en'] ??
           message.data['title_ur'] ??
           'NOOR E SUNNAT';
-      final body = message.data['body'] ??
+      final body =
+          message.data['body'] ??
           message.data['body_en'] ??
           message.data['body_ur'] ??
           message.data['message'] ??
@@ -127,6 +131,14 @@ void main() async {
           badge: true,
           sound: true,
         );
+
+    // 5. Explicitly Subscribe to all_users broadcast topic on boot
+    try {
+      await FirebaseMessaging.instance.subscribeToTopic('all_users');
+      if (kDebugMode) print('Subscribed to all_users topic on boot');
+    } catch (e) {
+      if (kDebugMode) print('Error subscribing to all_users topic: $e');
+    }
   }
 
   await globalLanguageProvider.init();

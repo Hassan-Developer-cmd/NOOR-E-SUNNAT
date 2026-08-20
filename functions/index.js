@@ -274,3 +274,77 @@ exports.onQuestionAnswered = functions.firestore
       return null;
     }
   });
+
+/**
+ * HTTP Endpoint: sendFCMBroadcastHttp
+ * Allows the Admin Panel to explicitly trigger an immediate FCM broadcast push to all_users topic
+ * or direct user target without relying solely on Firestore listener delays.
+ */
+exports.sendFCMBroadcastHttp = functions.https.onRequest(async (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") {
+    return res.status(204).send("");
+  }
+
+  try {
+    const body = (req.body && req.body.data) ? req.body.data : (req.body || {});
+    const { title, body: messageBody, target, fcmToken, type, questionId, eventId } = body;
+
+    const resolvedTitle = title || "NOOR E SUNNAT Notification";
+    const resolvedBody = messageBody || "";
+    const resolvedTarget = target || "all_users";
+
+    const payload = {
+      notification: {
+        title: resolvedTitle,
+        body: resolvedBody,
+      },
+      data: {
+        click_action: "FLUTTER_NOTIFICATION_CLICK",
+        type: type || "announcement",
+        title: resolvedTitle,
+        body: resolvedBody,
+        route: type === "question_answered" ? "/qna" : (type === "event" ? "/events" : "/home"),
+        questionId: questionId || "",
+        eventId: eventId || "",
+      },
+      android: {
+        priority: "high",
+        notification: {
+          channelId: "high_importance_channel",
+          sound: "default",
+          priority: "max",
+          clickAction: "FLUTTER_NOTIFICATION_CLICK",
+          defaultSound: true,
+          defaultVibrateTimings: true,
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            sound: "default",
+            contentAvailable: true,
+          },
+        },
+      },
+    };
+
+    if (fcmToken) {
+      payload.token = fcmToken;
+    } else if (resolvedTarget === "all" || resolvedTarget === "all_users" || resolvedTarget === "broadcast") {
+      payload.topic = "all_users";
+    } else {
+      payload.topic = `user_${resolvedTarget}`;
+    }
+
+    const response = await admin.messaging().send(payload);
+    console.log("sendFCMBroadcastHttp successfully dispatched:", response);
+    return res.status(200).json({ success: true, messageId: response });
+  } catch (error) {
+    console.error("sendFCMBroadcastHttp error:", error);
+    return res.status(500).json({ success: false, error: error.message || "Failed to dispatch FCM" });
+  }
+});
