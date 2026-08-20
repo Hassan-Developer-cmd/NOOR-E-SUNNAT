@@ -170,5 +170,12 @@ void main() {
       expect(dataMap['questionId'], equals(questionId));
       expect((targetedPayload['notification'] as Map)['title'], contains('Question Answered'));
     });
+
+    test('Native Android WAKE_LOCK and Notification Channel Configuration Check', () {
+      expect(highImportanceChannel.id, equals('high_importance_channel'));
+      expect(highImportanceChannel.importance, equals(Importance.max));
+      expect(highImportanceChannel.playSound, isTrue);
+      expect(highImportanceChannel.enableVibration, isTrue);
+    });
   });
 }

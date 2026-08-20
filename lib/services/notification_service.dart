@@ -245,10 +245,14 @@ class NotificationService {
           print('FCM Authorization Status: ${settings.authorizationStatus}');
         }
 
-        // 4. Auto Subscribe to Global Broadcast Topic
+        // 4. Auto Subscribe to Global Broadcast Topic & User Topic
         try {
           await messaging.subscribeToTopic('all_users');
           if (kDebugMode) print('Subscribed to all_users FCM topic');
+          final currentUser = FirebaseAuth.instance.currentUser;
+          if (currentUser != null && currentUser.uid != 'guest') {
+            await messaging.subscribeToTopic('user_${currentUser.uid}');
+          }
         } catch (e) {
           if (kDebugMode) print('FCM topic subscription error: $e');
         }
@@ -280,6 +284,11 @@ class NotificationService {
         await _loadUserState();
         _seenNotificationIds.clear();
         startListeningToLiveNotifications();
+        if (!kIsWeb && user != null && user.uid != 'guest') {
+          try {
+            await FirebaseMessaging.instance.subscribeToTopic('user_${user.uid}');
+          } catch (_) {}
+        }
       });
 
       _isInitialized = true;

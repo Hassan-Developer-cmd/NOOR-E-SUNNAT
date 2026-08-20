@@ -27,11 +27,60 @@ final LanguageProvider globalLanguageProvider = LanguageProvider();
 /// Top-level background message handler invoked by native Android/iOS when the app is closed or in background.
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  } catch (_) {}
+
   if (kDebugMode) {
     print(
       'FCM Background message received: ${message.messageId}, data: ${message.data}',
     );
+  }
+
+  // If the background/terminated message is data-only (no top-level notification rendered by OS),
+  // immediately render a native heads-up system tray notification using high_importance_channel
+  if (message.notification == null && message.data.isNotEmpty) {
+    try {
+      final title = message.data['title'] ??
+          message.data['title_en'] ??
+          message.data['title_ur'] ??
+          'NOOR E SUNNAT';
+      final body = message.data['body'] ??
+          message.data['body_en'] ??
+          message.data['body_ur'] ??
+          message.data['message'] ??
+          '';
+
+      if (title.toString().isNotEmpty || body.toString().isNotEmpty) {
+        const androidDetails = AndroidNotificationDetails(
+          'high_importance_channel',
+          'High Importance Notifications',
+          channelDescription:
+              'High priority broadcast notifications, event alerts & answers',
+          importance: Importance.max,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          enableVibration: true,
+          playSound: true,
+        );
+
+        const notificationDetails = NotificationDetails(
+          android: androidDetails,
+        );
+        await flutterLocalNotificationsPlugin.show(
+          id: message.messageId.hashCode,
+          title: title.toString(),
+          body: body.toString(),
+          notificationDetails: notificationDetails,
+          payload:
+              message.data['id'] ??
+              message.data['questionId'] ??
+              message.data['route'],
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) print('Background local notification fallback error: $e');
+    }
   }
 }
 
