@@ -36,6 +36,10 @@ class _QAScreenState extends State<QAScreen> {
     super.dispose();
   }
 
+  void _openAskQuestionModal(BuildContext context) {
+    AskQuestionSheet.show(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -263,7 +267,7 @@ class _QAScreenState extends State<QAScreen> {
 
                       return ListView.builder(
                         physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 16, 24),
+                        padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 16, 80),
                         itemCount: filtered.length,
                         itemBuilder: (context, index) {
                           final q = filtered[index];
@@ -275,6 +279,21 @@ class _QAScreenState extends State<QAScreen> {
                 ),
               ],
             ),
+            floatingActionButton: FloatingActionButton.extended(
+              onPressed: () => _openAskQuestionModal(context),
+              backgroundColor: const Color(0xFF0F6848),
+              elevation: 4,
+              icon: const Icon(Icons.add_comment_rounded, color: Colors.white, size: 20),
+              label: Text(
+                isUrdu ? 'سوال پوچھیں' : 'Ask Question',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
           ),
         );
       },

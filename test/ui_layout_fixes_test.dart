@@ -126,5 +126,18 @@ void main() {
 
       expect(find.text('Namaz'), findsOneWidget);
     });
+
+    testWidgets('QAScreen renders FloatingActionButton with Ask Question label', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: QAScreen(),
+          ),
+        ),
+      );
+
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+      expect(find.text('Ask Question'), findsOneWidget);
+    });
   });
 }
