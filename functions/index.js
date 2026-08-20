@@ -123,22 +123,21 @@ exports.updateUserPasswordWithOtp = functions.https.onRequest(async (req, res) =
 });
 
 /**
- * Firestore Trigger: sendBroadcastNotification
- * Dispatches high-importance FCM push notifications.
- * Supports targeted 1-to-1 token delivery (when fcm_token or user target is specified)
- * and broadcast delivery (when target is all_users / broadcast).
+ * Firestore Background Trigger: onNotificationCreated
+ * Automatically fires whenever an Admin or system creates a document in `notifications/{notificationId}`.
+ * Dispatches high-priority Google FCM push messages to `all_users` topic or targeted device tokens.
  */
-exports.sendBroadcastNotification = functions.firestore
+exports.onNotificationCreated = functions.firestore
   .document("notifications/{notificationId}")
   .onCreate(async (snap, context) => {
     const data = snap.data();
     if (!data) return null;
 
-    const title = data.title || data.title_en || "NOOR E SUNNAT Notification";
-    const body = data.body || data.body_en || "";
-    const target = data.target || "all_users";
-    const notificationType = data.type || "announcement";
-    const directToken = data.fcm_token || data.token || null;
+    const title = data.title || data.title_en || data.titleEnglish || "NOOR E SUNNAT Notification";
+    const body = data.body || data.body_en || data.bodyEnglish || data.message || "";
+    const target = data.target || data.targetTopic || "all_users";
+    const notificationType = data.type || "broadcast";
+    const directToken = data.fcm_token || data.token || data.fcmToken || null;
 
     const isBroadcast =
       target === "all" ||
@@ -157,8 +156,15 @@ exports.sendBroadcastNotification = functions.firestore
         type: notificationType,
         title: title,
         body: body,
-        route: notificationType === "question_answered" || notificationType === "question_received" ? "/qna" : "/home",
-        questionId: data.question_id || "",
+        route:
+          notificationType === "question_answered" ||
+          notificationType === "question_received"
+            ? "/qna"
+            : (notificationType === "event" || notificationType === "event_announcement"
+                ? "/events"
+                : "/home"),
+        questionId: data.question_id || data.questionId || "",
+        eventId: data.event_id || data.eventId || "",
       },
       android: {
         priority: "high",
@@ -193,13 +199,23 @@ exports.sendBroadcastNotification = functions.firestore
 
     try {
       const response = await admin.messaging().send(payload);
-      console.log("FCM notification successfully dispatched:", response);
-      return response;
+      console.log("Successfully sent FCM broadcast via Cloud Function:", response);
+      return snap.ref.update({
+        status: "delivered",
+        fcmMessageId: response,
+        delivered_at: admin.firestore.FieldValue.serverTimestamp(),
+      });
     } catch (error) {
-      console.error("Error dispatching FCM notification:", error);
-      return null;
+      console.error("Error sending FCM broadcast via Cloud Function:", error);
+      return snap.ref.update({
+        status: "failed",
+        fcmError: error.message || String(error),
+      });
     }
   });
+
+// Alias for backwards compatibility
+exports.sendBroadcastNotification = exports.onNotificationCreated;
 
 /**
  * Firestore Trigger: onQuestionAnswered
