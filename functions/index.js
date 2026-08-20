@@ -157,6 +157,8 @@ exports.sendBroadcastNotification = functions.firestore
           sound: "default",
           priority: "max",
           clickAction: "FLUTTER_NOTIFICATION_CLICK",
+          defaultSound: true,
+          defaultVibrateTimings: true,
         },
       },
       apns: {
