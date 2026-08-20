@@ -133,27 +133,33 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Gold Islamic Crescent & Star Emblem Badge
+                    // Official App Logo Badge
                     Container(
                       width: 110,
                       height: 110,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white.withValues(alpha: 0.08),
-                        border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.4), width: 2),
+                        color: Colors.white,
+                        border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.6), width: 2.5),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.accentGold.withValues(alpha: 0.2),
+                            color: AppColors.accentGold.withValues(alpha: 0.25),
                             blurRadius: 24,
                             spreadRadius: 4,
                           ),
                         ],
                       ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.shield_moon_rounded,
-                          size: 54,
-                          color: AppColors.accentGold,
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/app_logo.png',
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => const Center(
+                            child: Icon(
+                              Icons.shield_moon_rounded,
+                              size: 54,
+                              color: AppColors.accentGold,
+                            ),
+                          ),
                         ),
                       ),
                     ),

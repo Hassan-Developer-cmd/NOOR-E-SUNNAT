@@ -186,6 +186,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               shape: BoxShape.circle,
+                              border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.6), width: 2),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withValues(alpha: 0.15),
@@ -194,10 +195,16 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                                 ),
                               ],
                             ),
-                            child: Icon(
-                              Icons.admin_panel_settings_rounded,
-                              size: isSmall ? 28 : 34,
-                              color: AppColors.primaryEmerald,
+                            child: ClipOval(
+                              child: Image.asset(
+                                'assets/images/app_logo.png',
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Icon(
+                                  Icons.admin_panel_settings_rounded,
+                                  size: isSmall ? 28 : 34,
+                                  color: AppColors.primaryEmerald,
+                                ),
+                              ),
                             ),
                           ),
                           SizedBox(height: isSmall ? 8 : 14),

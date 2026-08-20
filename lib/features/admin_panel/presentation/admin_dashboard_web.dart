@@ -310,7 +310,26 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
             color: AppColors.primaryEmerald,
             child: Row(
               children: [
-                const Icon(Icons.shield_moon_rounded, color: AppColors.accentGold, size: 28),
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.8), width: 1.5),
+                  ),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/images/app_logo.png',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.shield_moon_rounded,
+                        color: AppColors.accentGold,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

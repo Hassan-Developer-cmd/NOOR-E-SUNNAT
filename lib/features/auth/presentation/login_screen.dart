@@ -297,24 +297,32 @@ class _LoginScreenState extends State<LoginScreen> {
                               width: 76,
                               height: 76,
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.1),
+                                color: Colors.white,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: AppColors.goldBright.withValues(alpha: 0.5),
+                                  color: AppColors.goldBright.withValues(alpha: 0.6),
                                   width: 2,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.goldBright.withValues(alpha: 0.15),
+                                    color: AppColors.goldBright.withValues(alpha: 0.2),
                                     blurRadius: 16,
                                     spreadRadius: 2,
                                   ),
                                 ],
                               ),
-                              child: const Icon(
-                                Icons.shield_moon_rounded,
-                                size: 38,
-                                color: AppColors.goldBright,
+                              child: ClipOval(
+                                child: Image.asset(
+                                  'assets/images/app_logo.png',
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => const Center(
+                                    child: Icon(
+                                      Icons.shield_moon_rounded,
+                                      size: 38,
+                                      color: AppColors.goldBright,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                             const SizedBox(height: 18),
