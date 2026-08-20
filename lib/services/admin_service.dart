@@ -477,7 +477,7 @@ class AdminService {
         .map((snap) => snap.docs.length);
   }
 
-  /// Answers a question and automatically dispatches a notification to the user.
+  /// Answers a question and automatically dispatches a targeted 1-to-1 notification to the author.
   static Future<void> answerQuestion({
     required String questionId,
     required String answer,
@@ -495,21 +495,32 @@ class AdminService {
       'answered_by': answeredBy,
       'answered_at': FieldValue.serverTimestamp(),
       'updated_at': FieldValue.serverTimestamp(),
+      'is_public': isPublic,
     });
 
-    // Automated notification to the user
+    // Automated targeted 1-to-1 notification strictly to the author
     try {
       if (question.userId.isNotEmpty && question.userId != 'guest') {
-        await _firestore.collection('notifications').add({
-          'title': 'Your Question Has Been Answered! ✍️',
+        final notifData = <String, dynamic>{
+          'title': 'آپ کے سوال کا جواب دے دیا گیا ہے / Question Answered',
           'title_ur': 'آپ کے سوال کا جواب دے دیا گیا ہے! ✍️',
-          'body': 'Admin has responded to your question regarding ${question.category}.',
-          'body_ur': 'ایڈمن نے ${QuestionModel.getCategoryUrdu(question.category)} کے متعلق آپ کے سوال کا جواب فراہم کر دیا ہے۔',
+          'title_en': 'Your Question Has Been Answered! ✍️',
+          'body': 'علمائے کرام نے آپ کے سوال کا جواب فراہم کر دیا ہے۔ دیکھنے کے لیے ٹیپ کریں۔',
+          'body_ur': 'علمائے کرام نے آپ کے سوال کا جواب فراہم کر دیا ہے۔ دیکھنے کے لیے ٹیپ کریں۔',
+          'body_en': 'Admin has responded to your question regarding ${question.category}. Tap to view.',
           'target': question.userId,
+          'user_id': question.userId,
           'type': 'question_answered',
           'question_id': questionId,
           'sent_at': FieldValue.serverTimestamp(),
-        });
+        };
+
+        if (question.fcmToken != null && question.fcmToken!.isNotEmpty) {
+          notifData['fcm_token'] = question.fcmToken;
+          notifData['token'] = question.fcmToken;
+        }
+
+        await _firestore.collection('notifications').add(notifData);
       }
     } catch (e) {
       if (kDebugMode) print('AdminService.answerQuestion notification error: $e');

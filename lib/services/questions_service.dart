@@ -1,12 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import '../core/models/question_model.dart';
 
 class QuestionsService {
   static final _firestore = FirebaseFirestore.instance;
 
-  /// Submits a user question to Firestore and dispatches an automated in-app confirmation notification.
+  /// Submits a user question to Firestore, captures FCM token for 1-to-1 reply notifications,
+  /// and dispatches an automated in-app confirmation notification.
   static Future<String> submitQuestion({
     required String category,
     required String question,
@@ -16,10 +18,20 @@ class QuestionsService {
     final userEmail = user?.email ?? 'guest@islamicapp.org';
     final userName = user?.displayName ?? (userEmail.contains('@') ? userEmail.split('@').first : 'Beloved User');
 
+    String? fcmToken;
+    try {
+      if (!kIsWeb) {
+        fcmToken = await FirebaseMessaging.instance.getToken();
+      }
+    } catch (e) {
+      if (kDebugMode) print('QuestionsService: Error fetching FCM token: $e');
+    }
+
     final docRef = await _firestore.collection('user_questions').add({
       'user_id': userId,
       'user_name': userName,
       'user_email': userEmail,
+      'fcm_token': fcmToken,
       'category': category,
       'question': question.trim(),
       'status': 'Pending',

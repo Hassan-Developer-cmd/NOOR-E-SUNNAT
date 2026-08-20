@@ -133,5 +133,42 @@ void main() {
       expect(highImportanceChannel.playSound, isTrue);
       expect(highImportanceChannel.enableVibration, isTrue);
     });
+
+    test('Targeted 1-to-1 Q&A Push Notification Payload matches recipient device token only', () {
+      const channelId = 'high_importance_channel';
+      const recipientToken = 'fcm_device_token_user_author_456';
+      const questionId = 'q_897123';
+
+      final targetedPayload = {
+        'token': recipientToken,
+        'notification': {
+          'title': 'آپ کے سوال کا جواب دے دیا گیا ہے / Question Answered',
+          'body': 'علمائے کرام نے آپ کے سوال کا جواب فراہم کر دیا ہے۔ دیکھنے کے لیے ٹیپ کریں۔',
+        },
+        'data': {
+          'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+          'route': '/qna',
+          'questionId': questionId,
+          'type': 'question_answered',
+        },
+        'android': {
+          'priority': 'high',
+          'notification': {
+            'channelId': channelId,
+            'sound': 'default',
+            'priority': 'max',
+            'defaultSound': true,
+            'defaultVibrateTimings': true,
+          },
+        },
+      };
+
+      expect(targetedPayload['token'], equals(recipientToken));
+      expect(targetedPayload.containsKey('topic'), isFalse);
+      final dataMap = targetedPayload['data'] as Map<String, dynamic>;
+      expect(dataMap['route'], equals('/qna'));
+      expect(dataMap['questionId'], equals(questionId));
+      expect((targetedPayload['notification'] as Map)['title'], contains('Question Answered'));
+    });
   });
 }

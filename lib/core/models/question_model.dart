@@ -5,6 +5,7 @@ class QuestionModel {
   final String userId;
   final String userName;
   final String userEmail;
+  final String? fcmToken;
   final String question;
   final String category;
   final String status; // 'Pending' | 'Answered'
@@ -20,6 +21,7 @@ class QuestionModel {
     required this.userId,
     required this.userName,
     required this.userEmail,
+    this.fcmToken,
     required this.question,
     required this.category,
     this.status = 'Pending',
@@ -87,14 +89,15 @@ class QuestionModel {
 
     return QuestionModel(
       id: id,
-      userId: map['user_id'] as String? ?? '',
-      userName: map['user_name'] as String? ?? 'Anonymous',
-      userEmail: map['user_email'] as String? ?? '',
-      question: map['question'] as String? ?? '',
+      userId: map['user_id'] as String? ?? map['userId'] as String? ?? '',
+      userName: map['user_name'] as String? ?? map['userName'] as String? ?? 'Anonymous',
+      userEmail: map['user_email'] as String? ?? map['userEmail'] as String? ?? '',
+      fcmToken: map['fcm_token'] as String? ?? map['fcmToken'] as String?,
+      question: map['question'] as String? ?? map['questionText'] as String? ?? '',
       category: map['category'] as String? ?? 'General',
       status: map['status'] as String? ?? 'Pending',
-      answer: map['answer'] as String?,
-      answeredBy: map['answered_by'] as String?,
+      answer: map['answer'] as String? ?? map['answerText'] as String?,
+      answeredBy: map['answered_by'] as String? ?? map['answeredBy'] as String?,
       answeredAt: answeredTime,
       createdAt: createdTime,
       isPublic: map['is_public'] as bool? ?? false,
@@ -108,6 +111,7 @@ class QuestionModel {
         'user_id': userId,
         'user_name': userName,
         'user_email': userEmail,
+        'fcm_token': fcmToken,
         'question': question,
         'category': category,
         'status': status,
@@ -124,6 +128,7 @@ class QuestionModel {
     String? userId,
     String? userName,
     String? userEmail,
+    String? fcmToken,
     String? question,
     String? category,
     String? status,
@@ -139,6 +144,7 @@ class QuestionModel {
       userId: userId ?? this.userId,
       userName: userName ?? this.userName,
       userEmail: userEmail ?? this.userEmail,
+      fcmToken: fcmToken ?? this.fcmToken,
       question: question ?? this.question,
       category: category ?? this.category,
       status: status ?? this.status,

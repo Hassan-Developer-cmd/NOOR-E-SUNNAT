@@ -124,8 +124,9 @@ exports.updateUserPasswordWithOtp = functions.https.onRequest(async (req, res) =
 
 /**
  * Firestore Trigger: sendBroadcastNotification
- * Automatically dispatches high-importance FCM push notifications to all users (even when app is closed)
- * whenever a new notification is added to the Firestore 'notifications' collection.
+ * Dispatches high-importance FCM push notifications.
+ * Supports targeted 1-to-1 token delivery (when fcm_token or user target is specified)
+ * and broadcast delivery (when target is all_users / broadcast).
  */
 exports.sendBroadcastNotification = functions.firestore
   .document("notifications/{notificationId}")
@@ -137,6 +138,13 @@ exports.sendBroadcastNotification = functions.firestore
     const body = data.body || data.body_en || "";
     const target = data.target || "all_users";
     const notificationType = data.type || "announcement";
+    const directToken = data.fcm_token || data.token || null;
+
+    const isBroadcast =
+      target === "all" ||
+      target === "all_users" ||
+      target === "broadcast" ||
+      target === "active_today";
 
     const payload = {
       notification: {
@@ -149,6 +157,8 @@ exports.sendBroadcastNotification = functions.firestore
         type: notificationType,
         title: title,
         body: body,
+        route: notificationType === "question_answered" || notificationType === "question_received" ? "/qna" : "/home",
+        questionId: data.question_id || "",
       },
       android: {
         priority: "high",
@@ -169,18 +179,98 @@ exports.sendBroadcastNotification = functions.firestore
           },
         },
       },
-      topic:
-        target === "all" || target === "all_users" || target === "broadcast" || target === "active_today"
-          ? "all_users"
-          : target,
     };
+
+    // 1-to-1 Direct Token Target
+    if (directToken) {
+      payload.token = directToken;
+    } else if (isBroadcast) {
+      payload.topic = "all_users";
+    } else {
+      // User-specific topic fallback (user_<userId>)
+      payload.topic = `user_${target}`;
+    }
 
     try {
       const response = await admin.messaging().send(payload);
-      console.log("FCM push notification successfully dispatched:", response);
+      console.log("FCM notification successfully dispatched:", response);
       return response;
     } catch (error) {
-      console.error("Error dispatching FCM push notification:", error);
+      console.error("Error dispatching FCM notification:", error);
+      return null;
+    }
+  });
+
+/**
+ * Firestore Trigger: onQuestionAnswered
+ * Automatically sends targeted 1-to-1 push notification directly to the question author's FCM token
+ * when an admin updates the question status to 'Answered'.
+ */
+exports.onQuestionAnswered = functions.firestore
+  .document("user_questions/{questionId}")
+  .onUpdate(async (change, context) => {
+    const beforeData = change.before.data() || {};
+    const afterData = change.after.data() || {};
+
+    const wasAnswered = beforeData.status && beforeData.status.toLowerCase() === "answered";
+    const isNowAnswered = afterData.status && afterData.status.toLowerCase() === "answered";
+
+    // Only trigger when transitioned to Answered
+    if (wasAnswered || !isNowAnswered) {
+      return null;
+    }
+
+    const fcmToken = afterData.fcm_token || afterData.fcmToken;
+    const userId = afterData.user_id || afterData.userId;
+
+    if (!fcmToken && (!userId || userId === "guest")) {
+      console.warn(`No FCM token or valid userId found for question ${context.params.questionId}. Skipping push notification.`);
+      return null;
+    }
+
+    const payload = {
+      notification: {
+        title: "آپ کے سوال کا جواب دے دیا گیا ہے / Question Answered",
+        body: "علمائے کرام نے آپ کے سوال کا جواب فراہم کر دیا ہے۔ دیکھنے کے لیے ٹیپ کریں۔",
+      },
+      data: {
+        click_action: "FLUTTER_NOTIFICATION_CLICK",
+        route: "/qna",
+        questionId: context.params.questionId,
+        type: "question_answered",
+      },
+      android: {
+        priority: "high",
+        notification: {
+          channelId: "high_importance_channel",
+          sound: "default",
+          priority: "max",
+          defaultSound: true,
+          defaultVibrateTimings: true,
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            sound: "default",
+            contentAvailable: true,
+          },
+        },
+      },
+    };
+
+    if (fcmToken) {
+      payload.token = fcmToken;
+    } else {
+      payload.topic = `user_${userId}`;
+    }
+
+    try {
+      const response = await admin.messaging().send(payload);
+      console.log(`1-to-1 FCM response notification sent for question ${context.params.questionId}:`, response);
+      return response;
+    } catch (error) {
+      console.warn(`Targeted FCM delivery error for question ${context.params.questionId}:`, error);
       return null;
     }
   });

@@ -38,14 +38,15 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
-const AndroidNotificationChannel highImportanceChannel = AndroidNotificationChannel(
-  'high_importance_channel', // id
-  'High Importance Notifications', // title
-  description: 'This channel is used for important notifications.',
-  importance: Importance.max,
-  playSound: true,
-  enableVibration: true,
-);
+const AndroidNotificationChannel highImportanceChannel =
+    AndroidNotificationChannel(
+      'high_importance_channel', // id
+      'High Importance Notifications', // title
+      description: 'This channel is used for important notifications.',
+      importance: Importance.max,
+      playSound: true,
+      enableVibration: true,
+    );
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -58,7 +59,8 @@ void main() async {
     // 2. Setup Android Notification Channel
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
+          AndroidFlutterLocalNotificationsPlugin
+        >()
         ?.createNotificationChannel(highImportanceChannel);
 
     // 3. Request Permissions for Foreground/Background
@@ -70,11 +72,12 @@ void main() async {
     );
 
     // 4. Foreground presentation options for iOS/Android
-    await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+    await FirebaseMessaging.instance
+        .setForegroundNotificationPresentationOptions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
   }
 
   await globalLanguageProvider.init();
