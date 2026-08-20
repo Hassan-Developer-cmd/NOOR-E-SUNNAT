@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'fcm_v1_service.dart';
 import '../core/models/event_model.dart';
 import '../core/models/masail_model.dart';
 import '../core/models/aqaid_model.dart';
@@ -465,9 +466,27 @@ class AdminService {
 
     String fcmResult = 'saved_to_database';
 
-    // 2. Direct FCM Legacy REST API Trigger (Sends direct Google FCM push to /topics/all_users)
+    // 2. Direct FCM v1 HTTP API Dispatch (Service Account + OAuth2 Bearer Token)
+    try {
+      final v1Sent = await FcmV1Service.sendBroadcast(
+        title: cleanTitle,
+        body: cleanBody,
+        topic: target,
+        type: type,
+        id: docRef.id,
+        route: '/home',
+        eventId: eventId,
+      );
+      if (v1Sent) {
+        fcmResult = 'fcm_v1_success';
+      }
+    } catch (e) {
+      if (kDebugMode) print('AdminService FCM v1 dispatch error: $e');
+    }
+
+    // 3. Direct FCM Legacy REST API Trigger (Fallback if server key is configured)
     final serverKey = await getFcmServerKey();
-    if (serverKey != null && serverKey.isNotEmpty) {
+    if (serverKey != null && serverKey.isNotEmpty && fcmResult != 'fcm_v1_success') {
       try {
         final fcmUrl = Uri.parse('https://fcm.googleapis.com/fcm/send');
         final fcmRes = await http.post(
@@ -501,16 +520,13 @@ class AdminService {
         }
         if (fcmRes.statusCode == 200) {
           fcmResult = 'fcm_sent_success';
-        } else {
-          fcmResult = 'fcm_failed_${fcmRes.statusCode}';
         }
       } catch (e) {
         if (kDebugMode) print('Direct FCM REST error: $e');
-        fcmResult = 'fcm_error';
       }
     }
 
-    // 3. Parallel Cloud Function HTTP Endpoint Trigger (Fallback)
+    // 4. Parallel Cloud Function HTTP Endpoint Trigger (Fallback)
     try {
       final url = Uri.parse(
         'https://us-central1-islamic-app-ed1ed.cloudfunctions.net/sendFCMBroadcastHttp',
@@ -559,7 +575,7 @@ class AdminService {
       list.sort((a, b) {
         final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
         final bTime = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        return bTime.compareTo(aTime); // Newest first
+        return bTime.compareTo(aTime); // newest first
       });
       return list;
     }).handleError((e) {
@@ -620,6 +636,29 @@ class AdminService {
         }
 
         await _firestore.collection('notifications').add(notifData);
+
+        // Direct targeted 1-to-1 FCM v1 push notification
+        if (question.fcmToken != null && question.fcmToken!.isNotEmpty) {
+          try {
+            await FcmV1Service.sendToToken(
+              fcmToken: question.fcmToken!,
+              title: 'آپ کے سوال کا جواب دے دیا گیا ہے / Question Answered',
+              body: 'علمائے کرام نے آپ کے سوال کا جواب فراہم کر دیا ہے۔ دیکھنے کے لیے ٹیپ کریں۔',
+              type: 'question_answered',
+              questionId: questionId,
+            );
+          } catch (_) {}
+        } else {
+          try {
+            await FcmV1Service.sendBroadcast(
+              topic: 'user_${question.userId}',
+              title: 'آپ کے سوال کا جواب دے دیا گیا ہے / Question Answered',
+              body: 'علمائے کرام نے آپ کے سوال کا جواب فراہم کر دیا ہے۔ دیکھنے کے لیے ٹیپ کریں۔',
+              type: 'question_answered',
+              questionId: questionId,
+            );
+          } catch (_) {}
+        }
 
         // Direct 1-to-1 FCM Legacy REST Dispatch (if server key configured)
         final serverKey = await getFcmServerKey();

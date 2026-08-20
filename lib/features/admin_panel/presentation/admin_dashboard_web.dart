@@ -3292,10 +3292,10 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 );
                 if (ctx.mounted) {
                   Navigator.pop(ctx);
-                  if (fcmResult == 'fcm_sent_success') {
-                    _snack('Push notification broadcasted successfully to all users! 🚀 (Google FCM Network Push Sent)');
+                  if (fcmResult == 'fcm_v1_success' || fcmResult == 'fcm_sent_success') {
+                    _snack('Push notification broadcasted successfully to all users! 🚀 (Google FCM v1 Network Push Sent)');
                   } else {
-                    _snack('Notification saved to database! 📢 (Tip: Set FCM Server Key in settings for direct push)');
+                    _snack('Notification broadcasted and saved to database! 📢');
                   }
                 }
               },
