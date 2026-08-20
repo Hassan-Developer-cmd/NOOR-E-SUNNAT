@@ -19,11 +19,20 @@ class QAScreen extends StatefulWidget {
 class _QAScreenState extends State<QAScreen> {
   String _selectedFilter = 'all'; // 'all' | 'pending' | 'answered'
   String _searchQuery = '';
-  final TextEditingController _searchController = TextEditingController();
+  late final TextEditingController _searchController;
+  late final FocusNode _searchFocusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+    _searchFocusNode = FocusNode();
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -98,169 +107,173 @@ class _QAScreenState extends State<QAScreen> {
                 ),
               ],
             ),
-            body: StreamBuilder<List<QuestionModel>>(
-              stream: QuestionsService.getUserQuestionsStream(userId),
-              builder: (context, snap) {
-                if (snap.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: AppColors.primaryEmerald));
-                }
-
-                final allQuestions = snap.data ?? [];
-                final filtered = allQuestions.where((q) {
-                  final matchesFilter = _selectedFilter == 'all' ||
-                      (_selectedFilter == 'pending' && q.isPending) ||
-                      (_selectedFilter == 'answered' && q.isAnswered);
-
-                  final query = _searchQuery.toLowerCase();
-                  final matchesSearch = query.isEmpty ||
-                      q.question.toLowerCase().contains(query) ||
-                      q.category.toLowerCase().contains(query) ||
-                      (q.answer != null && q.answer!.toLowerCase().contains(query));
-
-                  return matchesFilter && matchesSearch;
-                }).toList();
-
-                final pendingCount = allQuestions.where((q) => q.isPending).length;
-                final answeredCount = allQuestions.where((q) => q.isAnswered).length;
-
-                return Column(
-                  children: [
-                    // Search & Filter Header
-                    Container(
-                      color: Colors.white,
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                      child: Column(
-                        children: [
-                          // Search Bar
-                          TextField(
-                            controller: _searchController,
-                            onChanged: (v) => setState(() => _searchQuery = v),
-                            textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
-                            textAlign: isUrdu ? TextAlign.right : TextAlign.left,
-                            decoration: InputDecoration(
-                              hintText: lp.tr('search_my_questions_hint'),
-                              hintTextDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
-                              hintStyle: const TextStyle(fontSize: 13, color: Colors.grey),
-                              prefixIcon: const Icon(Icons.search_rounded, size: 20, color: AppColors.primaryEmerald),
-                              suffixIcon: _searchQuery.isNotEmpty
-                                  ? IconButton(
-                                      icon: const Icon(Icons.clear_rounded, size: 18),
-                                      onPressed: () {
-                                        _searchController.clear();
-                                        setState(() => _searchQuery = '');
-                                      },
-                                    )
-                                  : null,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey.shade300),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: AppColors.borderLight),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: AppColors.primaryEmerald, width: 1.5),
-                              ),
-                              filled: true,
-                              fillColor: AppColors.bgOffWhite,
-                            ),
+            body: Column(
+              children: [
+                // Search & Filter Header
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 16, 12),
+                  child: Column(
+                    children: [
+                      // Search Bar
+                      TextField(
+                        controller: _searchController,
+                        focusNode: _searchFocusNode,
+                        onChanged: (v) {
+                          setState(() {
+                            _searchQuery = v.trim();
+                          });
+                        },
+                        textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
+                        textAlign: isUrdu ? TextAlign.right : TextAlign.left,
+                        decoration: InputDecoration(
+                          hintText: lp.tr('search_my_questions_hint'),
+                          hintTextDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
+                          hintStyle: const TextStyle(fontSize: 13, color: Colors.grey),
+                          prefixIcon: const Icon(Icons.search_rounded, size: 20, color: AppColors.primaryEmerald),
+                          suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear_rounded, size: 18),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() => _searchQuery = '');
+                                  },
+                                )
+                              : null,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
                           ),
-                          const SizedBox(height: 10),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.borderLight),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppColors.primaryEmerald, width: 1.5),
+                          ),
+                          filled: true,
+                          fillColor: AppColors.bgOffWhite,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
 
-                          // Filter Chips
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            child: Row(
+                      // Filter Chips
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          children: [
+                            _buildFilterChip(
+                              label: lp.tr('filter_all'),
+                              value: 'all',
+                              isSelected: _selectedFilter == 'all',
+                            ),
+                            const SizedBox(width: 8),
+                            _buildFilterChip(
+                              label: lp.tr('filter_pending'),
+                              value: 'pending',
+                              isSelected: _selectedFilter == 'pending',
+                            ),
+                            const SizedBox(width: 8),
+                            _buildFilterChip(
+                              label: lp.tr('filter_answered'),
+                              value: 'answered',
+                              isSelected: _selectedFilter == 'answered',
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Questions List Stream
+                Expanded(
+                  child: StreamBuilder<List<QuestionModel>>(
+                    stream: QuestionsService.getUserQuestionsStream(userId),
+                    builder: (context, snap) {
+                      if (snap.connectionState == ConnectionState.waiting && !snap.hasData) {
+                        return const Center(child: CircularProgressIndicator(color: AppColors.primaryEmerald));
+                      }
+
+                      final allQuestions = snap.data ?? [];
+                      final filtered = allQuestions.where((q) {
+                        final matchesFilter = _selectedFilter == 'all' ||
+                            (_selectedFilter == 'pending' && q.isPending) ||
+                            (_selectedFilter == 'answered' && q.isAnswered);
+
+                        final query = _searchQuery.toLowerCase();
+                        final matchesSearch = query.isEmpty ||
+                            q.question.toLowerCase().contains(query) ||
+                            q.category.toLowerCase().contains(query) ||
+                            (q.answer != null && q.answer!.toLowerCase().contains(query));
+
+                        return matchesFilter && matchesSearch;
+                      }).toList();
+
+                      if (filtered.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                _buildFilterChip(
-                                  label: '${lp.tr('filter_all')} (${allQuestions.length})',
-                                  value: 'all',
-                                  isSelected: _selectedFilter == 'all',
+                                Container(
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.emeraldContainer.withValues(alpha: 0.5),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.chat_bubble_outline_rounded,
+                                    size: 40,
+                                    color: AppColors.primaryEmerald,
+                                  ),
                                 ),
-                                const SizedBox(width: 8),
-                                _buildFilterChip(
-                                  label: '${lp.tr('filter_pending')} ($pendingCount)',
-                                  value: 'pending',
-                                  isSelected: _selectedFilter == 'pending',
+                                const SizedBox(height: 16),
+                                Text(
+                                  lp.tr('no_questions_found'),
+                                  style: AppTypography.headingMedium.copyWith(fontSize: 16),
                                 ),
-                                const SizedBox(width: 8),
-                                _buildFilterChip(
-                                  label: '${lp.tr('filter_answered')} ($answeredCount)',
-                                  value: 'answered',
-                                  isSelected: _selectedFilter == 'answered',
+                                const SizedBox(height: 6),
+                                Text(
+                                  lp.tr('no_questions_desc'),
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(fontSize: 13, color: Colors.grey),
+                                ),
+                                const SizedBox(height: 20),
+                                ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primaryEmerald,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                  ),
+                                  onPressed: () => AskQuestionSheet.show(context),
+                                  icon: const Icon(Icons.add_comment_rounded, size: 18),
+                                  label: Text(lp.tr('ask_question')),
                                 ),
                               ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
+                        );
+                      }
 
-                    // Questions List
-                    Expanded(
-                      child: filtered.isEmpty
-                          ? Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(32),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(20),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.emeraldContainer.withValues(alpha: 0.5),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.chat_bubble_outline_rounded,
-                                        size: 40,
-                                        color: AppColors.primaryEmerald,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      lp.tr('no_questions_found'),
-                                      style: AppTypography.headingMedium.copyWith(fontSize: 16),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      lp.tr('no_questions_desc'),
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(fontSize: 13, color: Colors.grey),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    ElevatedButton.icon(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.primaryEmerald,
-                                        foregroundColor: Colors.white,
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                      ),
-                                      onPressed: () => AskQuestionSheet.show(context),
-                                      icon: const Icon(Icons.add_comment_rounded, size: 18),
-                                      label: Text(lp.tr('ask_question')),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                          : ListView.builder(
-                              physics: const BouncingScrollPhysics(),
-                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                              itemCount: filtered.length,
-                              itemBuilder: (context, index) {
-                                final q = filtered[index];
-                                return _QuestionCard(question: q, isUrdu: isUrdu);
-                              },
-                            ),
-                    ),
-                  ],
-                );
-              },
+                      return ListView.builder(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 16, 24),
+                        itemCount: filtered.length,
+                        itemBuilder: (context, index) {
+                          final q = filtered[index];
+                          return _QuestionCard(question: q, isUrdu: isUrdu);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         );

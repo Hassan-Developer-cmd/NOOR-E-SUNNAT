@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:islamic_app/core/models/event_model.dart';
 import 'package:islamic_app/features/home/presentation/widgets/event_card.dart';
 import 'package:islamic_app/features/knowledge_hub/presentation/ask_question_sheet.dart';
+import 'package:islamic_app/features/knowledge_hub/presentation/qa_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -104,6 +105,26 @@ void main() {
       expect(find.text('Main Hall'), findsOneWidget);
       expect(find.byIcon(Icons.calendar_today_outlined), findsOneWidget);
       expect(find.byIcon(Icons.location_on_outlined), findsOneWidget);
+    });
+  });
+
+  group('QAScreen Search Controller & Focus Tests', () {
+    testWidgets('QAScreen retains search field across typing', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: QAScreen(),
+          ),
+        ),
+      );
+
+      final searchFinder = find.byType(TextField);
+      expect(searchFinder, findsOneWidget);
+
+      await tester.enterText(searchFinder, 'Namaz');
+      await tester.pump();
+
+      expect(find.text('Namaz'), findsOneWidget);
     });
   });
 }
