@@ -1921,40 +1921,24 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   'Total Broadcast Notifications (${allDocs.length})',
                   style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
                 ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: () => _showFcmSettingsModal(context),
-                      icon: const Icon(Icons.vpn_key_rounded, size: 16, color: AppColors.primaryEmerald),
-                      label: const Text('FCM Server Key (Direct Push)', style: TextStyle(color: AppColors.primaryEmerald, fontSize: 12, fontWeight: FontWeight.bold)),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppColors.primaryEmerald),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      ),
+                if (allDocs.isNotEmpty)
+                  OutlinedButton.icon(
+                    onPressed: () => _confirmDelete(
+                      context,
+                      () async {
+                        await AdminService.clearAllNotifications();
+                        _snack('All notifications cleared from the database.');
+                      },
+                      customTitle: 'Clear All Notifications',
+                      customMessage: 'Are you sure you want to permanently delete ALL notifications? This cannot be undone.',
                     ),
-                    if (allDocs.isNotEmpty) ...[
-                      const SizedBox(width: 8),
-                      OutlinedButton.icon(
-                        onPressed: () => _confirmDelete(
-                          context,
-                          () async {
-                            await AdminService.clearAllNotifications();
-                            _snack('All notifications cleared from the database.');
-                          },
-                          customTitle: 'Clear All Notifications',
-                          customMessage: 'Are you sure you want to permanently delete ALL notifications? This cannot be undone.',
-                        ),
-                        icon: const Icon(Icons.delete_sweep_rounded, size: 16, color: Colors.red),
-                        label: const Text('Clear All Notifications', style: TextStyle(color: Colors.red, fontSize: 12)),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.red),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+                    icon: const Icon(Icons.delete_sweep_rounded, size: 16, color: Colors.red),
+                    label: const Text('Clear All Notifications', style: TextStyle(color: Colors.red, fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.red),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 12),
@@ -3306,94 +3290,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     );
   }
 
-  void _showFcmSettingsModal(BuildContext context) async {
-    final existingKey = await AdminService.getFcmServerKey() ?? '';
-    if (!context.mounted) return;
 
-    final keyC = TextEditingController(text: existingKey);
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModal) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: AppColors.emeraldContainer, borderRadius: BorderRadius.circular(10)),
-                child: const Icon(Icons.vpn_key_rounded, color: AppColors.primaryEmerald, size: 20),
-              ),
-              const SizedBox(width: 10),
-              const Text('FCM Server Key Configuration', style: AppTypography.titleMedium),
-            ],
-          ),
-          content: SizedBox(
-            width: _dialogWidth(context),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFBFDBFE)),
-                    ),
-                    child: const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '💡 How to enable Direct Background & Terminated Push:',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E40AF)),
-                        ),
-                        SizedBox(height: 6),
-                        Text(
-                          '1. Go to Firebase Console -> Project Settings -> Cloud Messaging tab.\n2. Under "Cloud Messaging API (Legacy)", enable it if needed.\n3. Copy the "Server Key" and paste it below.\n4. Click Save. Every notification you broadcast will now instantly ring all physical mobile devices even when the app is completely closed!',
-                          style: TextStyle(fontSize: 12, color: Color(0xFF1E3A8A), height: 1.4),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _field(
-                    keyC,
-                    'Firebase Cloud Messaging (FCM) Server Key',
-                    hintText: 'AAAA... (from Firebase Console -> Cloud Messaging)',
-                    maxLines: 2,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.save_rounded, size: 16),
-              label: const Text('Save FCM Server Key'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryEmerald,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () async {
-                if (keyC.text.trim().isEmpty) {
-                  _snack('Please enter a valid Firebase Server Key.');
-                  return;
-                }
-                await AdminService.saveFcmServerKey(keyC.text.trim());
-                if (ctx.mounted) {
-                  Navigator.pop(ctx);
-                  _snack('FCM Server Key saved successfully! Direct push notifications are active. 🚀');
-                }
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   void _showAnswerQuestionModal(BuildContext context, QuestionModel q) {
     final answerC = TextEditingController(text: q.answer ?? '');
