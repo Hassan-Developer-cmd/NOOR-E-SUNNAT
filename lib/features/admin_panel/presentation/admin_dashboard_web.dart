@@ -1635,16 +1635,26 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
               DataCell(Text(m.question, style: const TextStyle(fontWeight: FontWeight.w600))),
               DataCell(_statusChip(m.categoryId.toUpperCase(), AppColors.emeraldContainer, AppColors.primaryEmerald)),
               DataCell(Text(m.getBook(false), style: const TextStyle(fontSize: 12))),
-              DataCell(Row(children: [
-                IconButton(
-                  icon: const Icon(Icons.edit, size: 18, color: AppColors.primaryEmerald),
-                  onPressed: () => _showEditMasailModal(context, m),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                  onPressed: () => _confirmDelete(context, () => AdminService.deleteMasail(m.id)),
-                ),
-              ])),
+              DataCell(Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit_rounded, size: 18, color: AppColors.primaryEmerald),
+                    tooltip: 'Edit Masail',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    onPressed: () => _showEditMasailModal(context, m),
+                  ),
+                  const SizedBox(width: 6),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red),
+                    tooltip: 'Delete Masail',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    onPressed: () => _confirmDelete(context, () => AdminService.deleteMasail(m.id)),
+                  ),
+                ],
+              )),
             ])).toList()),
           ],
         );
@@ -1738,16 +1748,26 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
               DataCell(Text(a.title, style: const TextStyle(fontWeight: FontWeight.w600))),
               DataCell(_statusChip(a.categoryId.toUpperCase(), AppColors.emeraldContainer, AppColors.primaryEmerald)),
               DataCell(Text(a.getBook(false), style: const TextStyle(fontSize: 12))),
-              DataCell(Row(children: [
-                IconButton(
-                  icon: const Icon(Icons.edit, size: 18, color: AppColors.primaryEmerald),
-                  onPressed: () => _showEditAqaidModal(context, a),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                  onPressed: () => _confirmDelete(context, () => AdminService.deleteAqaid(a.id)),
-                ),
-              ])),
+              DataCell(Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit_rounded, size: 18, color: AppColors.primaryEmerald),
+                    tooltip: 'Edit Aqaid',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    onPressed: () => _showEditAqaidModal(context, a),
+                  ),
+                  const SizedBox(width: 6),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red),
+                    tooltip: 'Delete Aqaid',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    onPressed: () => _confirmDelete(context, () => AdminService.deleteAqaid(a.id)),
+                  ),
+                ],
+              )),
             ])).toList()),
           ],
         );
@@ -1847,23 +1867,31 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   ),
                 )),
                 DataCell(Text(d.citation.isNotEmpty ? d.citation : d.citationUr, style: const TextStyle(fontSize: 12))),
-                DataCell(Row(children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit, size: 18, color: AppColors.primaryEmerald),
-                    tooltip: 'Edit Entry',
-                    onPressed: () => _showEditDailyContentModal(context, d),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                    tooltip: 'Delete Entry',
-                    onPressed: () => _confirmDelete(
-                      context,
-                      () => AdminService.deleteDailyContent(d.id),
-                      customTitle: 'Delete Content Entry',
-                      customMessage: 'Are you sure you want to delete this entry?',
+                DataCell(Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit_rounded, size: 18, color: AppColors.primaryEmerald),
+                      tooltip: 'Edit Entry',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      onPressed: () => _showEditDailyContentModal(context, d),
                     ),
-                  ),
-                ])),
+                    const SizedBox(width: 6),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red),
+                      tooltip: 'Delete Entry',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      onPressed: () => _confirmDelete(
+                        context,
+                        () => AdminService.deleteDailyContent(d.id),
+                        customTitle: 'Delete Content Entry',
+                        customMessage: 'Are you sure you want to delete this entry?',
+                      ),
+                    ),
+                  ],
+                )),
               ]);
             }).toList()),
           ],
@@ -2764,6 +2792,15 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
           ),
         ),
         actions: [
+          TextButton.icon(
+            icon: const Icon(Icons.delete_outline_rounded, size: 16, color: Colors.red),
+            label: const Text('Delete', style: TextStyle(color: Colors.red)),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _confirmDelete(context, () => AdminService.deleteMasail(item.id));
+            },
+          ),
+          const SizedBox(width: 8),
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
@@ -2909,6 +2946,15 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
           ),
         ),
         actions: [
+          TextButton.icon(
+            icon: const Icon(Icons.delete_outline_rounded, size: 16, color: Colors.red),
+            label: const Text('Delete', style: TextStyle(color: Colors.red)),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _confirmDelete(context, () => AdminService.deleteAqaid(item.id));
+            },
+          ),
+          const SizedBox(width: 8),
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
@@ -3158,6 +3204,20 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
               ),
             ),
             actions: [
+              TextButton.icon(
+                icon: const Icon(Icons.delete_outline_rounded, size: 16, color: Colors.red),
+                label: const Text('Delete', style: TextStyle(color: Colors.red)),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _confirmDelete(
+                    context,
+                    () => AdminService.deleteDailyContent(item.id),
+                    customTitle: 'Delete Content Entry',
+                    customMessage: 'Are you sure you want to delete this entry?',
+                  );
+                },
+              ),
+              const SizedBox(width: 8),
               TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
               ElevatedButton(
                 onPressed: () async {
