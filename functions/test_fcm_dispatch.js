@@ -1,14 +1,26 @@
 const admin = require("firebase-admin");
+const path = require("path");
+const fs = require("fs");
 
 if (!admin.apps.length) {
   try {
-    admin.initializeApp({
-      projectId: "islamic-app-ed1ed",
-    });
+    const serviceAccountPath = path.join(__dirname, "..", "service-account.json");
+    if (fs.existsSync(serviceAccountPath)) {
+      const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        projectId: "islamic-app-ed1ed",
+      });
+    } else {
+      admin.initializeApp({
+        projectId: "islamic-app-ed1ed",
+      });
+    }
   } catch (e) {
     console.error("Initialization error:", e);
   }
 }
+
 
 async function sendTestPush() {
   const timestamp = new Date().toISOString();

@@ -307,11 +307,12 @@ exports.sendFCMBroadcastHttp = functions.https.onRequest(async (req, res) => {
 
   try {
     const body = (req.body && req.body.data) ? req.body.data : (req.body || {});
-    const { title, body: messageBody, target, fcmToken, type, questionId, eventId } = body;
+    const { title, body: messageBody, target, fcmToken, type, questionId, eventId, route, id } = body;
 
     const resolvedTitle = title || "NOOR E SUNNAT Notification";
     const resolvedBody = messageBody || "";
     const resolvedTarget = target || "all_users";
+    const resolvedRoute = route || (type === "question_answered" ? "/qna" : (type === "event" ? "/events" : "/home"));
 
     const payload = {
       notification: {
@@ -320,10 +321,11 @@ exports.sendFCMBroadcastHttp = functions.https.onRequest(async (req, res) => {
       },
       data: {
         click_action: "FLUTTER_NOTIFICATION_CLICK",
-        type: type || "announcement",
+        type: type || "broadcast",
         title: resolvedTitle,
         body: resolvedBody,
-        route: type === "question_answered" ? "/qna" : (type === "event" ? "/events" : "/home"),
+        route: resolvedRoute,
+        id: id || "",
         questionId: questionId || "",
         eventId: eventId || "",
       },
