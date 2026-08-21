@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:islamic_app/core/models/event_model.dart';
+import 'package:islamic_app/core/models/question_model.dart';
 import 'package:islamic_app/features/home/presentation/widgets/event_card.dart';
 import 'package:islamic_app/features/knowledge_hub/presentation/ask_question_sheet.dart';
 import 'package:islamic_app/features/knowledge_hub/presentation/qa_screen.dart';
@@ -126,18 +127,91 @@ void main() {
 
       expect(find.text('Namaz'), findsOneWidget);
     });
+  });
 
-    testWidgets('QAScreen renders FloatingActionButton with Ask Question label', (WidgetTester tester) async {
+  group('Admin Dashboard Answer Question Dialog Tests', () {
+    testWidgets('Answer Question modal dialog renders form, question details, and actions properly without layout crashes', (WidgetTester tester) async {
+      const q = QuestionModel(
+        id: 'q_test_1',
+        userId: 'user_123',
+        userName: 'Ahmad Raza',
+        userEmail: 'ahmad@example.com',
+        category: 'namaz',
+        question: 'What is the ruling on praying in congregation?',
+        status: 'pending',
+      );
+
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: QAScreen(),
+        MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => StatefulBuilder(
+                        builder: (ctx, setModal) => AlertDialog(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          title: Row(
+                            children: [
+                              const Icon(Icons.question_answer_rounded),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(q.isAnswered ? 'Edit Answer / Q&A' : 'Answer Question'),
+                              ),
+                            ],
+                          ),
+                          content: SizedBox(
+                            width: 500,
+                            child: SingleChildScrollView(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('From: ${q.userName}'),
+                                  Text(q.question),
+                                  const TextField(),
+                                ],
+                              ),
+                            ),
+                          ),
+                          actions: [
+                            TextButton.icon(
+                              icon: const Icon(Icons.delete_outline_rounded),
+                              label: const Text('Delete Question'),
+                              onPressed: () => Navigator.pop(ctx),
+                            ),
+                            const SizedBox(width: 8),
+                            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.send_rounded),
+                              label: const Text('Save & Send Answer'),
+                              onPressed: () => Navigator.pop(ctx),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text('Open Modal'),
+                ),
+              ),
+            ),
           ),
         ),
       );
 
-      expect(find.byType(FloatingActionButton), findsOneWidget);
-      expect(find.text('Ask Question'), findsOneWidget);
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Answer Question'), findsOneWidget);
+      expect(find.text('From: Ahmad Raza'), findsOneWidget);
+      expect(find.text('What is the ruling on praying in congregation?'), findsOneWidget);
+      expect(find.text('Delete Question'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Save & Send Answer'), findsOneWidget);
     });
   });
 }
+

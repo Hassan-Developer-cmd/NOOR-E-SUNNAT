@@ -3364,7 +3364,14 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
             children: [
               const Icon(Icons.question_answer_rounded, color: AppColors.primaryEmerald),
               const SizedBox(width: 10),
-              Text(q.isAnswered ? 'Edit Answer / Q&A' : 'Answer Question', style: AppTypography.titleMedium),
+              Expanded(
+                child: Text(
+                  q.isAnswered ? 'Edit Answer / Q&A' : 'Answer Question',
+                  style: AppTypography.titleMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
           content: SizedBox(
@@ -3387,12 +3394,16 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'From: ${q.userName}',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            Expanded(
+                              child: Text(
+                                'From: ${q.userName}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
+                            const SizedBox(width: 8),
                             _statusChip(q.category.toUpperCase(), AppColors.emeraldContainer, AppColors.primaryEmerald),
                           ],
                         ),
@@ -3464,7 +3475,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 );
               },
             ),
-            const Spacer(),
+            const SizedBox(width: 8),
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
             ElevatedButton.icon(
               icon: const Icon(Icons.send_rounded, size: 16),
