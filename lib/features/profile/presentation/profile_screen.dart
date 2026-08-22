@@ -99,13 +99,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             : null,
                       ),
                       const SizedBox(height: 12),
-                      Text(
-                        displayName,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              displayName,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => _showEditNameDialog(context, displayName),
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                padding: const EdgeInsets.all(5),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.18),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.edit_rounded,
+                                  size: 16,
+                                  color: AppColors.goldBright,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -191,6 +219,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     child: Column(
                       children: [
+                        // Edit Profile Name
+                        ListTile(
+                          leading: const Icon(Icons.badge_rounded,
+                              color: AppColors.primaryEmerald),
+                          title: Text(
+                            lp.tr('edit_display_name'),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: Text(
+                            displayName,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          trailing: const Icon(Icons.arrow_forward_ios_rounded,
+                              size: 14, color: Colors.grey),
+                          onTap: () => _showEditNameDialog(context, displayName),
+                        ),
+                        const Divider(height: 1),
+
                         // My Questions
                         ListTile(
                           leading: const Icon(Icons.question_answer_rounded,
@@ -237,14 +283,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         // Sign Out
                         ListTile(
                           leading: const Icon(Icons.logout_rounded,
-                              color: Colors.redAccent),
+                              color: Color(0xFFE11D48)),
                           title: Text(
                             lp.tr('sign_out'),
                             style: const TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: Colors.redAccent),
+                                color: Color(0xFFE11D48)),
                           ),
                           onTap: () => _confirmSignOut(context),
+                        ),
+                        const Divider(height: 1),
+
+                        // Delete Account (Permanent Deletion)
+                        ListTile(
+                          leading: const Icon(Icons.delete_forever_rounded,
+                              color: Color(0xFFDC2626)),
+                          title: Text(
+                            lp.tr('delete_account'),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFFDC2626)),
+                          ),
+                          subtitle: Text(
+                            lp.isUrdu
+                                ? 'تمام ڈیٹا مستقل طور پر ختم ہو جائے گا'
+                                : 'Irreversible • Erases all Durood & account data',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: const Color(0xFFDC2626).withValues(alpha: 0.8),
+                            ),
+                          ),
+                          onTap: () => _confirmDeleteAccount(context),
                         ),
                       ],
                     ),
@@ -256,6 +325,508 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       },
     );
+  }
+
+  void _showEditNameDialog(BuildContext context, String currentDisplayName) {
+    final lp = globalLanguageProvider;
+    final guestLabel = lp.tr('user_profile_guest');
+    final initialText = currentDisplayName == guestLabel ? '' : currentDisplayName;
+    final textController = TextEditingController(text: initialText);
+    final formKey = GlobalKey<FormState>();
+    bool isSubmitting = false;
+
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (bottomSheetContext) {
+        return StatefulBuilder(
+          builder: (modalCtx, setModalState) {
+            return Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(bottomSheetContext).viewInsets.bottom + 20,
+                top: 20,
+                left: 20,
+                right: 20,
+              ),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryEmerald.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.edit_rounded,
+                            color: AppColors.primaryEmerald,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          lp.tr('edit_display_name'),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: textController,
+                      autofocus: true,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: InputDecoration(
+                        hintText: lp.tr('display_name_hint'),
+                        prefixIcon: const Icon(Icons.person_outline_rounded,
+                            color: AppColors.primaryEmerald),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(color: AppColors.borderLight),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(
+                              color: AppColors.primaryEmerald, width: 1.8),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return lp.tr('name_empty_error');
+                        }
+                        if (value.trim().length < 2) {
+                          return lp.tr('name_too_short_error');
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: isSubmitting
+                                ? null
+                                : () => Navigator.pop(bottomSheetContext),
+                            child: Text(lp.tr('cancel')),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryEmerald,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: isSubmitting
+                                ? null
+                                : () async {
+                                    if (!formKey.currentState!.validate()) return;
+                                    setModalState(() => isSubmitting = true);
+                                    try {
+                                      final newName = textController.text.trim();
+                                      await AuthService.updateUserProfileName(newName);
+                                      if (bottomSheetContext.mounted) {
+                                        Navigator.pop(bottomSheetContext);
+                                      }
+                                      if (mounted) {
+                                        setState(() {});
+                                        scaffoldMessenger.showSnackBar(
+                                          SnackBar(
+                                            content: Row(
+                                              children: [
+                                                const Icon(Icons.check_circle_rounded,
+                                                    color: Color(0xFF34D399), size: 20),
+                                                const SizedBox(width: 10),
+                                                Expanded(
+                                                  child: Text(
+                                                    lp.tr('name_updated_success'),
+                                                    style: const TextStyle(color: Colors.white),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            backgroundColor: const Color(0xFF064E3B),
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (bottomSheetContext.mounted) {
+                                        setModalState(() => isSubmitting = false);
+                                        ScaffoldMessenger.of(bottomSheetContext).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Error: $e'),
+                                            backgroundColor: const Color(0xFFDC2626),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  },
+                            child: isSubmitting
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor:
+                                          AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : Text(lp.tr('save')),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _confirmDeleteAccount(BuildContext context) {
+    final lp = globalLanguageProvider;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEE2E2),
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFFCA5A5)),
+              ),
+              child: const Icon(
+                Icons.warning_amber_rounded,
+                color: Color(0xFFDC2626),
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                lp.tr('delete_account_confirm_title'),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF991B1B),
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          lp.tr('delete_account_confirm_msg'),
+          style: const TextStyle(
+            fontSize: 13.5,
+            color: Color(0xFF4B5563),
+            height: 1.45,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text(
+              lp.tr('cancel'),
+              style: const TextStyle(color: Color(0xFF6B7280)),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () async {
+              Navigator.pop(dialogCtx);
+              await _executeAccountDeletion(context);
+            },
+            child: Text(lp.tr('delete_account_action')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _executeAccountDeletion(BuildContext context, {String? reauthPassword}) async {
+    final lp = globalLanguageProvider;
+
+    // Show loading indicator dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFDC2626)),
+                ),
+              ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Text(
+                  lp.tr('deleting_account'),
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    try {
+      await AuthService.deleteAccount(reauthPassword: reauthPassword);
+
+      if (context.mounted) {
+        // Dismiss loading dialog
+        Navigator.of(context, rootNavigator: true).pop();
+
+        // Navigate cleanly to Login Screen
+        _navigateToLogin(context);
+
+        // Show success snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_outline_rounded,
+                    color: Color(0xFF34D399), size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    lp.tr('account_deleted_success'),
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF064E3B),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (context.mounted) {
+        // Dismiss loading dialog
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+
+      if (e.code == 'requires-recent-login') {
+        if (context.mounted) {
+          _promptReauthentication(context);
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Deletion error: ${e.message ?? e.code}'),
+              backgroundColor: const Color(0xFFDC2626),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        // Dismiss loading dialog
+        Navigator.of(context, rootNavigator: true).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Deletion failed: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    }
+  }
+
+  void _promptReauthentication(BuildContext context) {
+    final lp = globalLanguageProvider;
+    final isGoogle = AuthService.isGoogleUser;
+
+    if (isGoogle) {
+      // Prompt Google re-authentication
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(lp.tr('reauth_required_title')),
+          content: Text(lp.tr('reauth_google_msg')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(lp.tr('cancel')),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryEmerald,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                Navigator.pop(ctx);
+                await _executeAccountDeletion(context);
+              },
+              child: Text(lp.tr('continue_with_google')),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Prompt Password re-authentication
+      final passwordController = TextEditingController();
+      final formKey = GlobalKey<FormState>();
+      bool obscure = true;
+
+      showDialog(
+        context: context,
+        builder: (ctx) => StatefulBuilder(
+          builder: (context, setDlgState) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text(lp.tr('reauth_required_title')),
+            content: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    lp.tr('reauth_required_msg'),
+                    style: const TextStyle(fontSize: 13, color: Color(0xFF4B5563)),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: passwordController,
+                    obscureText: obscure,
+                    decoration: InputDecoration(
+                      hintText: lp.tr('reauth_password_label'),
+                      prefixIcon: const Icon(Icons.lock_outline_rounded,
+                          color: AppColors.primaryEmerald),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscure ? Icons.visibility_off : Icons.visibility,
+                          size: 18,
+                        ),
+                        onPressed: () => setDlgState(() => obscure = !obscure),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    validator: (v) => (v == null || v.isEmpty)
+                        ? lp.tr('please_enter_password')
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(lp.tr('cancel')),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFDC2626),
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () async {
+                  if (!formKey.currentState!.validate()) return;
+                  final password = passwordController.text;
+                  Navigator.pop(ctx);
+                  await _executeAccountDeletion(context, reauthPassword: password);
+                },
+                child: Text(lp.tr('reauthenticate')),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  void _navigateToLogin(BuildContext context) {
+    try {
+      Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+        '/login',
+        (route) => false,
+      );
+    } catch (_) {
+      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (context) => LoginScreen(
+            onLoginSuccess: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const MainShell()),
+              );
+            },
+          ),
+        ),
+        (route) => false,
+      );
+    }
   }
 
   void _confirmSignOut(BuildContext context) {
@@ -273,27 +844,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
+              backgroundColor: const Color(0xFFE11D48),
               foregroundColor: Colors.white,
             ),
             onPressed: () async {
               Navigator.pop(ctx);
               await AuthService.signOut();
               if (context.mounted) {
-                Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-                  MaterialPageRoute(
-                    builder: (context) => LoginScreen(
-                      onLoginSuccess: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const MainShell()),
-                        );
-                      },
-                    ),
-                  ),
-                  (route) => false,
-                );
+                _navigateToLogin(context);
               }
             },
             child: Text(lp.tr('sign_out')),

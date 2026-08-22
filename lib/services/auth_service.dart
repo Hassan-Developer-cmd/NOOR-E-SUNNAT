@@ -226,6 +226,121 @@ class AuthService {
     }
   }
 
+  /// Returns whether the current user is authenticated via Google.
+  static bool get isGoogleUser =>
+      _auth.currentUser?.providerData.any((p) => p.providerId == 'google.com') ?? false;
+
+  /// Updates user display name in Firebase Auth and Firestore ('users/{uid}').
+  static Future<void> updateUserProfileName(String newName) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No authenticated user found');
+    final trimmedName = newName.trim();
+    if (trimmedName.isEmpty) throw Exception('Name cannot be empty');
+
+    // 1. Update Firebase Auth profile
+    await user.updateDisplayName(trimmedName);
+
+    // 2. Update Firestore user document
+    final docRef = _firestore.collection('users').doc(user.uid);
+    await docRef.set({
+      'name': trimmedName,
+      'username': trimmedName,
+      'updatedAt': FieldValue.serverTimestamp(),
+      'updated_at': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    if (kDebugMode) print('AuthService: Profile display name updated to "$trimmedName"');
+  }
+
+  /// Re-authenticates the current user using either Google Sign-In or Email/Password credentials.
+  static Future<void> reauthenticateUser({String? password}) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No authenticated user found');
+
+    if (isGoogleUser) {
+      final googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) throw Exception('Google re-authentication cancelled');
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      await user.reauthenticateWithCredential(credential);
+    } else {
+      if (password == null || password.isEmpty) {
+        throw Exception('Password is required for re-authentication');
+      }
+      final email = user.email;
+      if (email == null || email.isEmpty) {
+        throw Exception('User email not found for re-authentication');
+      }
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: password,
+      );
+      await user.reauthenticateWithCredential(credential);
+    }
+  }
+
+  /// Permanently deletes user data documents from Firestore and deletes the Firebase Auth account.
+  /// Handles cleanup of 'users/{uid}', questions submitted by user, and user notifications.
+  static Future<void> deleteAccount({String? reauthPassword}) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No authenticated user found');
+    final uid = user.uid;
+
+    // 1. Clean up Firestore user records
+    try {
+      final batch = _firestore.batch();
+
+      // Delete user document
+      final userDocRef = _firestore.collection('users').doc(uid);
+      batch.delete(userDocRef);
+
+      // Query and delete user questions
+      final questionsSnap = await _firestore
+          .collection('user_questions')
+          .where('user_id', isEqualTo: uid)
+          .get();
+      for (final doc in questionsSnap.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // Query and delete targeted notifications
+      final notificationsSnap = await _firestore
+          .collection('notifications')
+          .where('target', isEqualTo: uid)
+          .get();
+      for (final doc in notificationsSnap.docs) {
+        batch.delete(doc.reference);
+      }
+
+      await batch.commit();
+    } catch (e) {
+      if (kDebugMode) print('AuthService.deleteAccount Firestore cleanup warning: $e');
+    }
+
+    // 2. Delete Firebase Auth user (with re-auth handling if required)
+    try {
+      await user.delete();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        if (kDebugMode) print('AuthService.deleteAccount: requires-recent-login, attempting re-auth');
+        await reauthenticateUser(password: reauthPassword);
+        // Retry delete after successful re-auth
+        await _auth.currentUser?.delete();
+      } else {
+        rethrow;
+      }
+    }
+
+    // 3. Clear local session cache
+    await _clearLocalSession();
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {}
+  }
+
   /// Explicitly signs out of Firebase Auth and clears local session persistence.
   static Future<void> signOut() async {
     await _clearLocalSession();

@@ -17,6 +17,7 @@ import 'features/knowledge_hub/presentation/aqaid_grid.dart';
 import 'features/profile/presentation/profile_screen.dart';
 import 'features/admin_panel/presentation/admin_dashboard_web.dart';
 import 'features/admin_panel/presentation/admin_login_screen.dart';
+import 'features/auth/presentation/login_screen.dart';
 import 'features/splash/presentation/splash_screen.dart';
 import 'services/counter_service.dart';
 import 'services/firebase_init_service.dart';
@@ -176,6 +177,18 @@ class NoorESunnatApp extends StatelessWidget {
             );
           },
           home: kIsWeb ? const _WebAdminEntryGate() : const _AppAuthGate(),
+          routes: {
+            '/login': (context) => LoginScreen(
+                  onLoginSuccess: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const MainShell()),
+                    );
+                  },
+                ),
+            '/home': (context) => const MainShell(),
+          },
         );
       },
     );
