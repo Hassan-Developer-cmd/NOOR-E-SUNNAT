@@ -1,10 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../../../main.dart';
 
 class ProfileSettingsSheets {
+  // Official Play Store URL & Intent URI
+  static const String playStoreUrl =
+      'https://play.google.com/store/apps/details?id=com.nooresunnat.islamic_app';
+  static const String playStoreMarketUri =
+      'market://details?id=com.nooresunnat.islamic_app';
+
+  /// Directly launch Google Play Store App / URL
+  static Future<void> openPlayStore() async {
+    try {
+      final marketUri = Uri.parse(playStoreMarketUri);
+      if (await canLaunchUrl(marketUri)) {
+        await launchUrl(marketUri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } catch (_) {}
+
+    try {
+      final webUri = Uri.parse(playStoreUrl);
+      if (await canLaunchUrl(webUri)) {
+        await launchUrl(webUri, mode: LaunchMode.externalApplication);
+      }
+    } catch (_) {}
+  }
+
+  /// Trigger Native System Share Sheet with Play Store Link
+  static Future<void> shareApp(BuildContext context) async {
+    final lp = globalLanguageProvider;
+    final message = lp.tr('share_app_msg');
+
+    try {
+      await Share.share(
+        message,
+        subject: 'NOOR E SUNNAT (Faizan-e-Durood)',
+      );
+    } catch (_) {
+      // Fallback to clipboard if native share sheet is unavailable
+      await Clipboard.setData(ClipboardData(text: message));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(lp.tr('invitation_copied')),
+            backgroundColor: const Color(0xFF064E3B),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   // ── 1. About Us Modal Sheet ─────────────────────────────────────────
   static void showAboutUsSheet(BuildContext context) {
     final lp = globalLanguageProvider;
@@ -462,82 +513,153 @@ class ProfileSettingsSheets {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFECFDF5),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.share_rounded, color: AppColors.primaryEmerald, size: 32),
-              ),
-              const SizedBox(height: 12),
-
-              Text(
-                lp.tr('share_app_title'),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.emeraldDeep),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                lp.tr('share_app_subtitle'),
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              // Title & Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFECFDF5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.share_rounded, color: AppColors.primaryEmerald, size: 24),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        lp.tr('share_app_title'),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.emeraldDeep),
+                      ),
+                      Text(
+                        lp.tr('share_app_subtitle'),
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                ],
               ),
               const SizedBox(height: 18),
 
-              // Message Preview Box
+              // Sharing Text Preview Box (matching reference UI)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.bgOffWhite,
+                  color: const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: AppColors.borderLight),
                 ),
-                child: Text(
-                  message,
-                  style: const TextStyle(fontSize: 13, height: 1.45, color: AppColors.textPrimary),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Text('🌙 ✨', style: TextStyle(fontSize: 14)),
+                            const SizedBox(width: 6),
+                            Text(
+                              lp.tr('sharing_text'),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Quick Copy Icon Button
+                        IconButton(
+                          icon: const Icon(Icons.copy_rounded, size: 20, color: AppColors.primaryEmerald),
+                          tooltip: lp.tr('copy_invitation'),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () async {
+                            await Clipboard.setData(ClipboardData(text: message));
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      const Icon(Icons.check_circle_rounded, color: Color(0xFF34D399), size: 20),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          lp.tr('invitation_copied'),
+                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  backgroundColor: const Color(0xFF064E3B),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      message,
+                      style: const TextStyle(fontSize: 12.5, height: 1.45, color: AppColors.textPrimary),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 20),
 
-              // Copy & Share Action Button
+              // Button 1: Open Play Store Directly
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryEmerald,
-                    foregroundColor: Colors.white,
+                    backgroundColor: const Color(0xFF064E3B),
+                    foregroundColor: AppColors.goldBright,
                     padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 2,
+                  ),
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await openPlayStore();
+                  },
+                  icon: const Icon(Icons.shop_rounded, size: 22),
+                  label: Text(
+                    lp.tr('open_play_store'),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Button 2: Share via Native Apps (WhatsApp, FB, etc.)
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryEmerald,
+                    side: const BorderSide(color: AppColors.primaryEmerald, width: 1.5),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
                   onPressed: () async {
-                    await Clipboard.setData(ClipboardData(text: message));
-                    if (context.mounted) {
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Row(
-                            children: [
-                              const Icon(Icons.check_circle_rounded, color: Color(0xFF34D399), size: 20),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  lp.tr('invitation_copied'),
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ],
-                          ),
-                          backgroundColor: const Color(0xFF064E3B),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      );
-                    }
+                    Navigator.pop(ctx);
+                    await shareApp(context);
                   },
-                  icon: const Icon(Icons.copy_rounded, size: 18),
-                  label: Text(lp.tr('copy_invitation'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  icon: const Icon(Icons.share_rounded, size: 18),
+                  label: Text(
+                    lp.tr('share_via_apps'),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
                 ),
               ),
             ],
@@ -662,7 +784,27 @@ class ProfileSettingsSheets {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
+
+                  // Direct Play Store Rating Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF064E3B),
+                        foregroundColor: AppColors.goldBright,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () async {
+                        Navigator.pop(dialogCtx);
+                        await openPlayStore();
+                      },
+                      icon: const Icon(Icons.shop_rounded, size: 20),
+                      label: Text(lp.tr('rate_on_playstore'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
 
                   // Actions
                   Row(

@@ -10,7 +10,7 @@ void main() {
   });
 
   group('Profile Settings Localization Tests', () {
-    test('Translations contains all 5 settings items in English and Urdu', () {
+    test('Translations contains all 5 settings items and Play Store keys in English and Urdu', () {
       final en = AppTranslations.translations['en']!;
       final ur = AppTranslations.translations['ur']!;
 
@@ -28,6 +28,15 @@ void main() {
 
       expect(en['settings_terms_policy'], 'Terms & Privacy Policy');
       expect(ur['settings_terms_policy'], 'شرائط و پرائیویسی پالیسی');
+
+      expect(en['open_play_store'], 'Open Google Play Store');
+      expect(ur['open_play_store'], 'گوگل پلے اسٹور کھولیں');
+
+      expect(en['share_via_apps'], 'Share via Apps');
+      expect(ur['share_via_apps'], 'دیگر ایپس پر شیئر کریں');
+
+      expect(en['share_app_msg']!.contains('https://play.google.com/store/apps/details'), isTrue);
+      expect(ur['share_app_msg']!.contains('https://play.google.com/store/apps/details'), isTrue);
     });
   });
 
@@ -76,7 +85,7 @@ void main() {
       expect(find.text('Shariah & Hadith Research'), findsOneWidget);
     });
 
-    testWidgets('Share App sheet opens and displays invitation message', (WidgetTester tester) async {
+    testWidgets('Share App sheet opens and displays Play Store link and share options', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -94,10 +103,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Share NOOR E SUNNAT'), findsOneWidget);
-      expect(find.text('Copy Invitation Link'), findsOneWidget);
+      expect(find.text('Open Google Play Store'), findsOneWidget);
+      expect(find.text('Share via Apps'), findsOneWidget);
     });
 
-    testWidgets('Rate App dialog opens with 5 stars and submit button', (WidgetTester tester) async {
+    testWidgets('Rate App dialog opens with 5 stars and Play Store rate button', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -115,6 +125,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Rate Your Experience'), findsOneWidget);
+      expect(find.text('Rate on Google Play Store'), findsOneWidget);
       expect(find.text('Submit Review'), findsOneWidget);
     });
 
