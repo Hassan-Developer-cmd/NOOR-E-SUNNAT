@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/models/event_model.dart';
@@ -1195,19 +1197,28 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                                                 width: 44,
                                                 height: 44,
                                                 color: const Color(0xFF0F3E2E),
-                                                child: Image.network(
-                                                  (e.imageUrl != null && e.imageUrl!.trim().isNotEmpty)
-                                                      ? e.imageUrl!.trim()
-                                                      : EventCard.getThemedEventImage(
-                                                          '${e.title} ${e.titleUr}',
-                                                          '${e.description} ${e.descriptionUr}',
+                                                child: (e.imageBase64 != null && e.imageBase64!.trim().isNotEmpty)
+                                                    ? Image.memory(
+                                                        base64Decode(e.imageBase64!.trim()),
+                                                        fit: BoxFit.cover,
+                                                        alignment: Alignment.center,
+                                                        errorBuilder: (context, error, stackTrace) => const Center(
+                                                          child: Icon(Icons.event, color: Colors.white60, size: 20),
                                                         ),
-                                                  fit: BoxFit.cover,
-                                                  alignment: Alignment.center,
-                                                  errorBuilder: (context, error, stackTrace) => const Center(
-                                                    child: Icon(Icons.event, color: Colors.white60, size: 20),
-                                                  ),
-                                                ),
+                                                      )
+                                                    : Image.network(
+                                                        (e.imageUrl != null && e.imageUrl!.trim().isNotEmpty)
+                                                            ? e.imageUrl!.trim()
+                                                            : EventCard.getThemedEventImage(
+                                                                '${e.title} ${e.titleUr}',
+                                                                '${e.description} ${e.descriptionUr}',
+                                                              ),
+                                                        fit: BoxFit.cover,
+                                                        alignment: Alignment.center,
+                                                        errorBuilder: (context, error, stackTrace) => const Center(
+                                                          child: Icon(Icons.event, color: Colors.white60, size: 20),
+                                                        ),
+                                                      ),
                                               ),
                                             ),
                                             const SizedBox(width: 10),
@@ -2396,6 +2407,10 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     final imageUrlC = TextEditingController();
     final orderC = TextEditingController();
     String status = 'Coming Soon';
+    String imageType = EventModel.imageTypeUrl;
+    String? imageBase64;
+    int? uploadedFileSizeKb;
+    bool isUploadingImage = false;
 
     showDialog(
       context: context,
@@ -2420,69 +2435,290 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 _field(descC, 'Description (English)', maxLines: 2),
                 const SizedBox(height: 12),
                 _field(descUrC, 'Description (Urdu / اردو)', maxLines: 2),
-                const SizedBox(height: 12),
-                _field(
-                  imageUrlC,
-                  'Image URL (Direct Link) / تصویر کا لنک',
-                  hintText: 'https://images.unsplash.com/... or any image link',
+                const SizedBox(height: 14),
+
+                // ── Dual Image Selector (Option A: URL vs Option B: Device Upload) ──
+                Row(
+                  children: [
+                    const Icon(Icons.image_rounded, size: 18, color: AppColors.primaryEmerald),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Event Banner Image / ایونٹ بینر تصویر',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
-                ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: imageUrlC,
-                  builder: (context, val, _) {
-                    final url = val.text.trim();
-                    if (url.isEmpty) return const SizedBox.shrink();
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      height: 110,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.borderLight),
-                        color: const Color(0xFF0F3E2E),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            Image.network(
-                              url,
-                              fit: BoxFit.cover,
-                              alignment: Alignment.center,
-                              filterQuality: FilterQuality.medium,
-                              errorBuilder: (context, error, stackTrace) => const Center(
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.broken_image_rounded, color: Colors.white70, size: 18),
-                                    SizedBox(width: 8),
-                                    Text('Invalid Image URL', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                                  ],
-                                ),
-                              ),
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.borderLight),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setModal(() => imageType = EventModel.imageTypeUrl),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: imageType == EventModel.imageTypeUrl ? AppColors.primaryEmerald : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            Positioned(
-                              top: 6,
-                              right: 6,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.black54,
-                                  borderRadius: BorderRadius.circular(4),
+                            alignment: Alignment.center,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.link_rounded,
+                                  size: 16,
+                                  color: imageType == EventModel.imageTypeUrl ? Colors.white : Colors.grey.shade700,
                                 ),
-                                child: const Text(
-                                  'Preview',
-                                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Direct URL (لنک)',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: imageType == EventModel.imageTypeUrl ? Colors.white : Colors.grey.shade700,
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
-                    );
-                  },
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setModal(() => imageType = EventModel.imageTypeBase64),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: imageType == EventModel.imageTypeBase64 ? AppColors.primaryEmerald : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            alignment: Alignment.center,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.cloud_upload_rounded,
+                                  size: 16,
+                                  color: imageType == EventModel.imageTypeBase64 ? Colors.white : Colors.grey.shade700,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Upload Device (فائل)',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: imageType == EventModel.imageTypeBase64 ? Colors.white : Colors.grey.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(height: 12),
+
+                // Option A: Direct URL Input & Live Preview
+                if (imageType == EventModel.imageTypeUrl) ...[
+                  _field(
+                    imageUrlC,
+                    'Image URL (Direct Link) / تصویر کا لنک',
+                    hintText: 'https://images.unsplash.com/... or any image link',
+                  ),
+                  const SizedBox(height: 8),
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: imageUrlC,
+                    builder: (context, val, _) {
+                      final url = val.text.trim();
+                      if (url.isEmpty) return const SizedBox.shrink();
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        height: 110,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.borderLight),
+                          color: const Color(0xFF0F3E2E),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.network(
+                                url,
+                                fit: BoxFit.cover,
+                                alignment: Alignment.center,
+                                filterQuality: FilterQuality.medium,
+                                errorBuilder: (context, error, stackTrace) => const Center(
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.broken_image_rounded, color: Colors.white70, size: 18),
+                                      SizedBox(width: 8),
+                                      Text('Invalid Image URL', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 6,
+                                right: 6,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black54,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text(
+                                    'URL Preview',
+                                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+
+                // Option B: Upload from Device (Base64)
+                if (imageType == EventModel.imageTypeBase64) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.borderLight),
+                    ),
+                    child: Column(
+                      children: [
+                        if (imageBase64 != null && imageBase64!.trim().isNotEmpty) ...[
+                          Container(
+                            height: 120,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFF10B981), width: 1.5),
+                              color: const Color(0xFF0F3E2E),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Image.memory(
+                                    base64Decode(imageBase64!.trim()),
+                                    fit: BoxFit.cover,
+                                    alignment: Alignment.center,
+                                    filterQuality: FilterQuality.medium,
+                                    errorBuilder: (context, error, stackTrace) => const Center(
+                                      child: Text('Corrupt Image Data', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 6,
+                                    right: 6,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF065F46),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        uploadedFileSizeKb != null ? 'Base64 ($uploadedFileSizeKb KB)' : 'Uploaded Base64',
+                                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 6,
+                                    left: 6,
+                                    child: InkWell(
+                                      onTap: () => setModal(() {
+                                        imageBase64 = null;
+                                        uploadedFileSizeKb = null;
+                                      }),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.black54,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.close_rounded, color: Colors.white, size: 16),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryEmerald,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onPressed: isUploadingImage
+                              ? null
+                              : () async {
+                                  try {
+                                    final picker = ImagePicker();
+                                    final XFile? file = await picker.pickImage(
+                                      source: ImageSource.gallery,
+                                      maxWidth: 800,
+                                      maxHeight: 800,
+                                      imageQuality: 70,
+                                    );
+                                    if (file == null) return;
+                                    setModal(() => isUploadingImage = true);
+                                    final bytes = await file.readAsBytes();
+                                    final b64 = base64Encode(bytes);
+                                    final sizeKb = (bytes.lengthInBytes / 1024).round();
+                                    setModal(() {
+                                      imageBase64 = b64;
+                                      uploadedFileSizeKb = sizeKb;
+                                      isUploadingImage = false;
+                                    });
+                                  } catch (e) {
+                                    setModal(() => isUploadingImage = false);
+                                  }
+                                },
+                          icon: isUploadingImage
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Icon(Icons.add_photo_alternate_rounded, size: 18),
+                          label: Text(
+                            isUploadingImage
+                                ? 'Processing Image...'
+                                : (imageBase64 != null ? 'Change Image / تصویر تبدیل کریں' : 'Choose Image / تصویر اپلوڈ کریں'),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+
                 _field(orderC, 'Arrangement Order # (Optional)', hintText: 'e.g. 1 for top priority, or leave blank to append at end'),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
@@ -2505,7 +2741,27 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   return;
                 }
                 final assignedOrder = int.tryParse(orderC.text.trim()) ?? 0;
-                final customImg = imageUrlC.text.trim().isEmpty ? null : imageUrlC.text.trim();
+                String finalImageType = imageType;
+                String? finalImageUrl;
+                String? finalImageBase64;
+
+                if (imageType == EventModel.imageTypeBase64 && imageBase64 != null && imageBase64!.trim().isNotEmpty) {
+                  finalImageType = EventModel.imageTypeBase64;
+                  finalImageBase64 = imageBase64!.trim();
+                  finalImageUrl = null;
+                } else {
+                  final url = imageUrlC.text.trim();
+                  if (url.isNotEmpty) {
+                    finalImageType = EventModel.imageTypeUrl;
+                    finalImageUrl = url;
+                    finalImageBase64 = null;
+                  } else {
+                    finalImageType = EventModel.imageTypeUrl;
+                    finalImageUrl = null;
+                    finalImageBase64 = null;
+                  }
+                }
+
                 await AdminService.addEvent(EventModel(
                   id: '',
                   title: titleC.text.trim(),
@@ -2516,7 +2772,9 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   status: status,
                   description: descC.text.trim(),
                   descriptionUr: descUrC.text.trim().isEmpty ? descC.text.trim() : descUrC.text.trim(),
-                  imageUrl: customImg,
+                  imageType: finalImageType,
+                  imageUrl: finalImageUrl,
+                  imageBase64: finalImageBase64,
                   order: assignedOrder,
                 ));
                 if (ctx.mounted) {
@@ -2542,13 +2800,18 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     final descUrC = TextEditingController(text: event.descriptionUr);
     final initialImg = (event.imageUrl != null && event.imageUrl!.trim().isNotEmpty)
         ? event.imageUrl!.trim()
-        : EventCard.getThemedEventImage(
-            '${event.title} ${event.titleUr}',
-            '${event.description} ${event.descriptionUr}',
-          );
+        : '';
     final imageUrlC = TextEditingController(text: initialImg);
     final orderC = TextEditingController(text: event.order > 0 ? event.order.toString() : '');
     String status = EventModel.supportedStatuses.contains(event.status) ? event.status : 'Coming Soon';
+    String imageType = (event.imageBase64 != null && event.imageBase64!.trim().isNotEmpty)
+        ? EventModel.imageTypeBase64
+        : EventModel.imageTypeUrl;
+    String? imageBase64 = event.imageBase64;
+    int? uploadedFileSizeKb = (imageBase64 != null && imageBase64.trim().isNotEmpty)
+        ? (imageBase64.length * 3 / 4 / 1024).round()
+        : null;
+    bool isUploadingImage = false;
 
     showDialog(
       context: context,
@@ -2573,69 +2836,290 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 _field(descC, 'Description (English)', maxLines: 2),
                 const SizedBox(height: 12),
                 _field(descUrC, 'Description (Urdu / اردو)', maxLines: 2),
-                const SizedBox(height: 12),
-                _field(
-                  imageUrlC,
-                  'Image URL (Direct Link) / تصویر کا لنک',
-                  hintText: 'https://images.unsplash.com/... or any image link',
+                const SizedBox(height: 14),
+
+                // ── Dual Image Selector (Option A: URL vs Option B: Device Upload) ──
+                Row(
+                  children: [
+                    const Icon(Icons.image_rounded, size: 18, color: AppColors.primaryEmerald),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Event Banner Image / ایونٹ بینر تصویر',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
-                ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: imageUrlC,
-                  builder: (context, val, _) {
-                    final url = val.text.trim();
-                    if (url.isEmpty) return const SizedBox.shrink();
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      height: 110,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.borderLight),
-                        color: const Color(0xFF0F3E2E),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            Image.network(
-                              url,
-                              fit: BoxFit.cover,
-                              alignment: Alignment.center,
-                              filterQuality: FilterQuality.medium,
-                              errorBuilder: (context, error, stackTrace) => const Center(
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.broken_image_rounded, color: Colors.white70, size: 18),
-                                    SizedBox(width: 8),
-                                    Text('Invalid Image URL', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                                  ],
-                                ),
-                              ),
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.borderLight),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setModal(() => imageType = EventModel.imageTypeUrl),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: imageType == EventModel.imageTypeUrl ? AppColors.primaryEmerald : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            Positioned(
-                              top: 6,
-                              right: 6,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.black54,
-                                  borderRadius: BorderRadius.circular(4),
+                            alignment: Alignment.center,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.link_rounded,
+                                  size: 16,
+                                  color: imageType == EventModel.imageTypeUrl ? Colors.white : Colors.grey.shade700,
                                 ),
-                                child: const Text(
-                                  'Preview',
-                                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Direct URL (لنک)',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: imageType == EventModel.imageTypeUrl ? Colors.white : Colors.grey.shade700,
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
-                    );
-                  },
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setModal(() => imageType = EventModel.imageTypeBase64),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: imageType == EventModel.imageTypeBase64 ? AppColors.primaryEmerald : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            alignment: Alignment.center,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.cloud_upload_rounded,
+                                  size: 16,
+                                  color: imageType == EventModel.imageTypeBase64 ? Colors.white : Colors.grey.shade700,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Upload Device (فائل)',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: imageType == EventModel.imageTypeBase64 ? Colors.white : Colors.grey.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(height: 12),
+
+                // Option A: Direct URL Input & Live Preview
+                if (imageType == EventModel.imageTypeUrl) ...[
+                  _field(
+                    imageUrlC,
+                    'Image URL (Direct Link) / تصویر کا لنک',
+                    hintText: 'https://images.unsplash.com/... or any image link',
+                  ),
+                  const SizedBox(height: 8),
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: imageUrlC,
+                    builder: (context, val, _) {
+                      final url = val.text.trim();
+                      if (url.isEmpty) return const SizedBox.shrink();
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        height: 110,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.borderLight),
+                          color: const Color(0xFF0F3E2E),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.network(
+                                url,
+                                fit: BoxFit.cover,
+                                alignment: Alignment.center,
+                                filterQuality: FilterQuality.medium,
+                                errorBuilder: (context, error, stackTrace) => const Center(
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.broken_image_rounded, color: Colors.white70, size: 18),
+                                      SizedBox(width: 8),
+                                      Text('Invalid Image URL', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 6,
+                                right: 6,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black54,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text(
+                                    'URL Preview',
+                                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+
+                // Option B: Upload from Device (Base64)
+                if (imageType == EventModel.imageTypeBase64) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.borderLight),
+                    ),
+                    child: Column(
+                      children: [
+                        if (imageBase64 != null && imageBase64!.trim().isNotEmpty) ...[
+                          Container(
+                            height: 120,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFF10B981), width: 1.5),
+                              color: const Color(0xFF0F3E2E),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Image.memory(
+                                    base64Decode(imageBase64!.trim()),
+                                    fit: BoxFit.cover,
+                                    alignment: Alignment.center,
+                                    filterQuality: FilterQuality.medium,
+                                    errorBuilder: (context, error, stackTrace) => const Center(
+                                      child: Text('Corrupt Image Data', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 6,
+                                    right: 6,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF065F46),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        uploadedFileSizeKb != null ? 'Base64 ($uploadedFileSizeKb KB)' : 'Uploaded Base64',
+                                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 6,
+                                    left: 6,
+                                    child: InkWell(
+                                      onTap: () => setModal(() {
+                                        imageBase64 = null;
+                                        uploadedFileSizeKb = null;
+                                      }),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.black54,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.close_rounded, color: Colors.white, size: 16),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryEmerald,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onPressed: isUploadingImage
+                              ? null
+                              : () async {
+                                  try {
+                                    final picker = ImagePicker();
+                                    final XFile? file = await picker.pickImage(
+                                      source: ImageSource.gallery,
+                                      maxWidth: 800,
+                                      maxHeight: 800,
+                                      imageQuality: 70,
+                                    );
+                                    if (file == null) return;
+                                    setModal(() => isUploadingImage = true);
+                                    final bytes = await file.readAsBytes();
+                                    final b64 = base64Encode(bytes);
+                                    final sizeKb = (bytes.lengthInBytes / 1024).round();
+                                    setModal(() {
+                                      imageBase64 = b64;
+                                      uploadedFileSizeKb = sizeKb;
+                                      isUploadingImage = false;
+                                    });
+                                  } catch (e) {
+                                    setModal(() => isUploadingImage = false);
+                                  }
+                                },
+                          icon: isUploadingImage
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Icon(Icons.add_photo_alternate_rounded, size: 18),
+                          label: Text(
+                            isUploadingImage
+                                ? 'Processing Image...'
+                                : (imageBase64 != null ? 'Change Image / تصویر تبدیل کریں' : 'Choose Image / تصویر اپلوڈ کریں'),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+
                 _field(orderC, 'Arrangement Order # (Position in app)', hintText: 'e.g., 1 for Top, 2 for Second...'),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
@@ -2653,7 +3137,27 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
             ElevatedButton(
               onPressed: () async {
-                final customImg = imageUrlC.text.trim().isEmpty ? null : imageUrlC.text.trim();
+                String finalImageType = imageType;
+                String? finalImageUrl;
+                String? finalImageBase64;
+
+                if (imageType == EventModel.imageTypeBase64 && imageBase64 != null && imageBase64!.trim().isNotEmpty) {
+                  finalImageType = EventModel.imageTypeBase64;
+                  finalImageBase64 = imageBase64!.trim();
+                  finalImageUrl = null;
+                } else {
+                  final url = imageUrlC.text.trim();
+                  if (url.isNotEmpty) {
+                    finalImageType = EventModel.imageTypeUrl;
+                    finalImageUrl = url;
+                    finalImageBase64 = null;
+                  } else {
+                    finalImageType = EventModel.imageTypeUrl;
+                    finalImageUrl = null;
+                    finalImageBase64 = null;
+                  }
+                }
+
                 final Map<String, dynamic> updateMap = {
                   'title': titleC.text.trim(),
                   'title_ur': titleUrC.text.trim(),
@@ -2663,8 +3167,12 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   'description': descC.text.trim(),
                   'description_ur': descUrC.text.trim(),
                   'status': status,
-                  'image_url': customImg,
-                  'imageUrl': customImg,
+                  'image_type': finalImageType,
+                  'imageType': finalImageType,
+                  'image_url': finalImageUrl,
+                  'imageUrl': finalImageUrl,
+                  'image_base64': finalImageBase64,
+                  'imageBase64': finalImageBase64,
                 };
                 final parsedOrder = int.tryParse(orderC.text.trim());
                 if (parsedOrder != null && parsedOrder > 0) {

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../../../core/models/event_model.dart';
 import '../../../../main.dart';
@@ -24,37 +25,121 @@ class EventCard extends StatelessWidget {
         combined.contains('prophet') ||
         combined.contains('gathering') ||
         combined.contains('میلاد') ||
-        combined.contains('نبی') ||
+        combined.contains('سیرت') ||
         combined.contains('محفل')) {
-      return 'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?q=80&w=800&auto=format&fit=crop';
+      return 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80';
     }
 
-    // 2. Ramadan / Ramzan / Fasting Events
+    // 2. Shab-e-Barat / Shab-e-Meraj Night Vigil Events
+    if (combined.contains('night') ||
+        combined.contains('vigil') ||
+        combined.contains('shab') ||
+        combined.contains('meraj') ||
+        combined.contains('barat') ||
+        combined.contains('معراج') ||
+        combined.contains('برات')) {
+      return 'https://images.unsplash.com/photo-1519817650390-64a93db51149?auto=format&fit=crop&w=800&q=80';
+    }
+
+    // 3. Ramadan / Itikaf / Khatam-ul-Quran
     if (combined.contains('ramadan') ||
-        combined.contains('ramzan') ||
+        combined.contains('itikaf') ||
+        combined.contains('quran') ||
         combined.contains('fasting') ||
-        combined.contains('iftar') ||
-        combined.contains('sehri') ||
         combined.contains('رمضان') ||
-        combined.contains('افطار') ||
-        combined.contains('سحری') ||
-        combined.contains('روزہ')) {
-      return 'https://images.unsplash.com/photo-1564769625905-50e93615e769?q=80&w=800&auto=format&fit=crop';
+        combined.contains('اعتکاف') ||
+        combined.contains('قرآن')) {
+      return 'https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=800&q=80';
     }
 
-    // 3. Weekly Jumu'ah Durood / Friday Events
-    if (combined.contains('jumu') ||
+    // 4. Jumu'ah Mubarak / Weekly Gathering
+    if (combined.contains('jummah') ||
         combined.contains('friday') ||
-        combined.contains('durood') ||
-        combined.contains('salawat') ||
-        combined.contains('جمعہ') ||
-        combined.contains('درود') ||
-        combined.contains('صلوۃ')) {
-      return 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?q=80&w=800&auto=format&fit=crop';
+        combined.contains('weekly') ||
+        combined.contains('جمعہ')) {
+      return 'https://images.unsplash.com/photo-1564769625624-9195d82088f1?auto=format&fit=crop&w=800&q=80';
     }
 
-    // 4. Default / Fallback Islamic Architecture
-    return 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=800&auto=format&fit=crop';
+    // 5. Durood Sharif / Salawat Mehfil
+    if (combined.contains('durood') ||
+        combined.contains('salawat') ||
+        combined.contains('salat') ||
+        combined.contains('درود') ||
+        combined.contains('سلام')) {
+      return 'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&w=800&q=80';
+    }
+
+    // Default Atmospheric Green Islamic Lanterns Architecture
+    return 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?auto=format&fit=crop&w=800&q=80';
+  }
+
+  static Widget _buildFallbackImage(EventModel event) {
+    return Image.network(
+      getThemedEventImage(
+        '${event.title} ${event.titleUr}',
+        '${event.description} ${event.descriptionUr}',
+      ),
+      fit: BoxFit.cover,
+      alignment: Alignment.center,
+      filterQuality: FilterQuality.medium,
+      errorBuilder: (context, error, stackTrace) => Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF064E3B), Color(0xFF0F766E)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEventBackground(EventModel event) {
+    // 1. Local Device Uploaded Base64 Image
+    if (event.imageBase64 != null && event.imageBase64!.trim().isNotEmpty) {
+      try {
+        final bytes = base64Decode(event.imageBase64!.trim());
+        return Image.memory(
+          bytes,
+          fit: BoxFit.cover,
+          alignment: Alignment.center,
+          filterQuality: FilterQuality.medium,
+          errorBuilder: (context, error, stackTrace) => _buildFallbackImage(event),
+        );
+      } catch (_) {
+        return _buildFallbackImage(event);
+      }
+    }
+
+    // 2. Direct Web Image URL
+    if (event.imageUrl != null && event.imageUrl!.trim().isNotEmpty) {
+      return Image.network(
+        event.imageUrl!.trim(),
+        fit: BoxFit.cover,
+        alignment: Alignment.center,
+        filterQuality: FilterQuality.medium,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            color: const Color(0xFF0F3E2E),
+            child: Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white38,
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                    : null,
+              ),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) => _buildFallbackImage(event),
+      );
+    }
+
+    // 3. Fallback Themed Image
+    return _buildFallbackImage(event);
   }
 
   Widget _buildEventBadge(
@@ -103,13 +188,6 @@ class EventCard extends StatelessWidget {
         final cardWidth = width ??
             (MediaQuery.of(context).size.width * 0.82).clamp(280.0, 340.0);
 
-        final imageUrl = (event.imageUrl != null && event.imageUrl!.trim().isNotEmpty)
-            ? event.imageUrl!.trim()
-            : getThemedEventImage(
-                '${event.title} ${event.titleUr}',
-                '${event.description} ${event.descriptionUr}',
-              );
-
         return Directionality(
           textDirection: lp.textDirection,
           child: SizedBox(
@@ -120,48 +198,9 @@ class EventCard extends StatelessWidget {
               clipBehavior: Clip.antiAlias,
               child: Stack(
                 children: [
-                  // 1. High-Resolution Islamic / Custom Admin Background Image
+                  // 1. High-Resolution Islamic / Custom Base64 / URL Background Image
                   Positioned.fill(
-                    child: Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      alignment: Alignment.center,
-                      filterQuality: FilterQuality.medium,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          color: const Color(0xFF0F3E2E),
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white38,
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                  : null,
-                            ),
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) => Image.network(
-                        getThemedEventImage(
-                          '${event.title} ${event.titleUr}',
-                          '${event.description} ${event.descriptionUr}',
-                        ),
-                        fit: BoxFit.cover,
-                        alignment: Alignment.center,
-                        filterQuality: FilterQuality.medium,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Color(0xFF064E3B), Color(0xFF0F766E)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                    child: _buildEventBackground(event),
                   ),
 
                   // 2. Premium Dual-Tone Gradient Overlay for Crisp Readability

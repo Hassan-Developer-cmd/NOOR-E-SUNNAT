@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class EventModel {
+  static const String imageTypeUrl = 'url';
+  static const String imageTypeBase64 = 'base64';
+
   static const List<String> supportedStatuses = [
     'Coming Soon',
     'Featured',
@@ -19,7 +22,9 @@ class EventModel {
   final String status;
   final String description;
   final String descriptionUr;
+  final String imageType;
   final String? imageUrl;
+  final String? imageBase64;
   final int order;
   final List<Map<String, dynamic>> statusHistory;
   final String? lastNotifiedStatus;
@@ -37,7 +42,9 @@ class EventModel {
     required this.status,
     required this.description,
     this.descriptionUr = '',
+    this.imageType = imageTypeUrl,
     this.imageUrl,
+    this.imageBase64,
     this.order = 0,
     this.statusHistory = const [],
     this.lastNotifiedStatus,
@@ -78,7 +85,9 @@ class EventModel {
     String? status,
     String? description,
     String? descriptionUr,
+    String? imageType,
     String? imageUrl,
+    String? imageBase64,
     int? order,
     List<Map<String, dynamic>>? statusHistory,
     String? lastNotifiedStatus,
@@ -96,7 +105,9 @@ class EventModel {
       status: status ?? this.status,
       description: description ?? this.description,
       descriptionUr: descriptionUr ?? this.descriptionUr,
+      imageType: imageType ?? this.imageType,
       imageUrl: imageUrl ?? this.imageUrl,
+      imageBase64: imageBase64 ?? this.imageBase64,
       order: order ?? this.order,
       statusHistory: statusHistory ?? this.statusHistory,
       lastNotifiedStatus: lastNotifiedStatus ?? this.lastNotifiedStatus,
@@ -188,6 +199,12 @@ class EventModel {
 
     final rawDate = map['date_time'] ?? map['dateTime'] ?? map['date'];
     final rawImage = map['image_url'] ?? map['imageUrl'] ?? map['image'];
+    final rawBase64 = map['image_base64'] ?? map['imageBase64'];
+    final rawImageType = map['image_type'] ??
+        map['imageType'] ??
+        (rawBase64 != null && rawBase64.toString().trim().isNotEmpty
+            ? imageTypeBase64
+            : imageTypeUrl);
 
     int parseOrder(dynamic raw) {
       if (raw is num) return raw.toInt();
@@ -205,7 +222,9 @@ class EventModel {
       status: map['status']?.toString() ?? map['badgeText']?.toString() ?? 'Coming Soon',
       description: map['description']?.toString() ?? '',
       descriptionUr: map['description_ur']?.toString() ?? '',
-      imageUrl: rawImage?.toString(),
+      imageType: rawImageType.toString(),
+      imageUrl: (rawImage != null && rawImage.toString().trim().isNotEmpty) ? rawImage.toString().trim() : null,
+      imageBase64: (rawBase64 != null && rawBase64.toString().trim().isNotEmpty) ? rawBase64.toString().trim() : null,
       order: parseOrder(map['order'] ?? map['arrangement_index']),
       statusHistory: history,
       lastNotifiedStatus: map['last_notified_status']?.toString(),
@@ -226,8 +245,12 @@ class EventModel {
         'badgeText': status,
         'description': description,
         'description_ur': descriptionUr,
+        'image_type': imageType,
+        'imageType': imageType,
         'image_url': imageUrl,
         'imageUrl': imageUrl,
+        'image_base64': imageBase64,
+        'imageBase64': imageBase64,
         'order': order,
         'status_history': statusHistory,
         'last_notified_status': lastNotifiedStatus ?? status,

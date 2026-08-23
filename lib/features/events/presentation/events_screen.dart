@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
@@ -654,34 +655,10 @@ class _DetailedEventCard extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // 1. High-Resolution Islamic / Custom Admin Background
-                    Image.network(
-                      (event.imageUrl != null && event.imageUrl!.trim().isNotEmpty)
-                          ? event.imageUrl!.trim()
-                          : EventCard.getThemedEventImage(
-                              '${event.title} ${event.titleUr}',
-                              '${event.description} ${event.descriptionUr}',
-                            ),
-                      fit: BoxFit.cover,
-                      alignment: Alignment.center,
-                      filterQuality: FilterQuality.medium,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          color: const Color(0xFF0F3E2E),
-                          child: const Center(
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white38,
-                            ),
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) => Image.network(
-                        EventCard.getThemedEventImage(
-                          '${event.title} ${event.titleUr}',
-                          '${event.description} ${event.descriptionUr}',
-                        ),
+                    // 1. High-Resolution Base64 / URL / Themed Islamic Background
+                    if (event.imageBase64 != null && event.imageBase64!.trim().isNotEmpty)
+                      Image.memory(
+                        base64Decode(event.imageBase64!.trim()),
                         fit: BoxFit.cover,
                         alignment: Alignment.center,
                         filterQuality: FilterQuality.medium,
@@ -694,8 +671,49 @@ class _DetailedEventCard extends StatelessWidget {
                             ),
                           ),
                         ),
+                      )
+                    else
+                      Image.network(
+                        (event.imageUrl != null && event.imageUrl!.trim().isNotEmpty)
+                            ? event.imageUrl!.trim()
+                            : EventCard.getThemedEventImage(
+                                '${event.title} ${event.titleUr}',
+                                '${event.description} ${event.descriptionUr}',
+                              ),
+                        fit: BoxFit.cover,
+                        alignment: Alignment.center,
+                        filterQuality: FilterQuality.medium,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            color: const Color(0xFF0F3E2E),
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white38,
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) => Image.network(
+                          EventCard.getThemedEventImage(
+                            '${event.title} ${event.titleUr}',
+                            '${event.description} ${event.descriptionUr}',
+                          ),
+                          fit: BoxFit.cover,
+                          alignment: Alignment.center,
+                          filterQuality: FilterQuality.medium,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: event.gradientColors,
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
 
                     // 2. Dual-Tone Gradient Overlay
                     Container(
