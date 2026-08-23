@@ -11,6 +11,7 @@ import '../../../services/auth_service.dart';
 import '../../../services/counter_service.dart';
 import '../../auth/presentation/login_screen.dart';
 import '../../knowledge_hub/presentation/my_questions_screen.dart';
+import 'widgets/profile_settings_sheets.dart';
 
 class ProfileScreen extends StatefulWidget {
   final CounterService counterService;
@@ -24,6 +25,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _isAdmin = false;
   bool _isUploadingImage = false;
+  int _selectedTab = 0; // 0: Profile, 1: Settings
 
   @override
   void initState() {
@@ -410,160 +412,332 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     );
                   },
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
-                // ── Stats Row ──
-                StreamBuilder<CounterSnapshot>(
-                  stream: widget.counterService.snapshotStream,
-                  initialData: widget.counterService.snapshot,
-                  builder: (context, snapshot) {
-                    final snap = snapshot.data ?? widget.counterService.snapshot;
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: _ProfileStatCard(
-                            title: lp.tr('current_streak'),
-                            value: '${snap.currentStreak} ${lp.tr('streak_days')}',
-                            icon: Icons.local_fire_department_rounded,
-                            color: const Color(0xFFEA580C),
-                          ),
+                // ── Segmented Tab Switcher (Profile vs Settings) ──
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.borderLight),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x06000000),
+                        blurRadius: 10,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildSegmentButton(
+                          label: lp.tr('tab_profile'),
+                          icon: Icons.person_rounded,
+                          isSelected: _selectedTab == 0,
+                          onTap: () => setState(() => _selectedTab = 0),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _ProfileStatCard(
-                            title: lp.tr('durood_points'),
-                            value: '${snap.duroodPoints}',
-                            icon: Icons.star_rounded,
-                            color: AppColors.accentGold,
-                          ),
+                      ),
+                      Expanded(
+                        child: _buildSegmentButton(
+                          label: lp.tr('tab_settings'),
+                          icon: Icons.settings_rounded,
+                          isSelected: _selectedTab == 1,
+                          onTap: () => setState(() => _selectedTab = 1),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _ProfileStatCard(
-                            title: lp.tr('my_total'),
-                            value: '${snap.personalTotal}',
-                            icon: Icons.touch_app_rounded,
-                            color: AppColors.primaryEmerald,
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
-
-                // ── Settings List ──
-                Material(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  clipBehavior: Clip.antiAlias,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.borderLight),
-                    ),
-                    child: Column(
-                      children: [
-                        // Edit Profile Name
-                        ListTile(
-                          leading: const Icon(Icons.badge_rounded,
-                              color: AppColors.primaryEmerald),
-                          title: Text(
-                            lp.tr('edit_display_name'),
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          subtitle: Text(
-                            displayName,
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                          trailing: const Icon(Icons.arrow_forward_ios_rounded,
-                              size: 14, color: Colors.grey),
-                          onTap: () => _showEditNameDialog(context, displayName),
-                        ),
-                        const Divider(height: 1),
-
-                        // My Questions
-                        ListTile(
-                          leading: const Icon(Icons.question_answer_rounded,
-                              color: AppColors.primaryEmerald),
-                          title: Text(
-                            lp.tr('my_questions_title'),
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          subtitle: Text(
-                            lp.tr('my_questions_sub'),
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                          trailing: const Icon(Icons.arrow_forward_ios_rounded,
-                              size: 14, color: Colors.grey),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const MyQuestionsScreen()),
-                            );
-                          },
-                        ),
-                        const Divider(height: 1),
-
-                        // Language Setting
-                        ListTile(
-                          leading: const Icon(Icons.language_rounded,
-                              color: AppColors.primaryEmerald),
-                          title: Text(lp.tr('app_language'),
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w600)),
-                          subtitle: Text(
-                            lp.isUrdu ? 'اردو (Urdu)' : 'English (انگریزی)',
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                          trailing: Switch(
-                            value: lp.isUrdu,
-                            activeTrackColor: AppColors.primaryEmerald,
-                            onChanged: (_) => lp.toggleLanguage(),
-                          ),
-                        ),
-                        const Divider(height: 1),
-
-                        // Sign Out
-                        ListTile(
-                          leading: const Icon(Icons.logout_rounded,
-                              color: Color(0xFFE11D48)),
-                          title: Text(
-                            lp.tr('sign_out'),
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFFE11D48)),
-                          ),
-                          onTap: () => _confirmSignOut(context),
-                        ),
-                        const Divider(height: 1),
-
-                        // Delete Account (Permanent Deletion)
-                        ListTile(
-                          leading: const Icon(Icons.delete_forever_rounded,
-                              color: Color(0xFFDC2626)),
-                          title: Text(
-                            lp.tr('delete_account'),
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFFDC2626)),
-                          ),
-                          subtitle: Text(
-                            lp.isUrdu
-                                ? 'تمام ڈیٹا مستقل طور پر ختم ہو جائے گا'
-                                : 'Irreversible • Erases all Durood & account data',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: const Color(0xFFDC2626).withValues(alpha: 0.8),
-                            ),
-                          ),
-                          onTap: () => _confirmDeleteAccount(context),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
+                const SizedBox(height: 18),
+
+                // ── TAB 0: PROFILE VIEW ──
+                if (_selectedTab == 0) ...[
+                  // Stats Row
+                  StreamBuilder<CounterSnapshot>(
+                    stream: widget.counterService.snapshotStream,
+                    initialData: widget.counterService.snapshot,
+                    builder: (context, snapshot) {
+                      final snap = snapshot.data ?? widget.counterService.snapshot;
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: _ProfileStatCard(
+                              title: lp.tr('current_streak'),
+                              value: '${snap.currentStreak} ${lp.tr('streak_days')}',
+                              icon: Icons.local_fire_department_rounded,
+                              color: const Color(0xFFEA580C),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _ProfileStatCard(
+                              title: lp.tr('durood_points'),
+                              value: '${snap.duroodPoints}',
+                              icon: Icons.star_rounded,
+                              color: AppColors.accentGold,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _ProfileStatCard(
+                              title: lp.tr('my_total'),
+                              value: '${snap.personalTotal}',
+                              icon: Icons.touch_app_rounded,
+                              color: AppColors.primaryEmerald,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Profile Actions Card
+                  Material(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    clipBehavior: Clip.antiAlias,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.borderLight),
+                      ),
+                      child: Column(
+                        children: [
+                          // Edit Profile Name
+                          ListTile(
+                            leading: const Icon(Icons.badge_rounded,
+                                color: AppColors.primaryEmerald),
+                            title: Text(
+                              lp.tr('edit_display_name'),
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            subtitle: Text(
+                              displayName,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            trailing: const Icon(Icons.arrow_forward_ios_rounded,
+                                size: 14, color: Colors.grey),
+                            onTap: () => _showEditNameDialog(context, displayName),
+                          ),
+                          const Divider(height: 1),
+
+                          // My Questions
+                          ListTile(
+                            leading: const Icon(Icons.question_answer_rounded,
+                                color: AppColors.primaryEmerald),
+                            title: Text(
+                              lp.tr('my_questions_title'),
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            subtitle: Text(
+                              lp.tr('my_questions_sub'),
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            trailing: const Icon(Icons.arrow_forward_ios_rounded,
+                                size: 14, color: Colors.grey),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => const MyQuestionsScreen()),
+                              );
+                            },
+                          ),
+                          const Divider(height: 1),
+
+                          // Delete Account (Permanent Deletion)
+                          ListTile(
+                            leading: const Icon(Icons.delete_forever_rounded,
+                                color: Color(0xFFDC2626)),
+                            title: Text(
+                              lp.tr('delete_account'),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFFDC2626)),
+                            ),
+                            subtitle: Text(
+                              lp.isUrdu
+                                  ? 'تمام ڈیٹا مستقل طور پر ختم ہو جائے گا'
+                                  : 'Irreversible • Erases all Durood & account data',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: const Color(0xFFDC2626).withValues(alpha: 0.8),
+                              ),
+                            ),
+                            onTap: () => _confirmDeleteAccount(context),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+
+                // ── TAB 1: SETTINGS VIEW ──
+                if (_selectedTab == 1) ...[
+                  // Card 1: Language Preferences
+                  Material(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    clipBehavior: Clip.antiAlias,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.borderLight),
+                      ),
+                      child: ListTile(
+                        leading: const Icon(Icons.language_rounded,
+                            color: AppColors.primaryEmerald),
+                        title: Text(lp.tr('app_language'),
+                            style: const TextStyle(fontWeight: FontWeight.w600)),
+                        subtitle: Text(
+                          lp.isUrdu ? 'اردو (Urdu)' : 'English (انگریزی)',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        trailing: Switch(
+                          value: lp.isUrdu,
+                          activeTrackColor: AppColors.primaryEmerald,
+                          onChanged: (_) => lp.toggleLanguage(),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Card 2: App & Community (About Us, Our Team, Share App, Rate App, Terms & Policy)
+                  Material(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    clipBehavior: Clip.antiAlias,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.borderLight),
+                      ),
+                      child: Column(
+                        children: [
+                          // 1. About Us
+                          ListTile(
+                            leading: const Icon(Icons.info_outline_rounded,
+                                color: AppColors.primaryEmerald),
+                            title: Text(
+                              lp.tr('settings_about_us'),
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            subtitle: Text(
+                              lp.tr('settings_about_us_sub'),
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            trailing: const Icon(Icons.arrow_forward_ios_rounded,
+                                size: 14, color: Colors.grey),
+                            onTap: () => ProfileSettingsSheets.showAboutUsSheet(context),
+                          ),
+                          const Divider(height: 1),
+
+                          // 2. Our Team
+                          ListTile(
+                            leading: const Icon(Icons.groups_rounded,
+                                color: AppColors.primaryEmerald),
+                            title: Text(
+                              lp.tr('settings_our_team'),
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            subtitle: Text(
+                              lp.tr('settings_our_team_sub'),
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            trailing: const Icon(Icons.arrow_forward_ios_rounded,
+                                size: 14, color: Colors.grey),
+                            onTap: () => ProfileSettingsSheets.showOurTeamSheet(context),
+                          ),
+                          const Divider(height: 1),
+
+                          // 3. Share App
+                          ListTile(
+                            leading: const Icon(Icons.share_rounded,
+                                color: AppColors.primaryEmerald),
+                            title: Text(
+                              lp.tr('settings_share_app'),
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            subtitle: Text(
+                              lp.tr('settings_share_app_sub'),
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            trailing: const Icon(Icons.arrow_forward_ios_rounded,
+                                size: 14, color: Colors.grey),
+                            onTap: () => ProfileSettingsSheets.showShareAppSheet(context),
+                          ),
+                          const Divider(height: 1),
+
+                          // 4. Rate App
+                          ListTile(
+                            leading: const Icon(Icons.star_rate_rounded,
+                                color: Color(0xFFD97706)),
+                            title: Text(
+                              lp.tr('settings_rate_app'),
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            subtitle: Text(
+                              lp.tr('settings_rate_app_sub'),
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            trailing: const Icon(Icons.arrow_forward_ios_rounded,
+                                size: 14, color: Colors.grey),
+                            onTap: () => ProfileSettingsSheets.showRateAppDialog(context),
+                          ),
+                          const Divider(height: 1),
+
+                          // 5. Terms and Policy
+                          ListTile(
+                            leading: const Icon(Icons.policy_rounded,
+                                color: AppColors.primaryEmerald),
+                            title: Text(
+                              lp.tr('settings_terms_policy'),
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            subtitle: Text(
+                              lp.tr('settings_terms_policy_sub'),
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            trailing: const Icon(Icons.arrow_forward_ios_rounded,
+                                size: 14, color: Colors.grey),
+                            onTap: () => ProfileSettingsSheets.showTermsAndPolicySheet(context),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Card 3: Session (Sign Out)
+                  Material(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    clipBehavior: Clip.antiAlias,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: AppColors.borderLight),
+                      ),
+                      child: ListTile(
+                        leading: const Icon(Icons.logout_rounded,
+                            color: Color(0xFFE11D48)),
+                        title: Text(
+                          lp.tr('sign_out'),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFE11D48)),
+                        ),
+                        trailing: const Icon(Icons.arrow_forward_ios_rounded,
+                            size: 14, color: Colors.grey),
+                        onTap: () => _confirmSignOut(context),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -1102,6 +1276,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Text(lp.tr('sign_out')),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSegmentButton({
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primaryEmerald : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primaryEmerald.withValues(alpha: 0.25),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected ? Colors.white : Colors.grey.shade600,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                color: isSelected ? Colors.white : Colors.grey.shade700,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
