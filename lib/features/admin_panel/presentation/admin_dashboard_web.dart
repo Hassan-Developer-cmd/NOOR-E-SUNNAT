@@ -13,6 +13,7 @@ import '../../../core/utils/firestore_seeder.dart';
 import '../../../services/admin_service.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../home/presentation/widgets/event_card.dart';
+import 'widgets/campaign_popup_admin_tab.dart';
 import '../../../main.dart';
 
 
@@ -76,6 +77,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     'Push Notifications',
     'Questions Management',
     'User Management',
+    'Campaign Popup',
   ];
 
   final List<IconData> _navIcons = [
@@ -87,6 +89,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     Icons.notifications_active_rounded,
     Icons.question_answer_rounded,
     Icons.people_alt_rounded,
+    Icons.campaign_rounded,
   ];
 
   List<String> _getNavItems(LanguageProvider lp) {
@@ -99,6 +102,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
       lp.tr('notifications_mgmt'),
       lp.tr('questions_management'),
       lp.tr('admins_mgmt'),
+      lp.tr('campaign_popup_mgmt'),
     ];
   }
 
@@ -479,7 +483,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
               ),
-              if (_selectedNavIndex != 0 && _selectedNavIndex != 6 && _selectedNavIndex != 7)
+              if (_selectedNavIndex != 0 && _selectedNavIndex != 6 && _selectedNavIndex != 7 && _selectedNavIndex != 8)
                 ElevatedButton.icon(
                   onPressed: () => _showAddModal(context),
                   icon: const Icon(Icons.add, size: 16),
@@ -502,7 +506,9 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                       ? 'Users Leaderboard'
                       : (_selectedNavIndex == 6
                           ? 'Manage User Questions & Q&A'
-                          : 'Manage ${_navItems[_selectedNavIndex]}'),
+                          : (_selectedNavIndex == 8
+                              ? 'Campaign Popup Manager'
+                              : 'Manage ${_navItems[_selectedNavIndex]}')),
                   style: AppTypography.headingMedium,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -533,7 +539,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   side: const BorderSide(color: AppColors.primaryEmerald),
                 ),
               ),
-              if (_selectedNavIndex != 0 && _selectedNavIndex != 6 && _selectedNavIndex != 7) ...[
+              if (_selectedNavIndex != 0 && _selectedNavIndex != 6 && _selectedNavIndex != 7 && _selectedNavIndex != 8) ...[
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
                   onPressed: () => _showAddModal(context),
@@ -578,21 +584,21 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
               crossAxisCount = 2;
               aspectRatio = 2.0;
             } else if (screenWidth <= 1200) {
-              crossAxisCount = 3;
-              aspectRatio = 1.9;
-            } else {
-              crossAxisCount = 4;
-              aspectRatio = 1.8;
+              crossAxisCount = 2;
+              aspectRatio = 2.2;
             }
 
-            return GridView.count(
-              crossAxisCount: crossAxisCount,
+            return GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: aspectRatio,
-              children: cards,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: aspectRatio,
+              ),
+              itemCount: cards.length,
+              itemBuilder: (context, idx) => cards[idx],
             );
           },
         );
@@ -609,6 +615,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     if (_selectedNavIndex == 5) return _buildNotificationsSection();
     if (_selectedNavIndex == 6) return _buildQuestionsTable();
     if (_selectedNavIndex == 7) return _buildUserManagementTable();
+    if (_selectedNavIndex == 8) return const CampaignPopupAdminTab();
     return _buildLeaderboardTable();
   }
 

@@ -9,6 +9,7 @@ import '../../../main.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/counter_service.dart';
 import '../../../services/events_service.dart';
+import '../../../services/campaign_popup_service.dart';
 import '../../events/presentation/events_screen.dart';
 import 'widgets/event_card.dart';
 import 'widgets/durood_summary_card.dart';
@@ -17,8 +18,7 @@ import 'widgets/hadith_wisdom_card.dart';
 import 'widgets/notifications_sheet.dart';
 import '../../../services/notification_service.dart';
 
-class HomeScreen extends StatelessWidget {
-
+class HomeScreen extends StatefulWidget {
   final CounterService counterService;
   final VoidCallback onNavigateToCounter;
 
@@ -27,6 +27,21 @@ class HomeScreen extends StatelessWidget {
     required this.counterService,
     required this.onNavigateToCounter,
   });
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        CampaignPopupService.checkAndShowStartupPopup(context);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -264,10 +279,10 @@ class HomeScreen extends StatelessWidget {
                   delegate: SliverChildListDelegate([
                     // Gamification Row & Durood Summary Card wrapped with StreamBuilder for live launch streaming
                     StreamBuilder<CounterSnapshot>(
-                      stream: counterService.snapshotStream,
-                      initialData: counterService.snapshot,
+                      stream: widget.counterService.snapshotStream,
+                      initialData: widget.counterService.snapshot,
                       builder: (context, snapshot) {
-                        final snap = snapshot.data ?? counterService.snapshot;
+                        final snap = snapshot.data ?? widget.counterService.snapshot;
                         return Column(
                           children: [
                             GamificationBar(
@@ -276,8 +291,8 @@ class HomeScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 16),
                             DuroodSummaryCard(
-                              counterService: counterService,
-                              onSendSalawat: onNavigateToCounter,
+                              counterService: widget.counterService,
+                              onSendSalawat: widget.onNavigateToCounter,
                             ),
                           ],
                         );
@@ -299,7 +314,7 @@ class HomeScreen extends StatelessWidget {
                           ),
                           elevation: 2,
                         ),
-                        onPressed: onNavigateToCounter,
+                        onPressed: widget.onNavigateToCounter,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,

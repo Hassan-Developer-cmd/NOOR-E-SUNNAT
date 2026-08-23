@@ -153,6 +153,31 @@ class FirestoreSeeder {
         results['global_counter']['status'] = 'Seeded global counter main doc';
       }
 
+      // 6. Check & Seed Launch Campaign Popup
+      final popupRef = _firestore.collection('settings').doc('launch_popup');
+      final popupSnap = await popupRef.get();
+      if (!popupSnap.exists || force) {
+        final defaultPopupData = {
+          'isActive': true,
+          'titleEnglish': "Rabi'ul Awwal 2026",
+          'titleUrdu': 'ربیع الاول ۱۴۴۸ / ۲۰۲۶',
+          'detailsEnglish': 'Complete Durood, Shamail, Seerah, and courses to win prizes!',
+          'detailsUrdu': 'انعامات جیتنے کے لیے درود پاک، شمائل، سیرت اور کورسز مکمل کریں!',
+          'buttonTextEnglish': 'Get Started',
+          'buttonTextUrdu': 'شروع کریں',
+          'targetRoute': '/events',
+          'imageType': 'url',
+          'imageUrl': '',
+          'imageBase64': '',
+          'updatedAt': FieldValue.serverTimestamp(),
+        };
+        await popupRef.set(defaultPopupData, SetOptions(merge: true));
+        await _firestore.collection('app_popups').doc('launch_popup').set(defaultPopupData, SetOptions(merge: true));
+        results['launch_popup'] = {'seeded': true, 'status': 'Seeded default launch popup'};
+      } else {
+        results['launch_popup'] = {'seeded': false, 'status': 'Skipped (Already exists)'};
+      }
+
       return results;
     } catch (e) {
       if (kDebugMode) print('[Seeder] Firestore inspection error: $e');
