@@ -1,6 +1,10 @@
+import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/models/app_user.dart';
+import '../../../core/widgets/user_avatar.dart';
 import '../../../main.dart';
 import '../../../services/admin_service.dart';
 import '../../../services/auth_service.dart';
@@ -19,6 +23,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _isAdmin = false;
+  bool _isUploadingImage = false;
 
   @override
   void initState() {
@@ -33,6 +38,234 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  void _showImagePickerSheet(BuildContext context, {bool hasCustomPhoto = false}) {
+    final lp = globalLanguageProvider;
+    final isUrdu = lp.isUrdu;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Grab Handle
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE2E8F0),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Title
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.camera_alt_rounded, color: AppColors.primaryEmerald, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  lp.tr('profile_picture_title'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.emeraldDeep,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Take Photo Option
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: const BoxDecoration(
+                  color: AppColors.emeraldContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.camera_rounded, color: AppColors.primaryEmerald, size: 22),
+              ),
+              title: Text(
+                lp.tr('take_photo'),
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14.5),
+              ),
+              subtitle: Text(
+                isUrdu ? 'کیمرہ سے نئی تصویر بنائیں' : 'Capture a new profile photo',
+                style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              tileColor: const Color(0xFFF8FAFC),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                _pickAndUploadImage(ImageSource.camera);
+              },
+            ),
+            const SizedBox(height: 10),
+
+            // Gallery Option
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFEFF6FF),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.photo_library_rounded, color: Color(0xFF2563EB), size: 22),
+              ),
+              title: Text(
+                lp.tr('choose_from_gallery'),
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14.5),
+              ),
+              subtitle: Text(
+                isUrdu ? 'گیلری سے تصویر منتخب کریں' : 'Choose existing photo from device',
+                style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              tileColor: const Color(0xFFF8FAFC),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                _pickAndUploadImage(ImageSource.gallery);
+              },
+            ),
+
+            if (hasCustomPhoto) ...[
+              const SizedBox(height: 10),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFEE2E2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.delete_outline_rounded, color: Color(0xFFDC2626), size: 22),
+                ),
+                title: Text(
+                  lp.tr('remove_photo'),
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14.5, color: Color(0xFFDC2626)),
+                ),
+                subtitle: Text(
+                  isUrdu ? 'موجودہ تصویر ہٹا کر ابتدائی نام دکھائیں' : 'Remove custom photo and use initials',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                tileColor: const Color(0xFFFEF2F2),
+                onTap: () {
+                  Navigator.pop(sheetCtx);
+                  _removeProfileImage();
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAndUploadImage(ImageSource source) async {
+    final lp = globalLanguageProvider;
+    try {
+      final picker = ImagePicker();
+      final XFile? pickedFile = await picker.pickImage(
+        source: source,
+        maxWidth: 400,
+        maxHeight: 400,
+        imageQuality: 60,
+      );
+
+      if (pickedFile == null) return;
+
+      if (mounted) setState(() => _isUploadingImage = true);
+
+      final bytes = await pickedFile.readAsBytes();
+      final base64Image = base64Encode(bytes);
+
+      await AuthService.updateProfileImageBase64(base64Image);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, color: Color(0xFF34D399), size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    lp.tr('photo_updated_success'),
+                    style: const TextStyle(fontSize: 13, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF064E3B),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${lp.tr('photo_update_failed')} ($e)'),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingImage = false);
+    }
+  }
+
+  Future<void> _removeProfileImage() async {
+    final lp = globalLanguageProvider;
+    try {
+      setState(() => _isUploadingImage = true);
+      await AuthService.removeProfileImageBase64();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, color: Color(0xFF34D399), size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    lp.isUrdu ? 'تصویر کامیابی سے ہٹا دی گئی' : 'Profile photo removed successfully',
+                    style: const TextStyle(fontSize: 13, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF064E3B),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUploadingImage = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -43,9 +276,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final displayName = (user?.displayName != null && user!.displayName!.isNotEmpty)
             ? user.displayName!
             : lp.tr('user_profile_guest');
-        final email = user?.email ?? 'guest@nooresunnat.com';
-        final photoUrl = user?.photoURL;
-        final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
 
         return Scaffold(
           backgroundColor: const Color(0xFFF8FAFC),
@@ -62,108 +292,123 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               children: [
                 // ── User Header Card ──
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.emeraldDeep, AppColors.primaryEmerald],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primaryEmerald.withValues(alpha: 0.25),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 36,
-                        backgroundColor: Colors.white.withValues(alpha: 0.2),
-                        backgroundImage:
-                            photoUrl != null ? NetworkImage(photoUrl) : null,
-                        child: photoUrl == null
-                            ? Text(
-                                initial,
-                                style: const TextStyle(
-                                  color: AppColors.goldBright,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 28,
-                                ),
-                              )
-                            : null,
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              displayName,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () => _showEditNameDialog(context, displayName),
-                              borderRadius: BorderRadius.circular(16),
-                              child: Container(
-                                padding: const EdgeInsets.all(5),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.18),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.edit_rounded,
-                                  size: 16,
-                                  color: AppColors.goldBright,
-                                ),
-                              ),
-                            ),
+                StreamBuilder<AppUser?>(
+                  stream: AuthService.currentUserStream,
+                  builder: (context, userSnap) {
+                    final appUser = userSnap.data;
+                    final effectiveDisplayName = (appUser?.username != null && appUser!.username.isNotEmpty)
+                        ? appUser.username
+                        : ((user?.displayName != null && user!.displayName!.isNotEmpty)
+                            ? user.displayName!
+                            : lp.tr('user_profile_guest'));
+                    final effectiveEmail = (appUser?.email != null && appUser!.email.isNotEmpty)
+                        ? appUser.email
+                        : (user?.email ?? 'guest@nooresunnat.com');
+                    final effectivePhotoUrl = (appUser?.photoUrl != null && appUser!.photoUrl.isNotEmpty)
+                        ? appUser.photoUrl
+                        : user?.photoURL;
+                    final profileBase64 = appUser?.profileImageBase64;
+
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppColors.emeraldDeep, AppColors.primaryEmerald],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primaryEmerald.withValues(alpha: 0.25),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        email,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.75),
-                        ),
-                      ),
-                      if (_isAdmin) ...[
-                        const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.goldBright,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            lp.tr('admin_badge'),
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w900,
-                              color: AppColors.emeraldDeep,
+                      child: Column(
+                        children: [
+                          UserAvatar(
+                            radius: 38,
+                            profileImageBase64: profileBase64,
+                            photoUrl: effectivePhotoUrl,
+                            displayName: effectiveDisplayName,
+                            showEditButton: true,
+                            isLoading: _isUploadingImage,
+                            onEditPressed: () => _showImagePickerSheet(
+                              context,
+                              hasCustomPhoto: profileBase64 != null && profileBase64.isNotEmpty,
                             ),
                           ),
-                        ),
-                      ],
-                    ],
-                  ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  effectiveDisplayName,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () => _showEditNameDialog(context, effectiveDisplayName),
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(5),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.18),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.edit_rounded,
+                                      size: 16,
+                                      color: AppColors.goldBright,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            effectiveEmail,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.white.withValues(alpha: 0.75),
+                            ),
+                          ),
+                          if (_isAdmin) ...[
+                            const SizedBox(height: 10),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.goldBright,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                lp.tr('admin_badge'),
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.emeraldDeep,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 20),
 

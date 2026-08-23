@@ -252,6 +252,36 @@ class AuthService {
     if (kDebugMode) print('AuthService: Profile display name updated to "$trimmedName"');
   }
 
+  /// Updates user profile image as Base64 in Firestore ('users/{uid}').
+  static Future<void> updateProfileImageBase64(String base64Image) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No authenticated user found');
+
+    final docRef = _firestore.collection('users').doc(user.uid);
+    await docRef.set({
+      'profileImageBase64': base64Image,
+      'updatedAt': FieldValue.serverTimestamp(),
+      'updated_at': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    if (kDebugMode) print('AuthService: Profile image Base64 updated for ${user.uid}');
+  }
+
+  /// Removes custom profile image from Firestore.
+  static Future<void> removeProfileImageBase64() async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No authenticated user found');
+
+    final docRef = _firestore.collection('users').doc(user.uid);
+    await docRef.set({
+      'profileImageBase64': FieldValue.delete(),
+      'updatedAt': FieldValue.serverTimestamp(),
+      'updated_at': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    if (kDebugMode) print('AuthService: Profile image Base64 removed for ${user.uid}');
+  }
+
   /// Re-authenticates the current user using either Google Sign-In or Email/Password credentials.
   static Future<void> reauthenticateUser({String? password}) async {
     final user = _auth.currentUser;

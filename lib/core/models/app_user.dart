@@ -6,6 +6,7 @@ class AppUser {
   final String email;
   final String username;
   final String photoUrl;
+  final String? profileImageBase64;
   final bool isAdmin;
   final int personalTotalDurood;
   final int personalTodayDurood;
@@ -19,6 +20,7 @@ class AppUser {
     required this.email,
     required this.username,
     required this.photoUrl,
+    this.profileImageBase64,
     this.isAdmin = false,
     this.personalTotalDurood = 0,
     this.personalTodayDurood = 0,
@@ -56,6 +58,7 @@ class AppUser {
       email: map['email'] as String? ?? '',
       username: map['username'] as String? ?? 'User',
       photoUrl: map['photo_url'] as String? ?? map['photoUrl'] as String? ?? '',
+      profileImageBase64: map['profileImageBase64'] as String? ?? map['profile_image_base64'] as String?,
       isAdmin: map['is_admin'] as bool? ?? false,
       personalTotalDurood: ((map['personal_total_durood'] ??
               map['total_durood_count'] ??
@@ -83,6 +86,7 @@ class AppUser {
         'email': email,
         'username': username,
         'photo_url': photoUrl,
+        if (profileImageBase64 != null) 'profileImageBase64': profileImageBase64,
         'is_admin': isAdmin,
         'personal_total_durood': personalTotalDurood,
         'personal_today_durood': personalTodayDurood,

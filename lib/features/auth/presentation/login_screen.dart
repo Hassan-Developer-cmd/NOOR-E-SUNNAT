@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/services/email_otp_service.dart';
+import '../../../core/widgets/app_exit_confirmation_dialog.dart';
 import '../../../core/widgets/otp_password_reset_dialog.dart';
 import '../../../main.dart';
 import '../../../services/auth_service.dart';
@@ -222,6 +224,18 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _handlePopScope(bool didPop, dynamic result) async {
+    if (didPop) return;
+    if (_isSignUp) {
+      setState(() => _isSignUp = false);
+      return;
+    }
+    final shouldExit = await AppExitConfirmationDialog.show(context);
+    if (shouldExit && mounted) {
+      await SystemNavigator.pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -229,8 +243,11 @@ class _LoginScreenState extends State<LoginScreen> {
       builder: (context, _) {
         final lp = globalLanguageProvider;
 
-        return Scaffold(
-          backgroundColor: AppColors.bgPrimary,
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) => _handlePopScope(didPop, result),
+          child: Scaffold(
+            backgroundColor: AppColors.bgPrimary,
           body: SafeArea(
             child: Center(
               child: ConstrainedBox(
@@ -531,10 +548,11 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   Widget _buildGoogleSignInButton(LanguageProvider lp) {
     return Container(

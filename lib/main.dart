@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -9,6 +10,7 @@ import 'firebase_options.dart';
 import 'core/constants/app_colors.dart';
 import 'core/constants/app_theme.dart';
 import 'core/providers/language_provider.dart';
+import 'core/widgets/app_exit_confirmation_dialog.dart';
 import 'features/home/presentation/home_screen.dart';
 import 'features/counter/presentation/counter_screen.dart';
 import 'features/knowledge_hub/presentation/qa_screen.dart';
@@ -283,6 +285,18 @@ class _MainShellState extends State<MainShell> {
     super.dispose();
   }
 
+  Future<void> _handlePopScope(bool didPop, dynamic result) async {
+    if (didPop) return;
+    if (_currentTabIndex != 0) {
+      setState(() => _currentTabIndex = 0);
+      return;
+    }
+    final shouldExit = await AppExitConfirmationDialog.show(context);
+    if (shouldExit && mounted) {
+      await SystemNavigator.pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -313,73 +327,77 @@ class _MainShellState extends State<MainShell> {
 
         final activeBody = pages[_currentTabIndex];
 
-        return Scaffold(
-          body: isDesktopWeb
-              ? Center(
-                  child: Container(
-                    constraints: const BoxConstraints(maxWidth: 800),
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        left: BorderSide(color: Color(0xFFE5E7EB)),
-                        right: BorderSide(color: Color(0xFFE5E7EB)),
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) => _handlePopScope(didPop, result),
+          child: Scaffold(
+            body: isDesktopWeb
+                ? Center(
+                    child: Container(
+                      constraints: const BoxConstraints(maxWidth: 800),
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          left: BorderSide(color: Color(0xFFE5E7EB)),
+                          right: BorderSide(color: Color(0xFFE5E7EB)),
+                        ),
                       ),
+                      child: activeBody,
                     ),
-                    child: activeBody,
+                  )
+                : activeBody,
+            bottomNavigationBar: Directionality(
+              textDirection: lp.textDirection,
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(
+                    top: BorderSide(color: Color(0xFFE5E7EB), width: 1),
                   ),
-                )
-              : activeBody,
-          bottomNavigationBar: Directionality(
-            textDirection: lp.textDirection,
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  top: BorderSide(color: Color(0xFFE5E7EB), width: 1),
                 ),
-              ),
-              child: Align(
-                heightFactor: 1,
-                child: Container(
-                  constraints: BoxConstraints(
-                    maxWidth: isDesktopWeb ? 800 : double.infinity,
-                  ),
-                  child: BottomNavigationBar(
-                    currentIndex: _currentTabIndex,
-                    onTap: (index) => setState(() => _currentTabIndex = index),
-                    backgroundColor: Colors.white,
-                    type: BottomNavigationBarType.fixed,
-                    selectedItemColor: AppColors.primaryEmerald,
-                    unselectedItemColor: const Color(0xFF64748B),
-                    selectedFontSize: 11,
-                    unselectedFontSize: 11,
-                    elevation: 0,
-                    items: [
-                      BottomNavigationBarItem(
-                        icon: const Icon(Icons.home_outlined),
-                        activeIcon: const Icon(Icons.home_rounded),
-                        label: lp.tr('nav_home'),
-                      ),
-                      BottomNavigationBarItem(
-                        icon: const Icon(Icons.auto_awesome_outlined),
-                        activeIcon: const Icon(Icons.auto_awesome_rounded),
-                        label: lp.tr('nav_aqaid'),
-                      ),
-                      BottomNavigationBarItem(
-                        icon: const Icon(Icons.menu_book_outlined),
-                        activeIcon: const Icon(Icons.menu_book_rounded),
-                        label: lp.tr('nav_masail'),
-                      ),
-                      BottomNavigationBarItem(
-                        icon: const Icon(Icons.question_answer_outlined),
-                        activeIcon: const Icon(Icons.question_answer_rounded),
-                        label: lp.tr('nav_qa'),
-                      ),
-                      BottomNavigationBarItem(
-                        icon: const Icon(Icons.person_outline_rounded),
-                        activeIcon: const Icon(Icons.person_rounded),
-                        label: lp.tr('nav_profile'),
-                      ),
-                    ],
+                child: Align(
+                  heightFactor: 1,
+                  child: Container(
+                    constraints: BoxConstraints(
+                      maxWidth: isDesktopWeb ? 800 : double.infinity,
+                    ),
+                    child: BottomNavigationBar(
+                      currentIndex: _currentTabIndex,
+                      onTap: (index) => setState(() => _currentTabIndex = index),
+                      backgroundColor: Colors.white,
+                      type: BottomNavigationBarType.fixed,
+                      selectedItemColor: AppColors.primaryEmerald,
+                      unselectedItemColor: const Color(0xFF64748B),
+                      selectedFontSize: 11,
+                      unselectedFontSize: 11,
+                      elevation: 0,
+                      items: [
+                        BottomNavigationBarItem(
+                          icon: const Icon(Icons.home_outlined),
+                          activeIcon: const Icon(Icons.home_rounded),
+                          label: lp.tr('nav_home'),
+                        ),
+                        BottomNavigationBarItem(
+                          icon: const Icon(Icons.auto_awesome_outlined),
+                          activeIcon: const Icon(Icons.auto_awesome_rounded),
+                          label: lp.tr('nav_aqaid'),
+                        ),
+                        BottomNavigationBarItem(
+                          icon: const Icon(Icons.menu_book_outlined),
+                          activeIcon: const Icon(Icons.menu_book_rounded),
+                          label: lp.tr('nav_masail'),
+                        ),
+                        BottomNavigationBarItem(
+                          icon: const Icon(Icons.question_answer_outlined),
+                          activeIcon: const Icon(Icons.question_answer_rounded),
+                          label: lp.tr('nav_qa'),
+                        ),
+                        BottomNavigationBarItem(
+                          icon: const Icon(Icons.person_outline_rounded),
+                          activeIcon: const Icon(Icons.person_rounded),
+                          label: lp.tr('nav_profile'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

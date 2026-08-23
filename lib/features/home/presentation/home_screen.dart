@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/models/app_user.dart';
 import '../../../core/models/event_model.dart';
+import '../../../core/widgets/user_avatar.dart';
 import '../../../main.dart';
+import '../../../services/auth_service.dart';
 import '../../../services/counter_service.dart';
 import '../../../services/events_service.dart';
 import '../../events/presentation/events_screen.dart';
@@ -32,9 +35,6 @@ class HomeScreen extends StatelessWidget {
       builder: (context, _) {
         final lp = globalLanguageProvider;
         final firebaseUser = FirebaseAuth.instance.currentUser;
-        final displayName = firebaseUser?.displayName ?? lp.tr('guest');
-        final photoUrl = firebaseUser?.photoURL;
-        final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U';
 
         return Scaffold(
           backgroundColor: AppColors.bgPrimary,
@@ -93,73 +93,80 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ),
 
-                      // 4. Header Foreground Content (User Greeting, Name, Avatar)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 56, 20, 20),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    lp.tr('welcome_greeting'),
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.white.withValues(alpha: 0.85),
-                                      fontWeight: FontWeight.w500,
-                                      shadows: const [
-                                        Shadow(
-                                          color: Colors.black45,
-                                          blurRadius: 4,
-                                          offset: Offset(0, 1),
+                      // 3. User Welcome Greeting
+                      Positioned(
+                        left: 20,
+                        right: 20,
+                        bottom: 18,
+                        child: StreamBuilder<AppUser?>(
+                          stream: AuthService.currentUserStream,
+                          builder: (context, userSnap) {
+                            final appUser = userSnap.data;
+                            final liveDisplayName = (appUser?.username != null && appUser!.username.isNotEmpty)
+                                ? appUser.username
+                                : (firebaseUser?.displayName ?? lp.tr('guest'));
+                            final livePhotoUrl = (appUser?.photoUrl != null && appUser!.photoUrl.isNotEmpty)
+                                ? appUser.photoUrl
+                                : firebaseUser?.photoURL;
+                            final liveBase64 = appUser?.profileImageBase64;
+
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        lp.tr('welcome_greeting'),
+                                        style: TextStyle(
+                                          color: AppColors.goldBright,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          letterSpacing: 0.5,
+                                          shadows: const [
+                                            Shadow(
+                                              color: Colors.black45,
+                                              blurRadius: 4,
+                                              offset: Offset(0, 1),
+                                            ),
+                                          ],
                                         ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    displayName,
-                                    style: const TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                      letterSpacing: -0.3,
-                                      shadows: [
-                                        Shadow(
-                                          color: Colors.black54,
-                                          blurRadius: 6,
-                                          offset: Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            // Avatar
-                            CircleAvatar(
-                              radius: 22,
-                              backgroundColor: Colors.white.withValues(alpha: 0.2),
-                              backgroundImage:
-                                  photoUrl != null ? NetworkImage(photoUrl) : null,
-                              child: photoUrl == null
-                                  ? Text(
-                                      initial,
-                                      style: const TextStyle(
-                                        color: AppColors.goldBright,
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 18,
                                       ),
-                                    )
-                                  : null,
-                            ),
-                          ],
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        liveDisplayName,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          shadows: const [
+                                            Shadow(
+                                              color: Colors.black54,
+                                              blurRadius: 6,
+                                              offset: Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                // Avatar
+                                UserAvatar(
+                                  radius: 22,
+                                  profileImageBase64: liveBase64,
+                                  photoUrl: livePhotoUrl,
+                                  displayName: liveDisplayName,
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ),
                     ],
