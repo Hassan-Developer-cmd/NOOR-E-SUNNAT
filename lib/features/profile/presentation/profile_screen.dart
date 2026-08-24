@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -12,6 +11,7 @@ import '../../../services/counter_service.dart';
 import '../../auth/presentation/login_screen.dart';
 import '../../knowledge_hub/presentation/my_questions_screen.dart';
 import 'widgets/profile_settings_sheets.dart';
+import '../../../core/utils/image_compression_helper.dart';
 
 class ProfileScreen extends StatefulWidget {
   final CounterService counterService;
@@ -175,21 +175,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final lp = globalLanguageProvider;
     try {
       final picker = ImagePicker();
-      final XFile? pickedFile = await picker.pickImage(
-        source: source,
-        maxWidth: 400,
-        maxHeight: 400,
-        imageQuality: 60,
-      );
+      final XFile? pickedFile = await picker.pickImage(source: source);
 
       if (pickedFile == null) return;
 
       if (mounted) setState(() => _isUploadingImage = true);
 
-      final bytes = await pickedFile.readAsBytes();
-      final base64Image = base64Encode(bytes);
+      final rawBytes = await pickedFile.readAsBytes();
+      final compResult = await ImageCompressionHelper.compressImageBytes(
+        rawBytes,
+        maxWidth: 512,
+        maxHeight: 512,
+        initialQuality: 70,
+        maxSizeKb: 100,
+      );
 
-      await AuthService.updateProfileImageBase64(base64Image);
+      await AuthService.updateProfileImageBase64(compResult.base64String);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

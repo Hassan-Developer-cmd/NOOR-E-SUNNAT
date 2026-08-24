@@ -17,6 +17,7 @@ import '../../../services/admin_service.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../home/presentation/widgets/event_card.dart';
 import 'widgets/campaign_popup_admin_tab.dart';
+import '../../../core/utils/image_compression_helper.dart';
 
 
 
@@ -3481,6 +3482,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     String? imageBase64;
     int? uploadedFileSizeKb;
     bool isUploadingImage = false;
+    bool isSaving = false;
 
     showDialog(
       context: context,
@@ -3530,7 +3532,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                     children: [
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => setModal(() => imageType = EventModel.imageTypeUrl),
+                          onTap: isSaving ? null : () => setModal(() => imageType = EventModel.imageTypeUrl),
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             decoration: BoxDecoration(
@@ -3562,7 +3564,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                       ),
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => setModal(() => imageType = EventModel.imageTypeBase64),
+                          onTap: isSaving ? null : () => setModal(() => imageType = EventModel.imageTypeBase64),
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             decoration: BoxDecoration(
@@ -3663,7 +3665,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   ),
                 ],
 
-                // Option B: Upload from Device (Base64)
+                // Option B: Upload from Device (Base64 Canvas Compression)
                 if (imageType == EventModel.imageTypeBase64) ...[
                   Container(
                     width: double.infinity,
@@ -3717,10 +3719,12 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                                     top: 6,
                                     left: 6,
                                     child: InkWell(
-                                      onTap: () => setModal(() {
-                                        imageBase64 = null;
-                                        uploadedFileSizeKb = null;
-                                      }),
+                                      onTap: isSaving
+                                          ? null
+                                          : () => setModal(() {
+                                                imageBase64 = null;
+                                                uploadedFileSizeKb = null;
+                                              }),
                                       child: Container(
                                         padding: const EdgeInsets.all(4),
                                         decoration: const BoxDecoration(
@@ -3744,29 +3748,31 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
-                          onPressed: isUploadingImage
+                          onPressed: (isUploadingImage || isSaving)
                               ? null
                               : () async {
                                   try {
                                     final picker = ImagePicker();
-                                    final XFile? file = await picker.pickImage(
-                                      source: ImageSource.gallery,
-                                      maxWidth: 800,
-                                      maxHeight: 800,
-                                      imageQuality: 70,
-                                    );
+                                    final XFile? file = await picker.pickImage(source: ImageSource.gallery);
                                     if (file == null) return;
                                     setModal(() => isUploadingImage = true);
-                                    final bytes = await file.readAsBytes();
-                                    final b64 = base64Encode(bytes);
-                                    final sizeKb = (bytes.lengthInBytes / 1024).round();
+                                    final rawBytes = await file.readAsBytes();
+                                    final compResult = await ImageCompressionHelper.compressImageBytes(
+                                      rawBytes,
+                                      maxWidth: 1024,
+                                      maxHeight: 1024,
+                                      initialQuality: 70,
+                                      maxSizeKb: 200,
+                                    );
                                     setModal(() {
-                                      imageBase64 = b64;
-                                      uploadedFileSizeKb = sizeKb;
+                                      imageBase64 = compResult.base64String;
+                                      uploadedFileSizeKb = compResult.sizeKb;
                                       isUploadingImage = false;
                                     });
+                                    _snack('Image auto-compressed: ${compResult.originalSizeKb} KB ➔ ${compResult.sizeKb} KB (${compResult.width}x${compResult.height}px)');
                                   } catch (e) {
                                     setModal(() => isUploadingImage = false);
+                                    _snack('Error processing image: $e');
                                   }
                                 },
                           icon: isUploadingImage
@@ -3778,7 +3784,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                               : const Icon(Icons.add_photo_alternate_rounded, size: 18),
                           label: Text(
                             isUploadingImage
-                                ? 'Processing Image...'
+                                ? 'Compressing Canvas Image...'
                                 : (imageBase64 != null ? 'Change Image / تصویر تبدیل کریں' : 'Choose Image / تصویر اپلوڈ کریں'),
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                           ),
@@ -3797,62 +3803,104 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   items: EventModel.supportedStatuses
                       .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                       .toList(),
-                  onChanged: (v) => setModal(() => status = v ?? 'Coming Soon'),
+                  onChanged: isSaving ? null : (v) => setModal(() => status = v ?? 'Coming Soon'),
                 ),
               ]),
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(
+              onPressed: isSaving ? null : () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
             ElevatedButton(
-              onPressed: () async {
-                if (titleC.text.trim().isEmpty || dateC.text.trim().isEmpty) {
-                  _snack('Please enter Event Title and Date/Time.');
-                  return;
-                }
-                final assignedOrder = int.tryParse(orderC.text.trim()) ?? 0;
-                String finalImageType = imageType;
-                String? finalImageUrl;
-                String? finalImageBase64;
+              onPressed: (isSaving || isUploadingImage)
+                  ? null
+                  : () async {
+                      if (titleC.text.trim().isEmpty || dateC.text.trim().isEmpty) {
+                        _snack('Please enter Event Title and Date/Time.');
+                        return;
+                      }
+                      setModal(() => isSaving = true);
+                      try {
+                        final assignedOrder = int.tryParse(orderC.text.trim()) ?? 0;
+                        String finalImageType = imageType;
+                        String? finalImageUrl;
+                        String? finalImageBase64;
 
-                if (imageType == EventModel.imageTypeBase64 && imageBase64 != null && imageBase64!.trim().isNotEmpty) {
-                  finalImageType = EventModel.imageTypeBase64;
-                  finalImageBase64 = imageBase64!.trim();
-                  finalImageUrl = null;
-                } else {
-                  final url = imageUrlC.text.trim();
-                  if (url.isNotEmpty) {
-                    finalImageType = EventModel.imageTypeUrl;
-                    finalImageUrl = url;
-                    finalImageBase64 = null;
-                  } else {
-                    finalImageType = EventModel.imageTypeUrl;
-                    finalImageUrl = null;
-                    finalImageBase64 = null;
-                  }
-                }
+                        if (imageType == EventModel.imageTypeBase64 && imageBase64 != null && imageBase64!.trim().isNotEmpty) {
+                          finalImageType = EventModel.imageTypeBase64;
+                          finalImageBase64 = imageBase64!.trim();
+                          finalImageUrl = null;
+                        } else {
+                          final url = imageUrlC.text.trim();
+                          if (url.isNotEmpty) {
+                            finalImageType = EventModel.imageTypeUrl;
+                            finalImageUrl = url;
+                            finalImageBase64 = null;
+                          } else {
+                            finalImageType = EventModel.imageTypeUrl;
+                            finalImageUrl = null;
+                            finalImageBase64 = null;
+                          }
+                        }
 
-                await AdminService.addEvent(EventModel(
-                  id: '',
-                  title: titleC.text.trim(),
-                  titleUr: titleUrC.text.trim().isEmpty ? titleC.text.trim() : titleUrC.text.trim(),
-                  dateTime: dateC.text.trim(),
-                  location: locC.text.trim(),
-                  locationUr: locUrC.text.trim().isEmpty ? locC.text.trim() : locUrC.text.trim(),
-                  status: status,
-                  description: descC.text.trim(),
-                  descriptionUr: descUrC.text.trim().isEmpty ? descC.text.trim() : descUrC.text.trim(),
-                  imageType: finalImageType,
-                  imageUrl: finalImageUrl,
-                  imageBase64: finalImageBase64,
-                  order: assignedOrder,
-                ));
-                if (ctx.mounted) {
-                  Navigator.pop(ctx);
-                  _snack('Event added & automated notification dispatched!');
-                }
-              },
-              child: const Text('Save Event'),
+                        await AdminService.addEvent(EventModel(
+                          id: '',
+                          title: titleC.text.trim(),
+                          titleUr: titleUrC.text.trim().isEmpty ? titleC.text.trim() : titleUrC.text.trim(),
+                          dateTime: dateC.text.trim(),
+                          location: locC.text.trim(),
+                          locationUr: locUrC.text.trim().isEmpty ? locC.text.trim() : locUrC.text.trim(),
+                          status: status,
+                          description: descC.text.trim(),
+                          descriptionUr: descUrC.text.trim().isEmpty ? descC.text.trim() : descUrC.text.trim(),
+                          imageType: finalImageType,
+                          imageUrl: finalImageUrl,
+                          imageBase64: finalImageBase64,
+                          order: assignedOrder,
+                        ));
+                        if (ctx.mounted) {
+                          Navigator.pop(ctx);
+                          _snack('Event added & automated notification dispatched!');
+                        }
+                      } catch (e) {
+                        if (ctx.mounted) {
+                          setModal(() => isSaving = false);
+                          showDialog(
+                            context: ctx,
+                            builder: (c) => AlertDialog(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              title: const Row(
+                                children: [
+                                  Icon(Icons.error_outline, color: Colors.red, size: 22),
+                                  SizedBox(width: 8),
+                                  Text('Error Saving Event', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                              content: Text('Failed to save event to Firestore:\n$e'),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.pop(c), child: const Text('OK')),
+                              ],
+                            ),
+                          );
+                        }
+                      }
+                    },
+              child: isSaving
+                  ? const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        ),
+                        SizedBox(width: 8),
+                        Text('Compressing & Saving...'),
+                      ],
+                    )
+                  : const Text('Save Event'),
             ),
           ],
         ),
@@ -3882,6 +3930,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
         ? (imageBase64.length * 3 / 4 / 1024).round()
         : null;
     bool isUploadingImage = false;
+    bool isSaving = false;
 
     showDialog(
       context: context,
@@ -3931,7 +3980,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                     children: [
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => setModal(() => imageType = EventModel.imageTypeUrl),
+                          onTap: isSaving ? null : () => setModal(() => imageType = EventModel.imageTypeUrl),
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             decoration: BoxDecoration(
@@ -3963,7 +4012,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                       ),
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => setModal(() => imageType = EventModel.imageTypeBase64),
+                          onTap: isSaving ? null : () => setModal(() => imageType = EventModel.imageTypeBase64),
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             decoration: BoxDecoration(
@@ -4064,7 +4113,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   ),
                 ],
 
-                // Option B: Upload from Device (Base64)
+                // Option B: Upload from Device (Base64 Canvas Compression)
                 if (imageType == EventModel.imageTypeBase64) ...[
                   Container(
                     width: double.infinity,
@@ -4118,10 +4167,12 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                                     top: 6,
                                     left: 6,
                                     child: InkWell(
-                                      onTap: () => setModal(() {
-                                        imageBase64 = null;
-                                        uploadedFileSizeKb = null;
-                                      }),
+                                      onTap: isSaving
+                                          ? null
+                                          : () => setModal(() {
+                                                imageBase64 = null;
+                                                uploadedFileSizeKb = null;
+                                              }),
                                       child: Container(
                                         padding: const EdgeInsets.all(4),
                                         decoration: const BoxDecoration(
@@ -4145,29 +4196,31 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),
-                          onPressed: isUploadingImage
+                          onPressed: (isUploadingImage || isSaving)
                               ? null
                               : () async {
                                   try {
                                     final picker = ImagePicker();
-                                    final XFile? file = await picker.pickImage(
-                                      source: ImageSource.gallery,
-                                      maxWidth: 800,
-                                      maxHeight: 800,
-                                      imageQuality: 70,
-                                    );
+                                    final XFile? file = await picker.pickImage(source: ImageSource.gallery);
                                     if (file == null) return;
                                     setModal(() => isUploadingImage = true);
-                                    final bytes = await file.readAsBytes();
-                                    final b64 = base64Encode(bytes);
-                                    final sizeKb = (bytes.lengthInBytes / 1024).round();
+                                    final rawBytes = await file.readAsBytes();
+                                    final compResult = await ImageCompressionHelper.compressImageBytes(
+                                      rawBytes,
+                                      maxWidth: 1024,
+                                      maxHeight: 1024,
+                                      initialQuality: 70,
+                                      maxSizeKb: 200,
+                                    );
                                     setModal(() {
-                                      imageBase64 = b64;
-                                      uploadedFileSizeKb = sizeKb;
+                                      imageBase64 = compResult.base64String;
+                                      uploadedFileSizeKb = compResult.sizeKb;
                                       isUploadingImage = false;
                                     });
+                                    _snack('Image auto-compressed: ${compResult.originalSizeKb} KB ➔ ${compResult.sizeKb} KB (${compResult.width}x${compResult.height}px)');
                                   } catch (e) {
                                     setModal(() => isUploadingImage = false);
+                                    _snack('Error processing image: $e');
                                   }
                                 },
                           icon: isUploadingImage
@@ -4179,7 +4232,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                               : const Icon(Icons.add_photo_alternate_rounded, size: 18),
                           label: Text(
                             isUploadingImage
-                                ? 'Processing Image...'
+                                ? 'Compressing Canvas Image...'
                                 : (imageBase64 != null ? 'Change Image / تصویر تبدیل کریں' : 'Choose Image / تصویر اپلوڈ کریں'),
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                           ),
@@ -4198,63 +4251,105 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   items: EventModel.supportedStatuses
                       .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                       .toList(),
-                  onChanged: (v) => setModal(() => status = v ?? 'Coming Soon'),
+                  onChanged: isSaving ? null : (v) => setModal(() => status = v ?? 'Coming Soon'),
                 ),
               ]),
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(
+              onPressed: isSaving ? null : () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
             ElevatedButton(
-              onPressed: () async {
-                String finalImageType = imageType;
-                String? finalImageUrl;
-                String? finalImageBase64;
+              onPressed: (isSaving || isUploadingImage)
+                  ? null
+                  : () async {
+                      setModal(() => isSaving = true);
+                      try {
+                        String finalImageType = imageType;
+                        String? finalImageUrl;
+                        String? finalImageBase64;
 
-                if (imageType == EventModel.imageTypeBase64 && imageBase64 != null && imageBase64!.trim().isNotEmpty) {
-                  finalImageType = EventModel.imageTypeBase64;
-                  finalImageBase64 = imageBase64!.trim();
-                  finalImageUrl = null;
-                } else {
-                  final url = imageUrlC.text.trim();
-                  if (url.isNotEmpty) {
-                    finalImageType = EventModel.imageTypeUrl;
-                    finalImageUrl = url;
-                    finalImageBase64 = null;
-                  } else {
-                    finalImageType = EventModel.imageTypeUrl;
-                    finalImageUrl = null;
-                    finalImageBase64 = null;
-                  }
-                }
+                        if (imageType == EventModel.imageTypeBase64 && imageBase64 != null && imageBase64!.trim().isNotEmpty) {
+                          finalImageType = EventModel.imageTypeBase64;
+                          finalImageBase64 = imageBase64!.trim();
+                          finalImageUrl = null;
+                        } else {
+                          final url = imageUrlC.text.trim();
+                          if (url.isNotEmpty) {
+                            finalImageType = EventModel.imageTypeUrl;
+                            finalImageUrl = url;
+                            finalImageBase64 = null;
+                          } else {
+                            finalImageType = EventModel.imageTypeUrl;
+                            finalImageUrl = null;
+                            finalImageBase64 = null;
+                          }
+                        }
 
-                final Map<String, dynamic> updateMap = {
-                  'title': titleC.text.trim(),
-                  'title_ur': titleUrC.text.trim(),
-                  'date_time': dateC.text.trim(),
-                  'location': locC.text.trim(),
-                  'location_ur': locUrC.text.trim(),
-                  'description': descC.text.trim(),
-                  'description_ur': descUrC.text.trim(),
-                  'status': status,
-                  'image_type': finalImageType,
-                  'imageType': finalImageType,
-                  'image_url': finalImageUrl,
-                  'imageUrl': finalImageUrl,
-                  'image_base64': finalImageBase64,
-                  'imageBase64': finalImageBase64,
-                };
-                final parsedOrder = int.tryParse(orderC.text.trim());
-                if (parsedOrder != null && parsedOrder > 0) {
-                  updateMap['order'] = parsedOrder;
-                }
-                await AdminService.updateEvent(event.id, updateMap);
-                if (ctx.mounted) {
-                  Navigator.pop(ctx);
-                  _snack('Event updated!');
-                }
-              },
-              child: const Text('Update Event'),
+                        final Map<String, dynamic> updateMap = {
+                          'title': titleC.text.trim(),
+                          'title_ur': titleUrC.text.trim(),
+                          'date_time': dateC.text.trim(),
+                          'location': locC.text.trim(),
+                          'location_ur': locUrC.text.trim(),
+                          'description': descC.text.trim(),
+                          'description_ur': descUrC.text.trim(),
+                          'status': status,
+                          'image_type': finalImageType,
+                          'imageType': finalImageType,
+                          'image_url': finalImageUrl,
+                          'imageUrl': finalImageUrl,
+                          'image_base64': finalImageBase64,
+                          'imageBase64': finalImageBase64,
+                        };
+                        final parsedOrder = int.tryParse(orderC.text.trim());
+                        if (parsedOrder != null && parsedOrder > 0) {
+                          updateMap['order'] = parsedOrder;
+                        }
+                        await AdminService.updateEvent(event.id, updateMap);
+                        if (ctx.mounted) {
+                          Navigator.pop(ctx);
+                          _snack('Event updated!');
+                        }
+                      } catch (e) {
+                        if (ctx.mounted) {
+                          setModal(() => isSaving = false);
+                          showDialog(
+                            context: ctx,
+                            builder: (c) => AlertDialog(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              title: const Row(
+                                children: [
+                                  Icon(Icons.error_outline, color: Colors.red, size: 22),
+                                  SizedBox(width: 8),
+                                  Text('Error Updating Event', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                              content: Text('Failed to update event in Firestore:\n$e'),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.pop(c), child: const Text('OK')),
+                              ],
+                            ),
+                          );
+                        }
+                      }
+                    },
+              child: isSaving
+                  ? const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        ),
+                        SizedBox(width: 8),
+                        Text('Compressing & Saving...'),
+                      ],
+                    )
+                  : const Text('Update Event'),
             ),
           ],
         ),

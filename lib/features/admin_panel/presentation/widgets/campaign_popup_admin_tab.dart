@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -7,6 +6,7 @@ import '../../../../core/models/campaign_popup_model.dart';
 import '../../../../core/providers/language_provider.dart';
 import '../../../../core/widgets/campaign_popup_dialog.dart';
 import '../../../../services/campaign_popup_service.dart';
+import '../../../../core/utils/image_compression_helper.dart';
 import '../../../../main.dart';
 
 class CampaignPopupAdminTab extends StatefulWidget {
@@ -139,26 +139,26 @@ class _CampaignPopupAdminTabState extends State<CampaignPopupAdminTab> {
     final lp = globalLanguageProvider;
     try {
       final picker = ImagePicker();
-      final XFile? file = await picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 800,
-        maxHeight: 800,
-        imageQuality: 75,
-      );
+      final XFile? file = await picker.pickImage(source: ImageSource.gallery);
 
       if (file == null) return;
 
       setState(() => _isUploadingImage = true);
 
-      final bytes = await file.readAsBytes();
-      final base64String = base64Encode(bytes);
-      final sizeKb = (bytes.lengthInBytes / 1024).round();
+      final rawBytes = await file.readAsBytes();
+      final compResult = await ImageCompressionHelper.compressImageBytes(
+        rawBytes,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        initialQuality: 70,
+        maxSizeKb: 200,
+      );
 
       setState(() {
-        _imageBase64 = base64String;
+        _imageBase64 = compResult.base64String;
         _imageType = CampaignPopupModel.imageTypeBase64;
         _uploadedFileName = file.name;
-        _uploadedFileSizeKb = sizeKb;
+        _uploadedFileSizeKb = compResult.sizeKb;
         _isUploadingImage = false;
       });
 
@@ -171,7 +171,7 @@ class _CampaignPopupAdminTabState extends State<CampaignPopupAdminTab> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    '${lp.tr('image_uploaded_success')} ($sizeKb KB)',
+                    '${lp.tr('image_uploaded_success')} (${compResult.sizeKb} KB - ${compResult.width}x${compResult.height}px)',
                     style: const TextStyle(color: Colors.white, fontSize: 13),
                   ),
                 ),
