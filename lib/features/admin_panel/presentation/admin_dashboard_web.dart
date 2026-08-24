@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -14,6 +15,7 @@ import '../../../core/models/app_user.dart';
 import '../../../core/utils/firestore_seeder.dart';
 import '../../../services/admin_service.dart';
 import '../../../core/providers/language_provider.dart';
+import '../../../core/widgets/user_avatar.dart';
 import '../../home/presentation/widgets/event_card.dart';
 import 'widgets/campaign_popup_admin_tab.dart';
 import '../../../main.dart';
@@ -43,6 +45,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
   String _selectedEventStatus = 'all';
   String _selectedQuestionStatus = 'all';
   String _selectedDailyContentType = 'all';
+  String _selectedUserRoleFilter = 'all';
+  bool _isUsersGridView = false;
   bool _showMobileSearch = false;
   final TextEditingController _searchController = TextEditingController();
 
@@ -57,6 +61,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
       _selectedEventStatus = 'all';
       _selectedQuestionStatus = 'all';
       _selectedDailyContentType = 'all';
+      _selectedUserRoleFilter = 'all';
     });
   }
 
@@ -78,7 +83,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     'Daily Hadith/Ayat',
     'Push Notifications',
     'Questions Management',
-    'User Management',
+    'User Profiles',
+    'Admin Roles',
     'Campaign Popup',
   ];
 
@@ -91,6 +97,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     Icons.notifications_active_rounded,
     Icons.question_answer_rounded,
     Icons.people_alt_rounded,
+    Icons.admin_panel_settings_rounded,
     Icons.campaign_rounded,
   ];
 
@@ -103,6 +110,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
       lp.tr('daily_content_mgmt'),
       lp.tr('notifications_mgmt'),
       lp.tr('questions_management'),
+      lp.tr('registered_users_mgmt'),
       lp.tr('admins_mgmt'),
       lp.tr('campaign_popup_mgmt'),
     ];
@@ -452,7 +460,13 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 ? 'Users Leaderboard'
                 : (_selectedNavIndex == 6
                     ? 'Manage User Questions & Q&A'
-                    : 'Manage ${_navItems[_selectedNavIndex]}'),
+                    : (_selectedNavIndex == 7
+                        ? 'Registered Users / صارفین کی فہرست'
+                        : (_selectedNavIndex == 8
+                            ? 'Admin Roles & Permissions'
+                            : (_selectedNavIndex == 9
+                                ? 'Campaign Popup Manager'
+                                : 'Manage ${_navItems[_selectedNavIndex]}')))),
             style: AppTypography.headingMedium.copyWith(fontSize: 18),
           ),
           const SizedBox(height: 10),
@@ -485,7 +499,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
               ),
-              if (_selectedNavIndex != 0 && _selectedNavIndex != 6 && _selectedNavIndex != 7 && _selectedNavIndex != 8)
+              if (_selectedNavIndex != 0 && _selectedNavIndex != 6 && _selectedNavIndex != 7 && _selectedNavIndex != 8 && _selectedNavIndex != 9)
                 ElevatedButton.icon(
                   onPressed: () => _showAddModal(context),
                   icon: const Icon(Icons.add, size: 16),
@@ -508,9 +522,13 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                       ? 'Users Leaderboard'
                       : (_selectedNavIndex == 6
                           ? 'Manage User Questions & Q&A'
-                          : (_selectedNavIndex == 8
-                              ? 'Campaign Popup Manager'
-                              : 'Manage ${_navItems[_selectedNavIndex]}')),
+                          : (_selectedNavIndex == 7
+                              ? 'Registered Users / صارفین کی فہرست'
+                              : (_selectedNavIndex == 8
+                                  ? 'Admin Roles & Permissions'
+                                  : (_selectedNavIndex == 9
+                                      ? 'Campaign Popup Manager'
+                                      : 'Manage ${_navItems[_selectedNavIndex]}')))),
                   style: AppTypography.headingMedium,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -541,7 +559,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   side: const BorderSide(color: AppColors.primaryEmerald),
                 ),
               ),
-              if (_selectedNavIndex != 0 && _selectedNavIndex != 6 && _selectedNavIndex != 7 && _selectedNavIndex != 8) ...[
+              if (_selectedNavIndex != 0 && _selectedNavIndex != 6 && _selectedNavIndex != 7 && _selectedNavIndex != 8 && _selectedNavIndex != 9) ...[
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
                   onPressed: () => _showAddModal(context),
@@ -616,8 +634,9 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     if (_selectedNavIndex == 4) return _buildDailyContentTable();
     if (_selectedNavIndex == 5) return _buildNotificationsSection();
     if (_selectedNavIndex == 6) return _buildQuestionsTable();
-    if (_selectedNavIndex == 7) return _buildUserManagementTable();
-    if (_selectedNavIndex == 8) return const CampaignPopupAdminTab();
+    if (_selectedNavIndex == 7) return _buildRegisteredUsersSection();
+    if (_selectedNavIndex == 8) return _buildUserManagementTable();
+    if (_selectedNavIndex == 9) return const CampaignPopupAdminTab();
     return _buildLeaderboardTable();
   }
 
@@ -683,29 +702,11 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CircleAvatar(
+                      UserAvatar(
                         radius: 14,
-                        backgroundColor: rank == 1
-                            ? Colors.amber.shade100
-                            : rank == 2
-                                ? Colors.blueGrey.shade100
-                                : rank == 3
-                                    ? Colors.brown.shade100
-                                    : AppColors.emeraldContainer,
-                        child: Text(
-                          u.username.isNotEmpty ? u.username[0].toUpperCase() : 'U',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: rank == 1
-                                ? Colors.amber.shade900
-                                : rank == 2
-                                    ? Colors.blueGrey.shade800
-                                    : rank == 3
-                                        ? Colors.brown.shade800
-                                        : AppColors.primaryEmerald,
-                          ),
-                        ),
+                        profileImageBase64: u.profileImageBase64,
+                        photoUrl: u.photoUrl,
+                        displayName: u.username,
                       ),
                       const SizedBox(width: 10),
                       Text(
@@ -2332,7 +2333,1071 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
   }
 
 
-  // ── User Management Table ──────────────────────────────────────
+  // ── Registered Users Management Section (Tab 7) ────────────────
+
+  Widget _buildRegisteredUsersSection() {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    return StreamBuilder<List<AppUser>>(
+      stream: AdminService.usersStream,
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(40),
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+        if (snap.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'Error loading users: ${snap.error}',
+                style: const TextStyle(color: Colors.red),
+              ),
+            ),
+          );
+        }
+
+        final allUsers = snap.data ?? [];
+        final q = _searchQuery.trim().toLowerCase();
+
+        final filteredUsers = allUsers.where((u) {
+          final matchesQuery = q.isEmpty ||
+              u.username.toLowerCase().contains(q) ||
+              u.email.toLowerCase().contains(q) ||
+              u.userId.toLowerCase().contains(q);
+          if (!matchesQuery) return false;
+
+          if (_selectedUserRoleFilter == 'admins') return u.isAdmin;
+          if (_selectedUserRoleFilter == 'users') return !u.isAdmin;
+          if (_selectedUserRoleFilter == 'photos') {
+            return (u.profileImageBase64 != null && u.profileImageBase64!.trim().isNotEmpty) ||
+                u.photoUrl.trim().isNotEmpty;
+          }
+          return true;
+        }).toList();
+
+        // Statistics
+        final totalUsersCount = allUsers.length;
+        final withPhotosCount = allUsers.where((u) =>
+            (u.profileImageBase64 != null && u.profileImageBase64!.trim().isNotEmpty) ||
+            u.photoUrl.trim().isNotEmpty).length;
+        final activeRecitersCount = allUsers.where((u) => u.personalTotalDurood > 0).length;
+        final adminCount = allUsers.where((u) => u.isAdmin).length;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top Summary KPI Cards
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isCompact = constraints.maxWidth < 700;
+                final kpiItems = [
+                  _kpiCardContent('Total Users', _fmt(totalUsersCount), Icons.people_alt_rounded, AppColors.primaryEmerald),
+                  _kpiCardContent('With Profile Photos', _fmt(withPhotosCount), Icons.add_a_photo_rounded, AppColors.accentGold),
+                  _kpiCardContent('Active Reciters', _fmt(activeRecitersCount), Icons.auto_awesome, Colors.teal),
+                  _kpiCardContent('Admin Roles', _fmt(adminCount), Icons.admin_panel_settings_rounded, Colors.indigo),
+                ];
+
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: isCompact ? 2 : 4,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: isCompact ? 1.9 : 2.2,
+                  ),
+                  itemCount: kpiItems.length,
+                  itemBuilder: (context, idx) => kpiItems[idx],
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+
+            // Toolbar: Filter Chips & View Mode Toggle
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: const BorderSide(color: AppColors.borderLight),
+              ),
+              color: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 12,
+                  runSpacing: 10,
+                  children: [
+                    // Filter Chips
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        _buildFilterChip('all', 'All Users (${allUsers.length})'),
+                        _buildFilterChip('photos', 'With Photos ($withPhotosCount)'),
+                        _buildFilterChip('admins', 'Admins ($adminCount)'),
+                        _buildFilterChip('users', 'Standard Users (${totalUsersCount - adminCount})'),
+                      ],
+                    ),
+                    // View Switcher & Result Count
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.emeraldContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Showing ${filteredUsers.length} of ${allUsers.length}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.emeraldDeep,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.bgOffWhite,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppColors.borderLight),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: Icon(
+                                  Icons.table_chart_rounded,
+                                  size: 18,
+                                  color: !_isUsersGridView ? AppColors.primaryEmerald : Colors.grey,
+                                ),
+                                tooltip: 'Table View',
+                                onPressed: () => setState(() => _isUsersGridView = false),
+                                constraints: const BoxConstraints(minWidth: 36, minHeight: 34),
+                                padding: EdgeInsets.zero,
+                              ),
+                              Container(width: 1, height: 20, color: AppColors.borderLight),
+                              IconButton(
+                                icon: Icon(
+                                  Icons.grid_view_rounded,
+                                  size: 18,
+                                  color: _isUsersGridView ? AppColors.primaryEmerald : Colors.grey,
+                                ),
+                                tooltip: 'Grid Cards View',
+                                onPressed: () => setState(() => _isUsersGridView = true),
+                                constraints: const BoxConstraints(minWidth: 36, minHeight: 34),
+                                padding: EdgeInsets.zero,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Main Content: Table or Grid
+            if (filteredUsers.isEmpty)
+              Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: const BorderSide(color: AppColors.borderLight),
+                ),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(40),
+                  child: Column(
+                    children: [
+                      Icon(Icons.person_search_rounded, size: 48, color: Colors.grey.shade400),
+                      const SizedBox(height: 12),
+                      Text(
+                        _searchQuery.isNotEmpty
+                            ? 'No users match search query "$_searchQuery"'
+                            : 'No user accounts found.',
+                        style: TextStyle(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+                      ),
+                      if (_searchQuery.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        TextButton.icon(
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                          icon: const Icon(Icons.clear, size: 16),
+                          label: const Text('Clear Search Filter'),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              )
+            else if (_isUsersGridView)
+              _buildUsersGridView(filteredUsers, screenWidth)
+            else
+              _buildUsersTableView(filteredUsers),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildFilterChip(String key, String label) {
+    final isSelected = _selectedUserRoleFilter == key;
+    return ChoiceChip(
+      label: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+          color: isSelected ? Colors.white : AppColors.textPrimary,
+        ),
+      ),
+      selected: isSelected,
+      selectedColor: AppColors.primaryEmerald,
+      backgroundColor: AppColors.bgOffWhite,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      side: BorderSide(
+        color: isSelected ? AppColors.primaryEmerald : AppColors.borderLight,
+      ),
+      onSelected: (_) => setState(() => _selectedUserRoleFilter = key),
+    );
+  }
+
+  // ── Users Data Table View ──────────────────────────────────────
+
+  Widget _buildUsersTableView(List<AppUser> users) {
+    return _tableCard([
+      const DataColumn(label: Text('Profile / Name', style: TextStyle(fontWeight: FontWeight.bold))),
+      const DataColumn(label: Text('Gmail / Email', style: TextStyle(fontWeight: FontWeight.bold))),
+      const DataColumn(label: Text('Role / Status', style: TextStyle(fontWeight: FontWeight.bold))),
+      const DataColumn(label: Text('Total Durood', style: TextStyle(fontWeight: FontWeight.bold))),
+      const DataColumn(label: Text('Streak & Points', style: TextStyle(fontWeight: FontWeight.bold))),
+      const DataColumn(label: Text('Joined / Updated', style: TextStyle(fontWeight: FontWeight.bold))),
+      const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
+    ], users.map((u) {
+      final name = u.username.isNotEmpty ? u.username : 'User';
+      final email = u.email.isNotEmpty ? u.email : 'No Email';
+
+      return DataRow(cells: [
+        // Profile Avatar + Name + Mini UID
+        DataCell(
+          InkWell(
+            onTap: () => _showUserDetailsModal(u),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildRegisteredUserAvatarWidget(
+                    u,
+                    radius: 22,
+                    onTap: () => _showUserDetailsModal(u),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.textPrimary),
+                      ),
+                      if (u.userId.isNotEmpty)
+                        Text(
+                          'UID: ${u.userId.length > 10 ? '${u.userId.substring(0, 8)}...' : u.userId}',
+                          style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontFamily: 'monospace'),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        // Gmail / Email
+        DataCell(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                email,
+                style: TextStyle(color: Colors.grey.shade800, fontSize: 13),
+              ),
+              const SizedBox(width: 6),
+              InkWell(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: email));
+                  _snack('Email copied: $email');
+                },
+                child: Icon(Icons.copy_rounded, size: 13, color: Colors.grey.shade500),
+              ),
+            ],
+          ),
+        ),
+        // Role / Status Badge
+        DataCell(_statusChip(
+          u.isAdmin ? 'ADMIN' : 'USER',
+          u.isAdmin ? AppColors.goldLight : AppColors.emeraldContainer,
+          u.isAdmin ? AppColors.goldDark : AppColors.primaryEmerald,
+        )),
+        // Total Durood
+        DataCell(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.emeraldContainer,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.primaryEmerald.withValues(alpha: 0.2)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.auto_awesome, size: 12, color: AppColors.primaryEmerald),
+                const SizedBox(width: 5),
+                Text(
+                  _fmt(u.personalTotalDurood),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.emeraldDeep,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Streak & Points
+        DataCell(
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${u.currentStreak} Days 🔥',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.orange.shade900),
+              ),
+              Text(
+                '${_fmt(u.totalDuroodPoints)} pts ⭐',
+                style: const TextStyle(fontSize: 11, color: AppColors.primaryEmerald, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+        ),
+        // Joined / Updated Date
+        DataCell(
+          Text(
+            _formatUserDate(u.createdAt ?? u.lastActiveDuroodDate),
+            style: TextStyle(color: Colors.grey.shade700, fontSize: 11),
+          ),
+        ),
+        // Actions
+        DataCell(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () => _showUserDetailsModal(u),
+                icon: const Icon(Icons.visibility_rounded, size: 14),
+                label: const Text('View Details', style: TextStyle(fontSize: 11)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryEmerald,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+              const SizedBox(width: 6),
+              TextButton(
+                onPressed: () async {
+                  await AdminService.toggleAdminStatus(u.userId, u.isAdmin);
+                  _snack('Role updated for ${u.username}');
+                },
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  u.isAdmin ? 'Revoke' : 'Make Admin',
+                  style: TextStyle(
+                    color: u.isAdmin ? Colors.red : AppColors.primaryEmerald,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ]);
+    }).toList());
+  }
+
+  // ── Users Grid Cards View ──────────────────────────────────────
+
+  Widget _buildUsersGridView(List<AppUser> users, double screenWidth) {
+    int crossAxisCount = 4;
+    if (screenWidth <= 600) {
+      crossAxisCount = 1;
+    } else if (screenWidth <= 950) {
+      crossAxisCount = 2;
+    } else if (screenWidth <= 1300) {
+      crossAxisCount = 3;
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 1.15,
+      ),
+      itemCount: users.length,
+      itemBuilder: (context, idx) {
+        final u = users[idx];
+        final name = u.username.isNotEmpty ? u.username : 'User';
+        final email = u.email.isNotEmpty ? u.email : 'No Email';
+
+        return Card(
+          elevation: 1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: AppColors.borderLight),
+          ),
+          child: Column(
+            children: [
+              // Top Banner Accent
+              Container(
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: u.isAdmin
+                        ? [AppColors.accentGold, AppColors.goldLight]
+                        : [AppColors.primaryEmerald, AppColors.emeraldLight],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                alignment: Alignment.centerRight,
+                child: _statusChip(
+                  u.isAdmin ? 'ADMIN' : 'USER',
+                  Colors.white.withValues(alpha: 0.9),
+                  u.isAdmin ? AppColors.goldDark : AppColors.primaryEmerald,
+                ),
+              ),
+              // Card Content
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  child: Column(
+                    children: [
+                      // Avatar overlapping top banner
+                      Transform.translate(
+                        offset: const Offset(0, -22),
+                        child: _buildRegisteredUserAvatarWidget(
+                          u,
+                          radius: 28,
+                          onTap: () => _showUserDetailsModal(u),
+                        ),
+                      ),
+                      Transform.translate(
+                        offset: const Offset(0, -16),
+                        child: Column(
+                          children: [
+                            Text(
+                              name,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              email,
+                              style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 8),
+                            // Quick Stats Row
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                Column(
+                                  children: [
+                                    Text(_fmt(u.personalTotalDurood),
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryEmerald)),
+                                    const Text('Durood', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                                  ],
+                                ),
+                                Container(width: 1, height: 18, color: AppColors.borderLight),
+                                Column(
+                                  children: [
+                                    Text('${u.currentStreak}d 🔥',
+                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.orange.shade900)),
+                                    const Text('Streak', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                                  ],
+                                ),
+                                Container(width: 1, height: 18, color: AppColors.borderLight),
+                                Column(
+                                  children: [
+                                    Text(_fmt(u.totalDuroodPoints),
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.teal)),
+                                    const Text('Points', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: () => _showUserDetailsModal(u),
+                                icon: const Icon(Icons.person_outline_rounded, size: 14),
+                                label: const Text('View Full Profile', style: TextStyle(fontSize: 11)),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.primaryEmerald,
+                                  side: const BorderSide(color: AppColors.primaryEmerald),
+                                  padding: const EdgeInsets.symmetric(vertical: 4),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ── Avatar Decoding & Rendering Helper ────────────────────────
+
+  Widget _buildRegisteredUserAvatarWidget(AppUser u, {double radius = 22, VoidCallback? onTap}) {
+    Uint8List? memoryBytes;
+    if (u.profileImageBase64 != null && u.profileImageBase64!.trim().isNotEmpty) {
+      try {
+        final raw = u.profileImageBase64!.trim();
+        final clean = raw.contains(',') ? raw.split(',').last.trim() : raw;
+        memoryBytes = base64Decode(clean);
+      } catch (_) {
+        memoryBytes = null;
+      }
+    }
+
+    final name = u.username.trim().isNotEmpty ? u.username.trim() : 'User';
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
+
+    Widget avatarImage;
+    if (memoryBytes != null) {
+      avatarImage = CircleAvatar(
+        radius: radius,
+        backgroundColor: AppColors.emeraldDeep,
+        child: ClipOval(
+          child: Image.memory(
+            memoryBytes,
+            width: radius * 2,
+            height: radius * 2,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => _buildAvatarLetterFallback(initial, radius),
+          ),
+        ),
+      );
+    } else if (u.photoUrl.trim().isNotEmpty) {
+      avatarImage = CircleAvatar(
+        radius: radius,
+        backgroundColor: AppColors.emeraldDeep,
+        child: ClipOval(
+          child: Image.network(
+            u.photoUrl.trim(),
+            width: radius * 2,
+            height: radius * 2,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => _buildAvatarLetterFallback(initial, radius),
+          ),
+        ),
+      );
+    } else {
+      avatarImage = _buildAvatarLetterFallback(initial, radius);
+    }
+
+    final avatarContent = Container(
+      width: radius * 2 + 3,
+      height: radius * 2 + 3,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: u.isAdmin ? AppColors.accentGold : AppColors.primaryEmerald.withValues(alpha: 0.5),
+          width: 1.8,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Center(child: avatarImage),
+    );
+
+    if (onTap != null) {
+      return MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: onTap,
+          child: avatarContent,
+        ),
+      );
+    }
+
+    return avatarContent;
+  }
+
+  Widget _buildAvatarLetterFallback(String initial, double radius) {
+    final colors = [
+      AppColors.primaryEmerald,
+      AppColors.emeraldDeep,
+      const Color(0xFF1E3A8A), // Deep Blue
+      const Color(0xFF0F766E), // Deep Teal
+      const Color(0xFF7C2D12), // Amber Brown
+      const Color(0xFF4C1D95), // Deep Purple
+      const Color(0xFF831843), // Crimson
+    ];
+    final charCode = initial.isNotEmpty ? initial.codeUnitAt(0) : 0;
+    final bg = colors[charCode % colors.length];
+
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: bg,
+      child: Text(
+        initial,
+        style: TextStyle(
+          color: AppColors.accentGold,
+          fontWeight: FontWeight.bold,
+          fontSize: (radius * 0.85).clamp(10.0, 32.0),
+        ),
+      ),
+    );
+  }
+
+  String _formatUserDate(DateTime? dt) {
+    if (dt == null) return 'N/A';
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final m = months[dt.month - 1];
+    final h = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+    final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+    final min = dt.minute.toString().padLeft(2, '0');
+    return '$m ${dt.day}, ${dt.year} • $h:$min $ampm';
+  }
+
+  // ── View User Details Modal ───────────────────────────────────
+
+  void _showUserDetailsModal(AppUser u) {
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModal) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            contentPadding: EdgeInsets.zero,
+            content: Container(
+              width: _dialogWidth(context) + 80,
+              constraints: const BoxConstraints(maxHeight: 700),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Modal Header with Emerald Background
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    decoration: const BoxDecoration(
+                      color: AppColors.primaryEmerald,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.badge_rounded, color: AppColors.accentGold, size: 22),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            'User Profile & Metadata / تفصیلات',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                          onPressed: () => Navigator.pop(ctx),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Body Content
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Avatar & Name Header
+                          Center(
+                            child: Column(
+                              children: [
+                                _buildRegisteredUserAvatarWidget(
+                                  u,
+                                  radius: 46,
+                                  onTap: () => _showZoomAvatarDialog(u),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  u.username.isNotEmpty ? u.username : 'User',
+                                  style: AppTypography.headingMedium.copyWith(fontSize: 18),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.email_outlined, size: 14, color: Colors.grey),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      u.email.isNotEmpty ? u.email : 'No Email',
+                                      style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    InkWell(
+                                      onTap: () {
+                                        Clipboard.setData(ClipboardData(text: u.email));
+                                        _snack('Email copied: ${u.email}');
+                                      },
+                                      child: const Icon(Icons.copy_rounded, size: 13, color: AppColors.primaryEmerald),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                Wrap(
+                                  spacing: 8,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  children: [
+                                    _statusChip(
+                                      u.isAdmin ? 'ADMIN' : 'USER',
+                                      u.isAdmin ? AppColors.goldLight : AppColors.emeraldContainer,
+                                      u.isAdmin ? AppColors.goldDark : AppColors.primaryEmerald,
+                                    ),
+                                    OutlinedButton.icon(
+                                      onPressed: () async {
+                                        Navigator.pop(ctx);
+                                        await AdminService.toggleAdminStatus(u.userId, u.isAdmin);
+                                        if (mounted) {
+                                          _snack('Role updated for ${u.username}');
+                                        }
+                                      },
+                                      icon: Icon(
+                                        u.isAdmin ? Icons.remove_moderator_rounded : Icons.add_moderator_rounded,
+                                        size: 14,
+                                      ),
+                                      label: Text(
+                                        u.isAdmin ? 'Revoke Admin' : 'Grant Admin Role',
+                                        style: const TextStyle(fontSize: 11),
+                                      ),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: u.isAdmin ? Colors.red : AppColors.primaryEmerald,
+                                        side: BorderSide(color: u.isAdmin ? Colors.red : AppColors.primaryEmerald),
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Divider(height: 28),
+
+                          // Spiritual Recitation Stats Grid
+                          const Text(
+                            'Spiritual Recitations & Milestones',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(child: _buildUserMetricTile('Total Durood', _fmt(u.personalTotalDurood), Icons.auto_awesome, AppColors.primaryEmerald)),
+                              const SizedBox(width: 10),
+                              Expanded(child: _buildUserMetricTile('Today\'s Durood', _fmt(u.personalTodayDurood), Icons.today_rounded, AppColors.emeraldLight)),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(child: _buildUserMetricTile('Current Streak', '${u.currentStreak} Days', Icons.local_fire_department_rounded, Colors.orange.shade700)),
+                              const SizedBox(width: 10),
+                              Expanded(child: _buildUserMetricTile('Longest Streak', '${u.longestStreak} Days', Icons.emoji_events_rounded, AppColors.accentGold)),
+                              const SizedBox(width: 10),
+                              Expanded(child: _buildUserMetricTile('Total Points', '${_fmt(u.totalDuroodPoints)} pts', Icons.stars_rounded, Colors.teal)),
+                            ],
+                          ),
+                          const Divider(height: 28),
+
+                          // Account Metadata & Timestamps
+                          const Text(
+                            'Account Metadata & Timestamps',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                          ),
+                          const SizedBox(height: 10),
+                          _buildMetadataRow('User ID (UID):', u.userId, canCopy: true),
+                          const SizedBox(height: 6),
+                          _buildMetadataRow('Joined / Created Date:', _formatUserDate(u.createdAt)),
+                          const SizedBox(height: 6),
+                          _buildMetadataRow('Last Active Durood:', _formatUserDate(u.lastActiveDuroodDate)),
+                          const SizedBox(height: 6),
+                          _buildMetadataRow('Last Updated At:', _formatUserDate(u.updatedAt)),
+                          const SizedBox(height: 6),
+                          _buildMetadataRow(
+                            'Avatar Type:',
+                            u.profileImageBase64 != null && u.profileImageBase64!.isNotEmpty
+                                ? 'Custom Base64 Upload (${(u.profileImageBase64!.length / 1024).toStringAsFixed(1)} KB)'
+                                : (u.photoUrl.isNotEmpty ? 'Google Network Photo' : 'Initial Letter Badge'),
+                          ),
+
+                          // Raw Firestore JSON Inspector
+                          if (u.rawData != null && u.rawData!.isNotEmpty) ...[
+                            const Divider(height: 28),
+                            ExpansionTile(
+                              tilePadding: EdgeInsets.zero,
+                              title: const Text(
+                                'Raw Firestore Document JSON',
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey),
+                              ),
+                              children: [
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1E293B),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: SelectableText(
+                                    const JsonEncoder.withIndent('  ').convert(
+                                      u.rawData!.map((k, v) {
+                                        if (v is Timestamp) return MapEntry(k, v.toDate().toIso8601String());
+                                        if (k == 'profileImageBase64' && v is String && v.length > 60) {
+                                          return MapEntry(k, '${v.substring(0, 60)}... [${v.length} chars]');
+                                        }
+                                        return MapEntry(k, v);
+                                      }),
+                                    ),
+                                    style: const TextStyle(
+                                      color: Color(0xFF38BDF8),
+                                      fontSize: 11,
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showZoomAvatarDialog(AppUser u) {
+    Uint8List? memoryBytes;
+    if (u.profileImageBase64 != null && u.profileImageBase64!.trim().isNotEmpty) {
+      try {
+        final raw = u.profileImageBase64!.trim();
+        final clean = raw.contains(',') ? raw.split(',').last.trim() : raw;
+        memoryBytes = base64Decode(clean);
+      } catch (_) {}
+    }
+
+    final name = u.username.trim().isNotEmpty ? u.username.trim() : 'User';
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(20),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          constraints: const BoxConstraints(maxWidth: 400),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: const [
+              BoxShadow(color: Colors.black26, blurRadius: 20, offset: Offset(0, 8)),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      '$name - Profile Photo',
+                      style: AppTypography.titleMedium,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: 240,
+                height: 240,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.accentGold, width: 4),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black12, blurRadius: 12, offset: Offset(0, 4)),
+                  ],
+                ),
+                child: ClipOval(
+                  child: memoryBytes != null
+                      ? Image.memory(memoryBytes, fit: BoxFit.cover)
+                      : (u.photoUrl.trim().isNotEmpty
+                          ? Image.network(u.photoUrl.trim(), fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => _buildAvatarLetterFallback(initial, 120))
+                          : _buildAvatarLetterFallback(initial, 120)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(u.email, style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
+              const SizedBox(height: 8),
+              _statusChip(
+                u.isAdmin ? 'ADMINISTRATOR' : 'REGISTERED USER',
+                u.isAdmin ? AppColors.goldLight : AppColors.emeraldContainer,
+                u.isAdmin ? AppColors.goldDark : AppColors.primaryEmerald,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserMetricTile(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade800, fontWeight: FontWeight.w500),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: color),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetadataRow(String label, String value, {bool canCopy = false}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 140,
+          child: Text(
+            label,
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+          ),
+        ),
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(
+                child: SelectableText(
+                  value,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                ),
+              ),
+              if (canCopy) ...[
+                const SizedBox(width: 4),
+                InkWell(
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: value));
+                    _snack('Copied: $value');
+                  },
+                  child: const Icon(Icons.copy_rounded, size: 13, color: AppColors.primaryEmerald),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Admin Roles & User Permissions Table (Tab 8) ───────────────
 
   Widget _buildUserManagementTable() {
     return StreamBuilder<List<AppUser>>(
@@ -2344,10 +3409,11 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
         final users = (snap.data ?? [])
             .where((u) =>
                 u.username.toLowerCase().contains(_searchQuery) ||
-                u.email.toLowerCase().contains(_searchQuery))
+                u.email.toLowerCase().contains(_searchQuery) ||
+                u.userId.toLowerCase().contains(_searchQuery))
             .toList();
         return _tableCard([
-          const DataColumn(label: Text('Username', style: TextStyle(fontWeight: FontWeight.bold))),
+          const DataColumn(label: Text('Profile / Username', style: TextStyle(fontWeight: FontWeight.bold))),
           const DataColumn(label: Text('Email', style: TextStyle(fontWeight: FontWeight.bold))),
           const DataColumn(label: Text('Total Durood', style: TextStyle(fontWeight: FontWeight.bold))),
           const DataColumn(label: Text('Streak', style: TextStyle(fontWeight: FontWeight.bold))),
@@ -2355,7 +3421,16 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
           const DataColumn(label: Text('Role', style: TextStyle(fontWeight: FontWeight.bold))),
           const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
         ], users.map((u) => DataRow(cells: [
-          DataCell(Text(u.username, style: const TextStyle(fontWeight: FontWeight.w600))),
+          DataCell(
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildRegisteredUserAvatarWidget(u, radius: 14),
+                const SizedBox(width: 10),
+                Text(u.username, style: const TextStyle(fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
           DataCell(Text(u.email)),
           DataCell(Text(_fmt(u.personalTotalDurood))),
           DataCell(Text('${u.currentStreak} Days 🔥')),
@@ -2366,12 +3441,16 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
             u.isAdmin ? AppColors.goldDark : AppColors.primaryEmerald,
           )),
           DataCell(
-            TextButton(
+            TextButton.icon(
               onPressed: () async {
                 await AdminService.toggleAdminStatus(u.userId, u.isAdmin);
                 _snack('Role updated for ${u.username}');
               },
-              child: Text(
+              icon: Icon(
+                u.isAdmin ? Icons.remove_moderator_rounded : Icons.add_moderator_rounded,
+                size: 14,
+              ),
+              label: Text(
                 u.isAdmin ? 'Revoke Admin' : 'Make Admin',
                 style: TextStyle(
                   color: u.isAdmin ? Colors.red : AppColors.primaryEmerald,
