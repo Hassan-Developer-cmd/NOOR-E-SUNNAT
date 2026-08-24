@@ -3,8 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
-import '../../../core/widgets/otp_password_reset_dialog.dart';
-import '../../../main.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   final VoidCallback onAdminAuthenticated;
@@ -105,47 +103,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     }
   }
 
-  Future<void> _handleForgotPassword() async {
-    final lp = globalLanguageProvider;
-    final isUrdu = lp.isUrdu;
-    final resetEmail = await OtpPasswordResetDialog.show(
-      context,
-      initialEmail: _emailController.text.trim(),
-      isAdminPortal: true,
-    );
-    if (resetEmail != null && resetEmail.isNotEmpty && mounted) {
-      setState(() {
-        _emailController.text = resetEmail;
-        _passwordController.clear();
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.mark_email_read_rounded, color: Color(0xFF34D399), size: 20),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  isUrdu
-                      ? "پاس ورڈ ری سیٹ کا لنک آپ کی ای میل پر بھیج دیا گیا ہے"
-                      : "Password reset link has been sent to your email.",
-                  style: const TextStyle(fontSize: 12, color: Colors.white),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: const Color(0xFF064E3B),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          duration: const Duration(seconds: 4),
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final lp = globalLanguageProvider;
     final screenWidth = MediaQuery.of(context).size.width;
     final isWide = screenWidth > 700;
     final isSmall = screenWidth < 400;
@@ -209,7 +168,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                           ),
                           SizedBox(height: isSmall ? 8 : 14),
                           Text(
-                            lp.tr('admin_portal_access'),
+                            'Admin Portal Access',
                             style: (isSmall
                                     ? AppTypography.headingSmall
                                     : AppTypography.headingLarge)
@@ -220,7 +179,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            lp.tr('app_title'),
+                            'NOOR E SUNNAT',
                             style: AppTypography.bodySmall.copyWith(
                               color: Colors.white.withValues(alpha: 0.85),
                             ),
@@ -253,7 +212,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                lp.tr('sign_in_as_admin'),
+                                'Sign In as Admin',
                                 style: (isSmall
                                         ? AppTypography.headingSmall
                                         : AppTypography.headingMedium)
@@ -305,7 +264,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
                               // Email field
                               Text(
-                                lp.tr('email'),
+                                'Email Address',
                                 style: AppTypography.caption.copyWith(
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.textSecondary,
@@ -319,15 +278,15 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                                 textInputAction: TextInputAction.next,
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
-                                    return lp.tr('please_enter_email');
+                                    return 'Please enter a valid email address';
                                   }
                                   if (!value.contains('@')) {
-                                    return lp.tr('please_enter_email');
+                                    return 'Please enter a valid email address';
                                   }
                                   return null;
                                 },
                                 decoration: InputDecoration(
-                                  hintText: lp.tr('admin_email_hint'),
+                                  hintText: 'admin@nooresunnat.app',
                                   hintStyle: AppTypography.bodySmall.copyWith(
                                     color: AppColors.textMuted,
                                   ),
@@ -363,7 +322,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
                               // Password field
                               Text(
-                                lp.tr('password'),
+                                'Password',
                                 style: AppTypography.caption.copyWith(
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.textSecondary,
@@ -377,12 +336,12 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                                 onFieldSubmitted: (_) => _handleAdminLogin(),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return lp.tr('please_enter_password');
+                                    return 'Please enter your password';
                                   }
                                   return null;
                                 },
                                 decoration: InputDecoration(
-                                  hintText: lp.tr('admin_pass_hint'),
+                                  hintText: '••••••••',
                                   hintStyle: AppTypography.bodySmall.copyWith(
                                     color: AppColors.textMuted,
                                   ),
@@ -425,22 +384,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 8),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: TextButton(
-                                  onPressed: _isLoading ? null : _handleForgotPassword,
-                                  child: const Text(
-                                    'Forgot Password / Reset Link?',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.primaryEmerald,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
+                              const SizedBox(height: 24),
 
                               // Sign In Button
                               SizedBox(
@@ -463,15 +407,15 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                                           child: CircularProgressIndicator(
                                               color: Colors.white, strokeWidth: 2.5),
                                         )
-                                      : Text(
-                                          lp.tr('sign_in_as_admin'),
-                                          style: const TextStyle(
+                                      : const Text(
+                                          'Sign In as Admin',
+                                          style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.white,
                                           ),
                                         ),
-                                 ),
+                                ),
                               ),
                               const SizedBox(height: 20),
 
@@ -513,9 +457,9 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                                   onPressed: widget.onCancel,
                                   icon: const Icon(Icons.arrow_back,
                                       size: 16, color: AppColors.primaryEmerald),
-                                  label: Text(
-                                    lp.tr('return_to_user_app'),
-                                    style: const TextStyle(
+                                  label: const Text(
+                                    'Return to User App',
+                                    style: TextStyle(
                                       color: AppColors.primaryEmerald,
                                       fontWeight: FontWeight.w600,
                                       fontSize: 13,

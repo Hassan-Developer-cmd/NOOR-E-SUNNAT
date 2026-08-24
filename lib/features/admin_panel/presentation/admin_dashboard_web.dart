@@ -14,11 +14,9 @@ import '../../../core/models/question_model.dart';
 import '../../../core/models/app_user.dart';
 import '../../../core/utils/firestore_seeder.dart';
 import '../../../services/admin_service.dart';
-import '../../../core/providers/language_provider.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../home/presentation/widgets/event_card.dart';
 import 'widgets/campaign_popup_admin_tab.dart';
-import '../../../main.dart';
 
 
 
@@ -101,219 +99,213 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     Icons.campaign_rounded,
   ];
 
-  List<String> _getNavItems(LanguageProvider lp) {
-    return [
-      lp.tr('dashboard_overview'),
-      lp.tr('event_management'),
-      lp.tr('masail_content'),
-      lp.tr('aqaid_content'),
-      lp.tr('daily_content_mgmt'),
-      lp.tr('notifications_mgmt'),
-      lp.tr('questions_management'),
-      lp.tr('registered_users_mgmt'),
-      lp.tr('admins_mgmt'),
-      lp.tr('campaign_popup_mgmt'),
+  List<String> _getNavItems() {
+    return const [
+      'Dashboard Overview',
+      'Event Management',
+      'Masail Content',
+      'Aqaid Content',
+      'Daily Hadith & Ayat',
+      'Push Notifications',
+      'Questions Management',
+      'User Profiles',
+      'Admin Roles',
+      'Campaign Popup',
     ];
   }
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: globalLanguageProvider,
-      builder: (context, _) {
-        final lp = globalLanguageProvider;
-        final navItems = _getNavItems(lp);
-        final screenWidth = MediaQuery.of(context).size.width;
-        final isDesktop = screenWidth > 900;
+    final navItems = _getNavItems();
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 900;
 
-        return ScrollConfiguration(
-          behavior: ScrollConfiguration.of(context).copyWith(
-            dragDevices: {
-              PointerDeviceKind.touch,
-              PointerDeviceKind.mouse,
-              PointerDeviceKind.trackpad,
-              PointerDeviceKind.stylus,
-            },
-          ),
-          child: Scaffold(
-            backgroundColor: AppColors.bgOffWhite,
-            drawer: !isDesktop ? Drawer(child: _buildSidebar(isDrawer: true, lp: lp, navItems: navItems)) : null,
-            body: Row(
-              children: [
-                // Persistent Sidebar for Desktop
-                if (isDesktop) _buildSidebar(isDrawer: false, lp: lp, navItems: navItems),
-                // Main Content
-                Expanded(
-                  child: Column(
-                    children: [
-                      // Top Bar
-                      Container(
-                        height: 64,
-                        padding: EdgeInsets.symmetric(horizontal: screenWidth < 600 ? 8 : 16),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          border: Border(bottom: BorderSide(color: AppColors.borderLight)),
-                        ),
-                        child: (_showMobileSearch && screenWidth < 600)
-                            ? Row(
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.arrow_back, color: AppColors.primaryEmerald),
-                                    onPressed: () => setState(() => _showMobileSearch = false),
-                                  ),
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _searchController,
-                                      autofocus: true,
-                                      onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
-                                      decoration: InputDecoration(
-                                        hintText: lp.tr('search_records'),
-                                        prefixIcon: const Icon(Icons.search, size: 18),
-                                        suffixIcon: _searchQuery.isNotEmpty
-                                            ? IconButton(
-                                                icon: const Icon(Icons.clear, size: 16),
-                                                onPressed: () {
-                                                  _searchController.clear();
-                                                  setState(() => _searchQuery = '');
-                                                },
-                                              )
-                                            : null,
-                                        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                                        filled: true,
-                                        fillColor: AppColors.bgOffWhite,
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(20),
-                                          borderSide: BorderSide.none,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : Row(
-                                children: [
-                                  if (!isDesktop)
-                                    Builder(
-                                      builder: (ctx) => IconButton(
-                                        icon: const Icon(Icons.menu, color: AppColors.primaryEmerald),
-                                        onPressed: () => Scaffold.of(ctx).openDrawer(),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                                      ),
-                                    ),
-                                  Expanded(
-                                    child: Text(
-                                      navItems[_selectedNavIndex],
-                                      style: AppTypography.headingMedium.copyWith(
-                                        fontSize: screenWidth < 600 ? 15 : 20,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-
-                                  // Search on mobile (icon toggle) vs desktop (inline field)
-                                  if (screenWidth < 600) ...[
-                                    IconButton(
-                                      icon: Icon(
-                                        Icons.search,
-                                        color: _searchQuery.isNotEmpty
-                                            ? AppColors.accentGold
-                                            : AppColors.primaryEmerald,
-                                        size: 22,
-                                      ),
-                                      onPressed: () => setState(() => _showMobileSearch = true),
-                                      tooltip: lp.tr('search_records'),
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                                    ),
-                                    const SizedBox(width: 4),
-                                  ] else ...[
-                                    SizedBox(
-                                      width: screenWidth < 900 ? 140 : 200,
-                                      height: 38,
-                                      child: TextField(
-                                        controller: _searchController,
-                                        onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
-                                        decoration: InputDecoration(
-                                          hintText: lp.tr('search_records'),
-                                          prefixIcon: const Icon(Icons.search, size: 18),
-                                          suffixIcon: _searchQuery.isNotEmpty
-                                              ? IconButton(
-                                                  icon: const Icon(Icons.clear, size: 16),
-                                                  onPressed: () {
-                                                    _searchController.clear();
-                                                    setState(() => _searchQuery = '');
-                                                  },
-                                                )
-                                              : null,
-                                          contentPadding: EdgeInsets.zero,
-                                          filled: true,
-                                          fillColor: AppColors.bgOffWhite,
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(20),
-                                            borderSide: BorderSide.none,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                  ],
-
-                                  // Admin Avatar Profile Pill
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primaryEmerald.withValues(alpha: 0.08),
-                                      borderRadius: BorderRadius.circular(18),
-                                      border: Border.all(color: AppColors.primaryEmerald.withValues(alpha: 0.2)),
-                                    ),
-                                    child: const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 13,
-                                          backgroundColor: AppColors.primaryEmerald,
-                                          child: Text(
-                                            'A',
-                                            style: TextStyle(color: AppColors.accentGold, fontWeight: FontWeight.bold, fontSize: 11),
-                                          ),
-                                        ),
-                                        SizedBox(width: 6),
-                                        Text(
-                                          'Admin',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                            color: AppColors.primaryEmerald,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(
+        dragDevices: {
+          PointerDeviceKind.touch,
+          PointerDeviceKind.mouse,
+          PointerDeviceKind.trackpad,
+          PointerDeviceKind.stylus,
+        },
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.bgOffWhite,
+        drawer: !isDesktop ? Drawer(child: _buildSidebar(isDrawer: true, navItems: navItems)) : null,
+        body: Row(
+          children: [
+            // Persistent Sidebar for Desktop
+            if (isDesktop) _buildSidebar(isDrawer: false, navItems: navItems),
+            // Main Content
+            Expanded(
+              child: Column(
+                children: [
+                  // Top Bar
+                  Container(
+                    height: 64,
+                    padding: EdgeInsets.symmetric(horizontal: screenWidth < 600 ? 8 : 16),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      border: Border(bottom: BorderSide(color: AppColors.borderLight)),
+                    ),
+                    child: (_showMobileSearch && screenWidth < 600)
+                        ? Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.arrow_back, color: AppColors.primaryEmerald),
+                                onPressed: () => setState(() => _showMobileSearch = false),
                               ),
-                      ),
-                      // Body
-                      Expanded(
-                        child: SingleChildScrollView(
-                          padding: EdgeInsets.all(screenWidth < 600 ? 12 : 24),
-                          child: _buildContent(),
-                        ),
-                      ),
-                    ],
+                              Expanded(
+                                child: TextField(
+                                  controller: _searchController,
+                                  autofocus: true,
+                                  onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
+                                  decoration: InputDecoration(
+                                    hintText: 'Search records...',
+                                    prefixIcon: const Icon(Icons.search, size: 18),
+                                    suffixIcon: _searchQuery.isNotEmpty
+                                        ? IconButton(
+                                            icon: const Icon(Icons.clear, size: 16),
+                                            onPressed: () {
+                                              _searchController.clear();
+                                              setState(() => _searchQuery = '');
+                                            },
+                                          )
+                                        : null,
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                                    filled: true,
+                                    fillColor: AppColors.bgOffWhite,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              if (!isDesktop)
+                                Builder(
+                                  builder: (ctx) => IconButton(
+                                    icon: const Icon(Icons.menu, color: AppColors.primaryEmerald),
+                                    onPressed: () => Scaffold.of(ctx).openDrawer(),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                  ),
+                                ),
+                              Expanded(
+                                child: Text(
+                                  navItems[_selectedNavIndex],
+                                  style: AppTypography.headingMedium.copyWith(
+                                    fontSize: screenWidth < 600 ? 15 : 20,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+
+                              // Search on mobile (icon toggle) vs desktop (inline field)
+                              if (screenWidth < 600) ...[
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.search,
+                                    color: _searchQuery.isNotEmpty
+                                        ? AppColors.accentGold
+                                        : AppColors.primaryEmerald,
+                                    size: 22,
+                                  ),
+                                  onPressed: () => setState(() => _showMobileSearch = true),
+                                  tooltip: 'Search records',
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                ),
+                                const SizedBox(width: 4),
+                              ] else ...[
+                                SizedBox(
+                                  width: screenWidth < 900 ? 140 : 200,
+                                  height: 38,
+                                  child: TextField(
+                                    controller: _searchController,
+                                    onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
+                                    decoration: InputDecoration(
+                                      hintText: 'Search records...',
+                                      prefixIcon: const Icon(Icons.search, size: 18),
+                                      suffixIcon: _searchQuery.isNotEmpty
+                                          ? IconButton(
+                                              icon: const Icon(Icons.clear, size: 16),
+                                              onPressed: () {
+                                                _searchController.clear();
+                                                setState(() => _searchQuery = '');
+                                              },
+                                            )
+                                          : null,
+                                      contentPadding: EdgeInsets.zero,
+                                      filled: true,
+                                      fillColor: AppColors.bgOffWhite,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(20),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+
+                              // Admin Avatar Profile Pill
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryEmerald.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(color: AppColors.primaryEmerald.withValues(alpha: 0.2)),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 13,
+                                      backgroundColor: AppColors.primaryEmerald,
+                                      child: Text(
+                                        'A',
+                                        style: TextStyle(color: AppColors.accentGold, fontWeight: FontWeight.bold, fontSize: 11),
+                                      ),
+                                    ),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      'Admin',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.primaryEmerald,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                   ),
-                ),
-              ],
+                  // Body
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.all(screenWidth < 600 ? 12 : 24),
+                      child: _buildContent(),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildSidebar({required bool isDrawer, required LanguageProvider lp, required List<String> navItems}) {
+  Widget _buildSidebar({required bool isDrawer, required List<String> navItems}) {
     return Container(
       width: 260,
       color: AppColors.emeraldDark,
@@ -345,14 +337,14 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
+                const Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(lp.tr('app_title'),
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                      Text(lp.tr('admin_portal'),
-                          style: const TextStyle(fontSize: 11, color: AppColors.accentGold)),
+                      Text('NOOR E SUNNAT',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                      Text('Web Admin Portal',
+                          style: TextStyle(fontSize: 11, color: AppColors.accentGold)),
                     ],
                   ),
                 ),
@@ -427,8 +419,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
             color: Colors.transparent,
             child: ListTile(
               leading: const Icon(Icons.logout_rounded, color: Colors.white70),
-              title: Text(lp.tr('sign_out'),
-                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+              title: const Text('Sign Out',
+                  style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
               onTap: () {
                 if (isDrawer) Navigator.pop(context);
                 widget.onSignOut?.call();
@@ -436,7 +428,6 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
             ),
           ),
           const SizedBox(height: 12),
-
         ],
       ),
     );
@@ -461,7 +452,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 : (_selectedNavIndex == 6
                     ? 'Manage User Questions & Q&A'
                     : (_selectedNavIndex == 7
-                        ? 'Registered Users / صارفین کی فہرست'
+                        ? 'Registered Users Management'
                         : (_selectedNavIndex == 8
                             ? 'Admin Roles & Permissions'
                             : (_selectedNavIndex == 9
@@ -523,7 +514,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                       : (_selectedNavIndex == 6
                           ? 'Manage User Questions & Q&A'
                           : (_selectedNavIndex == 7
-                              ? 'Registered Users / صارفین کی فہرست'
+                              ? 'Registered Users Management'
                               : (_selectedNavIndex == 8
                                   ? 'Admin Roles & Permissions'
                                   : (_selectedNavIndex == 9
@@ -1022,18 +1013,18 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          globalLanguageProvider.tr('drag_drop_banner_title'),
-                          style: const TextStyle(
+                        const Text(
+                          'Drag & Drop Event Arrangement',
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                             color: Color(0xFF14532D),
                           ),
                         ),
                         const SizedBox(height: 2),
-                        Text(
-                          globalLanguageProvider.tr('drag_drop_banner_sub'),
-                          style: const TextStyle(fontSize: 12, color: Color(0xFF166534)),
+                        const Text(
+                          'Drag rows with the grip handle (≡) or use the Up/Down buttons to reorder events. Arrangement numbers (#1, #2, #3...) update automatically and sync live to the mobile app.',
+                          style: TextStyle(fontSize: 12, color: Color(0xFF166534)),
                         ),
                       ],
                     ),
@@ -1051,10 +1042,10 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: AppColors.borderLight),
                 ),
-                child: Center(
+                child: const Center(
                   child: Text(
-                    globalLanguageProvider.tr('no_data'),
-                    style: const TextStyle(color: Colors.grey, fontSize: 13),
+                    'No records found.',
+                    style: TextStyle(color: Colors.grey, fontSize: 13),
                   ),
                 ),
               )
