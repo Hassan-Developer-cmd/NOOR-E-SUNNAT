@@ -4262,9 +4262,17 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
               child: const Text('Cancel'),
             ),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryEmerald,
+                foregroundColor: Colors.white,
+              ),
               onPressed: (isSaving || isUploadingImage)
                   ? null
                   : () async {
+                      if (titleC.text.trim().isEmpty || dateC.text.trim().isEmpty) {
+                        _snack('Please enter Event Title and Date/Time.');
+                        return;
+                      }
                       setModal(() => isSaving = true);
                       try {
                         String finalImageType = imageType;
@@ -4290,12 +4298,13 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
 
                         final Map<String, dynamic> updateMap = {
                           'title': titleC.text.trim(),
-                          'title_ur': titleUrC.text.trim(),
+                          'title_ur': titleUrC.text.trim().isEmpty ? titleC.text.trim() : titleUrC.text.trim(),
                           'date_time': dateC.text.trim(),
+                          'dateTime': dateC.text.trim(),
                           'location': locC.text.trim(),
-                          'location_ur': locUrC.text.trim(),
+                          'location_ur': locUrC.text.trim().isEmpty ? locC.text.trim() : locUrC.text.trim(),
                           'description': descC.text.trim(),
-                          'description_ur': descUrC.text.trim(),
+                          'description_ur': descUrC.text.trim().isEmpty ? descC.text.trim() : descUrC.text.trim(),
                           'status': status,
                           'image_type': finalImageType,
                           'imageType': finalImageType,

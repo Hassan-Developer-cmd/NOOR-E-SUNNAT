@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
@@ -161,7 +162,8 @@ class AdminService {
     final lastNotified = event.lastNotifiedStatus;
 
     // Deduplication check: only notify if status has truly transitioned to an unnotified state
-    final shouldNotify = newStatus != oldStatus && newStatus != lastNotified;
+    final shouldNotify = newStatus.trim().toLowerCase() != oldStatus.trim().toLowerCase() &&
+        newStatus.trim().toLowerCase() != (lastNotified?.trim().toLowerCase() ?? '');
 
     final updateData = <String, dynamic>{
       'status': newStatus,
@@ -180,57 +182,62 @@ class AdminService {
       updateData['last_notification_sent_at'] = FieldValue.serverTimestamp();
     }
 
-    await _firestore.collection('events').doc(eventId).update(updateData);
+    await _firestore.collection('events').doc(eventId).set(updateData, SetOptions(merge: true));
 
-    // If status changed and hasn't been notified yet, dispatch tailored notification
+    // If status changed and hasn't been notified yet, dispatch tailored notification in background
     if (shouldNotify) {
-      final title = _getNotificationTitleForStatus(event.title, newStatus);
-      final titleUr = _getNotificationTitleUrForStatus(event.getTitle(true), newStatus);
-      final body = _getNotificationBodyForStatus(event.title, newStatus);
-      final bodyUr = _getNotificationBodyUrForStatus(event.getTitle(true), newStatus);
+      unawaited(() async {
+        try {
+          final title = _getNotificationTitleForStatus(event!.title, newStatus);
+          final titleUr = _getNotificationTitleUrForStatus(event.getTitle(true), newStatus);
+          final body = _getNotificationBodyForStatus(event.title, newStatus);
+          final bodyUr = _getNotificationBodyUrForStatus(event.getTitle(true), newStatus);
 
-      await sendNotification(
-        title: title,
-        titleUr: titleUr,
-        body: body,
-        bodyUr: bodyUr,
-        target: 'all_users',
-        type: 'event_update',
-        eventId: eventId,
-      );
+          await sendNotification(
+            title: title,
+            titleUr: titleUr,
+            body: body,
+            bodyUr: bodyUr,
+            target: 'all_users',
+            type: 'event_update',
+            eventId: eventId,
+          );
+        } catch (e) {
+          if (kDebugMode) print('Event notification error: $e');
+        }
+      }());
     }
   }
 
-  /// Updates event document with deduplicated status checking.
+  /// Updates event document with deduplicated status checking and resilient merge.
   static Future<void> updateEvent(String id, Map<String, dynamic> data) async {
-    final doc = await _firestore.collection('events').doc(id).get();
-    if (!doc.exists || doc.data() == null) {
+    try {
+      final doc = await _firestore.collection('events').doc(id).get();
+      if (!doc.exists || doc.data() == null) {
+        await _firestore.collection('events').doc(id).set({
+          ...data,
+          'updated_at': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        return;
+      }
+
+      final currentEvent = EventModel.fromMap(doc.id, doc.data()!);
+      final newStatus = data['status'] as String?;
+
+      if (newStatus != null && newStatus.trim().toLowerCase() != currentEvent.status.trim().toLowerCase()) {
+        await updateEventStatus(id, newStatus, currentEvent: currentEvent);
+      }
+
       await _firestore.collection('events').doc(id).set({
         ...data,
         'updated_at': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
-      return;
-    }
-
-    final currentEvent = EventModel.fromMap(doc.id, doc.data()!);
-    final newStatus = data['status'] as String?;
-
-    if (newStatus != null && newStatus != currentEvent.status) {
-      await updateEventStatus(id, newStatus, currentEvent: currentEvent);
-      // Remove status from data since updateEventStatus handled status + history + notifications
-      final remainingData = Map<String, dynamic>.from(data)..remove('status');
-      if (remainingData.isNotEmpty) {
-        await _firestore.collection('events').doc(id).update({
-          ...remainingData,
-          'updated_at': FieldValue.serverTimestamp(),
-        });
-      }
-    } else {
-      // No status change -> only update other fields (NO notification emitted)
-      await _firestore.collection('events').doc(id).update({
+    } catch (e) {
+      // Fallback write directly ensuring the update persists regardless of read failure
+      await _firestore.collection('events').doc(id).set({
         ...data,
         'updated_at': FieldValue.serverTimestamp(),
-      });
+      }, SetOptions(merge: true));
     }
   }
 
