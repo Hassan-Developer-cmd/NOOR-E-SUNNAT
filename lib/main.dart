@@ -181,14 +181,13 @@ class NoorESunnatApp extends StatelessWidget {
           home: kIsWeb ? const _WebAdminEntryGate() : const _AppAuthGate(),
           routes: {
             '/login': (context) => LoginScreen(
-                  onLoginSuccess: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const MainShell()),
-                    );
-                  },
-                ),
+              onLoginSuccess: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MainShell()),
+                );
+              },
+            ),
             '/home': (context) => const MainShell(),
           },
         );
@@ -329,7 +328,8 @@ class _MainShellState extends State<MainShell> {
 
         return PopScope(
           canPop: false,
-          onPopInvokedWithResult: (didPop, result) => _handlePopScope(didPop, result),
+          onPopInvokedWithResult: (didPop, result) =>
+              _handlePopScope(didPop, result),
           child: Scaffold(
             body: isDesktopWeb
                 ? Center(
@@ -362,7 +362,8 @@ class _MainShellState extends State<MainShell> {
                     ),
                     child: BottomNavigationBar(
                       currentIndex: _currentTabIndex,
-                      onTap: (index) => setState(() => _currentTabIndex = index),
+                      onTap: (index) =>
+                          setState(() => _currentTabIndex = index),
                       backgroundColor: Colors.white,
                       type: BottomNavigationBarType.fixed,
                       selectedItemColor: AppColors.primaryEmerald,

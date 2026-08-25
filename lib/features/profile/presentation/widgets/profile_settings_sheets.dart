@@ -333,43 +333,62 @@ class ProfileSettingsSheets {
                             child: const Icon(Icons.groups_rounded, color: AppColors.primaryEmerald, size: 26),
                           ),
                           const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                lp.tr('our_team_title'),
-                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.emeraldDeep),
-                              ),
-                              Text(
-                                lp.tr('our_team_subtitle'),
-                                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                              ),
-                            ],
+                          Flexible(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  lp.tr('our_team_title'),
+                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.emeraldDeep),
+                                ),
+                                Text(
+                                  lp.tr('our_team_subtitle'),
+                                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 24),
 
-                      // Roles
-                      _buildTeamCard(
-                        icon: Icons.code_rounded,
-                        role: lp.tr('team_dev_role'),
-                        desc: lp.tr('team_dev_desc'),
-                        badgeColor: const Color(0xFF0284C7),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildTeamCard(
-                        icon: Icons.menu_book_rounded,
-                        role: lp.tr('team_scholar_role'),
-                        desc: lp.tr('team_scholar_desc'),
-                        badgeColor: AppColors.primaryEmerald,
-                      ),
-                      const SizedBox(height: 12),
-                      _buildTeamCard(
-                        icon: Icons.palette_rounded,
-                        role: lp.tr('team_design_role'),
-                        desc: lp.tr('team_design_desc'),
-                        badgeColor: const Color(0xFFD97706),
+                      // Team Members 2-Column Grid
+                      GridView.count(
+                        crossAxisCount: 2,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 0.60,
+                        children: [
+                          _buildTeamGridCard(
+                            context: ctx,
+                            name: 'Hassan Awan',
+                            role: lp.tr('App Developer'),
+                            desc: 'Leading mobile app architecture, cloud integrations, and core feature development for Noor e Sunnat.',
+                            imagePath: 'assets/images/team_hassan.jpeg',
+                            fallbackIcon: Icons.code_rounded,
+                            badgeColor: const Color(0xFF0284C7),
+                          ),
+                          _buildTeamGridCard(
+                            context: ctx,
+                            name: lp.tr('team_member_2_name'),
+                            role: lp.tr('team_scholar_role'),
+                            desc: lp.tr('team_scholar_desc'),
+                            imagePath: null, // Placeholder: e.g. 'assets/images/team_scholar.png' or URL
+                            fallbackIcon: Icons.menu_book_rounded,
+                            badgeColor: AppColors.primaryEmerald,
+                          ),
+                          _buildTeamGridCard(
+                            context: ctx,
+                            name: lp.tr('team_member_3_name'),
+                            role: lp.tr('team_design_role'),
+                            desc: lp.tr('team_design_desc'),
+                            imagePath: null, // Placeholder: e.g. 'assets/images/team_design.png' or URL
+                            fallbackIcon: Icons.palette_rounded,
+                            badgeColor: const Color(0xFFD97706),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 20),
 
@@ -430,56 +449,381 @@ class ProfileSettingsSheets {
     );
   }
 
-  static Widget _buildTeamCard({
-    required IconData icon,
+  static Widget _buildTeamGridCard({
+    required BuildContext context,
+    required String name,
     required String role,
-    required String desc,
+    String? desc,
+    String? imagePath,
+    required IconData fallbackIcon,
     required Color badgeColor,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderLight),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x06000000),
-            blurRadius: 10,
-            offset: Offset(0, 3),
+    final lp = globalLanguageProvider;
+    final bool hasImage = imagePath != null && imagePath.trim().isNotEmpty;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _showMemberDetailSheet(
+          context,
+          name: name,
+          role: role,
+          desc: desc,
+          imagePath: imagePath,
+          fallbackIcon: fallbackIcon,
+          badgeColor: badgeColor,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(10, 12, 10, 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.borderLight),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x08000000),
+                blurRadius: 10,
+                offset: Offset(0, 3),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: badgeColor.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: badgeColor, size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  role,
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Circular Avatar with Badge
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: badgeColor.withValues(alpha: 0.12),
+                      border: Border.all(color: badgeColor.withValues(alpha: 0.4), width: 2.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: badgeColor.withValues(alpha: 0.15),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: hasImage
+                          ? (imagePath.startsWith('http')
+                              ? Image.network(
+                                  imagePath,
+                                  fit: BoxFit.cover,
+                                  width: 56,
+                                  height: 56,
+                                  errorBuilder: (_, _, _) => _buildAvatarFallback(fallbackIcon, badgeColor, name, size: 22),
+                                )
+                              : Image.asset(
+                                  imagePath,
+                                  fit: BoxFit.cover,
+                                  width: 56,
+                                  height: 56,
+                                  errorBuilder: (_, _, _) => _buildAvatarFallback(fallbackIcon, badgeColor, name, size: 22),
+                                ))
+                          : _buildAvatarFallback(fallbackIcon, badgeColor, name, size: 22),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: -2,
+                    right: -2,
+                    child: Container(
+                      padding: const EdgeInsets.all(3.5),
+                      decoration: BoxDecoration(
+                        color: badgeColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                      child: Icon(fallbackIcon, size: 10, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // Member Name
+              Text(
+                name,
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  desc,
-                  style: TextStyle(fontSize: 12.5, color: Colors.grey.shade700, height: 1.4),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 3),
+
+              // Role Badge Pill
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  role,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: badgeColor,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+
+              if (desc != null && desc.trim().isNotEmpty) ...[
+                const SizedBox(height: 5),
+                Expanded(
+                  child: Text(
+                    desc,
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      color: Colors.grey.shade600,
+                      height: 1.25,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
-            ),
+              const SizedBox(height: 4),
+
+              // Detail Arrow Button
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      lp.tr('team_view_details'),
+                      style: TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.bold,
+                        color: badgeColor,
+                      ),
+                    ),
+                    const SizedBox(width: 3),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 9,
+                      color: badgeColor,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
+    );
+  }
+
+  /// Displays the full untruncated profile & bio for a team member
+  static void _showMemberDetailSheet(
+    BuildContext context, {
+    required String name,
+    required String role,
+    String? desc,
+    String? imagePath,
+    required IconData fallbackIcon,
+    required Color badgeColor,
+  }) {
+    final lp = globalLanguageProvider;
+    final bool hasImage = imagePath != null && imagePath.trim().isNotEmpty;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: const EdgeInsets.fromLTRB(22, 16, 22, 28),
+        child: Directionality(
+          textDirection: lp.textDirection,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Large Member Avatar
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 76,
+                    height: 76,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: badgeColor.withValues(alpha: 0.12),
+                      border: Border.all(color: badgeColor.withValues(alpha: 0.45), width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: badgeColor.withValues(alpha: 0.2),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: hasImage
+                          ? (imagePath.startsWith('http')
+                              ? Image.network(
+                                  imagePath,
+                                  fit: BoxFit.cover,
+                                  width: 76,
+                                  height: 76,
+                                  errorBuilder: (_, _, _) => _buildAvatarFallback(fallbackIcon, badgeColor, name, size: 30),
+                                )
+                              : Image.asset(
+                                  imagePath,
+                                  fit: BoxFit.cover,
+                                  width: 76,
+                                  height: 76,
+                                  errorBuilder: (_, _, _) => _buildAvatarFallback(fallbackIcon, badgeColor, name, size: 30),
+                                ))
+                          : _buildAvatarFallback(fallbackIcon, badgeColor, name, size: 30),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        color: badgeColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: Icon(fallbackIcon, size: 13, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // Name
+              Text(
+                name,
+                style: const TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 6),
+
+              // Role Badge Chip
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  role,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: badgeColor,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              // Full Untruncated Description Box
+              if (desc != null && desc.trim().isNotEmpty) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.borderLight),
+                  ),
+                  child: Text(
+                    desc,
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.5,
+                      color: Colors.grey.shade800,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+
+              // Close Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryEmerald,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(lp.tr('close'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Widget _buildAvatarFallback(IconData icon, Color color, String name, {double size = 22}) {
+    final initials = name.trim().isNotEmpty
+        ? name.trim().split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join('').toUpperCase()
+        : '';
+
+    if (initials.isNotEmpty && initials.length <= 2 && RegExp(r'^[A-Z0-9]+$').hasMatch(initials)) {
+      return Center(
+        child: Text(
+          initials,
+          style: TextStyle(
+            fontSize: size,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      );
+    }
+
+    return Center(
+      child: Icon(icon, color: color, size: size + 4),
     );
   }
 
@@ -528,18 +872,20 @@ class ProfileSettingsSheets {
                     child: const Icon(Icons.share_rounded, color: AppColors.primaryEmerald, size: 24),
                   ),
                   const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        lp.tr('share_app_title'),
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.emeraldDeep),
-                      ),
-                      Text(
-                        lp.tr('share_app_subtitle'),
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                      ),
-                    ],
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          lp.tr('share_app_title'),
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.emeraldDeep),
+                        ),
+                        Text(
+                          lp.tr('share_app_subtitle'),
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
