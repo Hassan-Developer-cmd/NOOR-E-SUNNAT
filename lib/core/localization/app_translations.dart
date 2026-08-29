@@ -409,6 +409,10 @@ class AppTranslations {
       'preview_in_urdu': 'Preview Urdu',
       'preview_in_english': 'Preview English',
       'image_uploaded_success': 'Image converted and prepared successfully!',
+      'hijri_calendar_adjustment': 'Hijri Calendar & Moon Sighting Adjustment',
+      'hijri_day_offset': 'Moon Sighting Offset (Days)',
+      'hijri_settings_saved': 'Hijri calendar adjustment saved successfully!',
+      'islamic_date': 'Islamic Date',
     },
 
     'ur': {
@@ -820,6 +824,10 @@ class AppTranslations {
       'preview_in_urdu': 'اردو پریویو',
       'preview_in_english': 'انگریزی پریویو',
       'image_uploaded_success': 'تصویر کامیابی سے تیار ہو گئی!',
+      'hijri_calendar_adjustment': 'چاند کی رویت اور ہجری تاریخ ایڈجسٹمنٹ',
+      'hijri_day_offset': 'رویت ہلال کے مطابق تاریخ میں ردوبدل',
+      'hijri_settings_saved': 'ہجری کیلنڈر ترتیبات کامیابی سے محفوظ ہو گئیں!',
+      'islamic_date': 'ہجری تاریخ',
     },
   };
 

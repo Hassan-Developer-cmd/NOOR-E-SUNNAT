@@ -4,6 +4,8 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/models/app_user.dart';
 import '../../../core/models/event_model.dart';
+import '../../../core/models/hijri_date_model.dart';
+import '../../../core/utils/islamic_date_helper.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../../main.dart';
 import '../../../services/auth_service.dart';
@@ -57,7 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
             slivers: [
               // ── Premium App Bar / Header ─────────────────────────────────────
               SliverAppBar(
-                expandedHeight: 160,
+                expandedHeight: 175,
                 pinned: true,
                 backgroundColor: AppColors.primaryEmerald,
                 surfaceTintColor: Colors.transparent,
@@ -108,11 +110,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
 
-                      // 3. User Welcome Greeting
+                      // 3. User Welcome Greeting & Dynamic Hijri Date Badge
                       Positioned(
                         left: 20,
                         right: 20,
-                        bottom: 18,
+                        bottom: 16,
                         child: StreamBuilder<AppUser?>(
                           stream: AuthService.currentUserStream,
                           builder: (context, userSnap) {
@@ -134,6 +136,76 @@ class _HomeScreenState extends State<HomeScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
+                                      // Dynamic Localized Hijri Date Badge
+                                      StreamBuilder<int>(
+                                        stream: IslamicDateHelper.hijriOffsetStream,
+                                        builder: (context, offsetSnap) {
+                                          final offset = offsetSnap.data ?? 0;
+                                          return FutureBuilder<HijriDateModel>(
+                                            future: IslamicDateHelper.getHijriDate(dayOffset: offset),
+                                            initialData: IslamicDateHelper.calculateOfflineHijriDate(
+                                              DateTime.now().add(Duration(days: offset)),
+                                            ),
+                                            builder: (context, dateSnap) {
+                                              final hijriDate = dateSnap.data ??
+                                                  IslamicDateHelper.calculateOfflineHijriDate(
+                                                    DateTime.now().add(Duration(days: offset)),
+                                                  );
+                                              final dateText = hijriDate.getFormatted(lp.isUrdu);
+
+                                              return Container(
+                                                margin: const EdgeInsets.only(bottom: 6),
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black.withValues(alpha: 0.28),
+                                                  borderRadius: BorderRadius.circular(20),
+                                                  border: Border.all(
+                                                    color: AppColors.accentGold.withValues(alpha: 0.5),
+                                                    width: 1,
+                                                  ),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black.withValues(alpha: 0.25),
+                                                      blurRadius: 6,
+                                                      offset: const Offset(0, 2),
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    const Icon(
+                                                      Icons.nightlight_round,
+                                                      color: AppColors.goldBright,
+                                                      size: 13,
+                                                    ),
+                                                    const SizedBox(width: 6),
+                                                    Text(
+                                                      dateText,
+                                                      style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: lp.isUrdu ? 12.5 : 11.5,
+                                                        fontWeight: FontWeight.w600,
+                                                        fontFamily: lp.isUrdu
+                                                            ? AppTypography.urduFontFamily
+                                                            : AppTypography.englishFontFamily,
+                                                        letterSpacing: lp.isUrdu ? 0 : 0.3,
+                                                        shadows: const [
+                                                          Shadow(
+                                                            color: Colors.black54,
+                                                            blurRadius: 4,
+                                                            offset: Offset(0, 1),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                          );
+                                        },
+                                      ),
                                       Text(
                                         lp.tr('welcome_greeting'),
                                         style: TextStyle(

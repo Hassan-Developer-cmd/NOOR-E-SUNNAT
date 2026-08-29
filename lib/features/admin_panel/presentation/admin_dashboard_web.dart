@@ -18,6 +18,7 @@ import '../../../core/widgets/user_avatar.dart';
 import '../../home/presentation/widgets/event_card.dart';
 import 'widgets/campaign_popup_admin_tab.dart';
 import '../../../core/utils/image_compression_helper.dart';
+import '../../../core/utils/islamic_date_helper.dart';
 
 
 
@@ -48,6 +49,46 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
   bool _isUsersGridView = false;
   bool _showMobileSearch = false;
   final TextEditingController _searchController = TextEditingController();
+
+  int _hijriDayOffset = 0;
+  bool _isLoadingHijri = true;
+  bool _isSavingHijri = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHijriConfig();
+  }
+
+  Future<void> _loadHijriConfig() async {
+    try {
+      final offset = await IslamicDateHelper.getHijriOffset();
+      if (mounted) {
+        setState(() {
+          _hijriDayOffset = offset;
+          _isLoadingHijri = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingHijri = false);
+    }
+  }
+
+  Future<void> _saveHijriConfig() async {
+    setState(() => _isSavingHijri = true);
+    try {
+      await IslamicDateHelper.saveHijriOffset(_hijriDayOffset);
+      if (mounted) {
+        setState(() => _isSavingHijri = false);
+        _snack('Hijri moon-sighting offset (${_hijriDayOffset >= 0 ? "+$_hijriDayOffset" : "$_hijriDayOffset"} days) saved & published!');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSavingHijri = false);
+        _snack('Error saving Hijri settings: $e');
+      }
+    }
+  }
 
   void _switchTab(int index) {
     setState(() {
@@ -443,6 +484,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
       children: [
         if (_selectedNavIndex == 0) ...[
           _buildDashboardKpiCards(screenWidth),
+          const SizedBox(height: 20),
+          _buildHijriAdjustmentCard(screenWidth),
           const SizedBox(height: 28),
         ],
         // Section Title & Actions
@@ -615,6 +658,232 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildHijriAdjustmentCard(double screenWidth) {
+    final effectiveHijriDate = IslamicDateHelper.calculateOfflineHijriDate(
+      DateTime.now().add(Duration(days: _hijriDayOffset)),
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderLight),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Row
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryEmerald.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.nightlight_round,
+                  color: AppColors.primaryEmerald,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Hijri Calendar & Moon Sighting Adjustment / چاند کی رویت اور ہجری تاریخ ایڈجسٹمنٹ',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Adjust the Islamic date offset (-2 to +2 days) to synchronize with local Ruet-e-Hilal moon sighting declarations across all client mobile devices in real time.',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          const Divider(color: AppColors.borderLight),
+          const SizedBox(height: 18),
+
+          // Controls & Live Preview (Responsive Wrap/Row)
+          Wrap(
+            spacing: 24,
+            runSpacing: 16,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              // Offset Dropdown
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Day Offset / تاریخ میں ردوبدل:',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.bgOffWhite,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.borderLight),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<int>(
+                        value: _hijriDayOffset,
+                        icon: const Icon(Icons.arrow_drop_down_rounded, color: AppColors.primaryEmerald),
+                        items: const [
+                          DropdownMenuItem(
+                            value: -2,
+                            child: Text('-2 Days (Moon sighted later / دو دن پیچھے)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                          ),
+                          DropdownMenuItem(
+                            value: -1,
+                            child: Text('-1 Day (Moon sighted later / ایک دن پیچھے)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                          ),
+                          DropdownMenuItem(
+                            value: 0,
+                            child: Text('Exact Standard Date (0 Offset / اصل تاریخ)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primaryEmerald)),
+                          ),
+                          DropdownMenuItem(
+                            value: 1,
+                            child: Text('+1 Day (Moon sighted earlier / ایک دن آگے)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                          ),
+                          DropdownMenuItem(
+                            value: 2,
+                            child: Text('+2 Days (Moon sighted earlier / دو دن آگے)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                          ),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() => _hijriDayOffset = val);
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              // Live Date Preview Box
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF064E3B),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.6), width: 1.2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.visibility_rounded, size: 14, color: AppColors.goldBright),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Client App Header Live Preview (${_hijriDayOffset >= 0 ? "+$_hijriDayOffset" : "$_hijriDayOffset"} d):',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.goldBright,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          effectiveHijriDate.formattedEnglish,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 10),
+                          child: Text('|', style: TextStyle(color: Colors.white38)),
+                        ),
+                        Text(
+                          effectiveHijriDate.formattedUrdu,
+                          textDirection: TextDirection.rtl,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppTypography.urduFontFamily,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Save Button
+              ElevatedButton.icon(
+                onPressed: _isLoadingHijri || _isSavingHijri ? null : _saveHijriConfig,
+                icon: _isSavingHijri
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.cloud_done_rounded, size: 18),
+                label: Text(
+                  _isSavingHijri ? 'Saving...' : 'Save Hijri Settings',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryEmerald,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  elevation: 2,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
