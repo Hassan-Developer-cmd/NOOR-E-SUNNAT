@@ -140,15 +140,15 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                       child: Column(
                         children: [
                           Container(
-                            width: isSmall ? 52 : 64,
-                            height: isSmall ? 52 : 64,
+                            width: isSmall ? 56 : 68,
+                            height: isSmall ? 56 : 68,
                             decoration: BoxDecoration(
                               color: Colors.white,
                               shape: BoxShape.circle,
-                              border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.6), width: 2),
+                              border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.85), width: 2),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.15),
+                                  color: Colors.black.withValues(alpha: 0.25),
                                   blurRadius: 16,
                                   offset: const Offset(0, 4),
                                 ),
@@ -156,7 +156,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                             ),
                             child: ClipOval(
                               child: Image.asset(
-                                'assets/images/app_logo.png',
+                                'assets/images/NOOR E SUNNAT.jpeg',
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) => Icon(
                                   Icons.admin_panel_settings_rounded,

@@ -368,7 +368,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                   ),
                   child: ClipOval(
                     child: Image.asset(
-                      'assets/images/app_logo.png',
+                      'assets/images/NOOR E SUNNAT.jpeg',
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => const Icon(
                         Icons.shield_moon_rounded,
