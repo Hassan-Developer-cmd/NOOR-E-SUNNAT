@@ -7,6 +7,7 @@ class CampaignPopupModel {
 
   final String id;
   final bool isActive;
+  final bool showActionButton;
   final String titleEnglish;
   final String titleUrdu;
   final String detailsEnglish;
@@ -22,6 +23,7 @@ class CampaignPopupModel {
   const CampaignPopupModel({
     this.id = 'launch_popup',
     this.isActive = true,
+    this.showActionButton = true,
     this.titleEnglish = "Rabi'ul Awwal 2026",
     this.titleUrdu = 'ربیع الاول ۱۴۴۸ / ۲۰۲۶',
     this.detailsEnglish = 'Complete Durood, Shamail, Seerah, and courses to win prizes!',
@@ -61,6 +63,7 @@ class CampaignPopupModel {
   Map<String, dynamic> toMap() {
     return {
       'isActive': isActive,
+      'showActionButton': showActionButton,
       'titleEnglish': titleEnglish,
       'titleUrdu': titleUrdu,
       'detailsEnglish': detailsEnglish,
@@ -80,6 +83,7 @@ class CampaignPopupModel {
 
     // Support both camelCase and snake_case keys for resilience
     final isActive = (map['isActive'] ?? map['is_active'] ?? map['active']) as bool? ?? true;
+    final showActionButton = (map['showActionButton'] ?? map['show_action_button'] ?? true) as bool? ?? true;
     final titleEn = (map['titleEnglish'] ?? map['title_en'] ?? map['title']) as String? ?? "Rabi'ul Awwal 2026";
     final titleUr = (map['titleUrdu'] ?? map['title_ur'] ?? '') as String? ?? 'ربیع الاول ۱۴۴۸ / ۲۰۲۶';
     final detailsEn = (map['detailsEnglish'] ?? map['details_en'] ?? map['details'] ?? map['body_en']) as String? ??
@@ -97,6 +101,7 @@ class CampaignPopupModel {
     return CampaignPopupModel(
       id: id,
       isActive: isActive,
+      showActionButton: showActionButton,
       titleEnglish: titleEn,
       titleUrdu: titleUr,
       detailsEnglish: detailsEn,
@@ -115,6 +120,7 @@ class CampaignPopupModel {
     return CampaignPopupModel(
       id: id,
       isActive: true,
+      showActionButton: true,
       titleEnglish: "Rabi'ul Awwal 2026",
       titleUrdu: 'ربیع الاول ۱۴۴۸ / ۲۰۲۶',
       detailsEnglish: 'Complete Durood, Shamail, Seerah, and courses to win prizes!',
@@ -132,6 +138,7 @@ class CampaignPopupModel {
   CampaignPopupModel copyWith({
     String? id,
     bool? isActive,
+    bool? showActionButton,
     String? titleEnglish,
     String? titleUrdu,
     String? detailsEnglish,
@@ -147,6 +154,7 @@ class CampaignPopupModel {
     return CampaignPopupModel(
       id: id ?? this.id,
       isActive: isActive ?? this.isActive,
+      showActionButton: showActionButton ?? this.showActionButton,
       titleEnglish: titleEnglish ?? this.titleEnglish,
       titleUrdu: titleUrdu ?? this.titleUrdu,
       detailsEnglish: detailsEnglish ?? this.detailsEnglish,

@@ -15,11 +15,13 @@ import '../../services/counter_service.dart';
 class CampaignPopupDialog extends StatelessWidget {
   final CampaignPopupModel config;
   final bool isPreview;
+  final bool? previewLanguageUrdu;
 
   const CampaignPopupDialog({
     super.key,
     required this.config,
     this.isPreview = false,
+    this.previewLanguageUrdu,
   });
 
   /// Static helper to trigger the dialog with smooth scale and fade transition
@@ -28,7 +30,7 @@ class CampaignPopupDialog extends StatelessWidget {
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Dismiss Campaign Popup',
-      barrierColor: Colors.black.withValues(alpha: 0.72),
+      barrierColor: Colors.black.withValues(alpha: 0.75),
       transitionDuration: const Duration(milliseconds: 320),
       pageBuilder: (context, anim1, anim2) {
         return CampaignPopupDialog(config: config);
@@ -103,10 +105,11 @@ class CampaignPopupDialog extends StatelessWidget {
     return ListenableBuilder(
       listenable: globalLanguageProvider,
       builder: (context, _) {
-        final isUrdu = globalLanguageProvider.isUrdu;
+        final isUrdu = previewLanguageUrdu ?? globalLanguageProvider.isUrdu;
         final title = config.getTitle(isUrdu);
         final details = config.getDetails(isUrdu);
         final buttonText = config.getButtonText(isUrdu);
+        final showBtn = config.showActionButton;
 
         return Center(
           child: Material(
@@ -121,24 +124,24 @@ class CampaignPopupDialog extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [
-                    Color(0xFF063B26), // Deep rich Islamic Green
-                    Color(0xFF094E32), // Vibrant Emerald Green
-                    Color(0xFF052B1B), // Dark Midnight Green base
+                    Color(0xFF063B26), // Deep rich Islamic Emerald
+                    Color(0xFF084B30), // Vibrant Forest Emerald
+                    Color(0xFF042416), // Dark Midnight Emerald base
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: AppColors.accentGold.withValues(alpha: 0.4),
+                  color: AppColors.accentGold.withValues(alpha: 0.45),
                   width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    blurRadius: 28,
+                    color: Colors.black.withValues(alpha: 0.55),
+                    blurRadius: 30,
                     spreadRadius: 4,
-                    offset: const Offset(0, 10),
+                    offset: const Offset(0, 12),
                   ),
                   BoxShadow(
                     color: AppColors.primaryEmerald.withValues(alpha: 0.25),
@@ -152,139 +155,205 @@ class CampaignPopupDialog extends StatelessWidget {
                 textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
                 child: Stack(
                   children: [
-                    // Background Hanging Lanterns Ornaments
-                    Positioned.fill(
-                      child: CustomPaint(
-                        painter: _LanternsDecorationPainter(),
-                      ),
-                    ),
-
-                    // Main Content Column
+                    // Main Scrollable Content Layout
                     SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            // Top Dismiss Button ('X' inside white circle)
-                            Center(
-                              child: GestureDetector(
-                                onTap: () {
-                                  if (!isPreview) {
-                                    Navigator.of(context, rootNavigator: true).pop();
-                                  }
-                                },
-                                child: Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.25),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Icon(
-                                    Icons.close_rounded,
-                                    color: Color(0xFF1E293B),
-                                    size: 24,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 18),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // 1. Top Media / Banner Artwork (Top Section)
+                          _buildTopGraphic(context),
 
-                            // Campaign Title
-                            Text(
-                              title,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.w800,
-                                height: 1.25,
-                                fontFamily: isUrdu
-                                    ? AppTypography.urduFontFamily
-                                    : AppTypography.englishFontFamily,
-                                shadows: const [
-                                  Shadow(
-                                    color: Colors.black54,
-                                    blurRadius: 8,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                              ),
+                          // 2. Middle Content Section (Title, Divider & Body)
+                          Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              22,
+                              18,
+                              22,
+                              showBtn ? 16 : 24,
                             ),
-                            const SizedBox(height: 12),
-
-                            // Campaign Details / Subtitle
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 6),
-                              child: Text(
-                                details,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.92),
-                                  fontSize: isUrdu ? 15 : 14,
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.45,
-                                  fontFamily: isUrdu
-                                      ? AppTypography.urduFontFamily
-                                      : AppTypography.englishFontFamily,
-                                  shadows: const [
-                                    Shadow(
-                                      color: Colors.black38,
-                                      blurRadius: 4,
-                                      offset: Offset(0, 1),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-
-                            // Action CTA Button ("Get Started" / "شروع کریں")
-                            SizedBox(
-                              width: double.infinity,
-                              height: 48,
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFD4A017), // Rich Royal Gold
-                                  foregroundColor: Colors.white,
-                                  elevation: 4,
-                                  shadowColor: Colors.black45,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                                ),
-                                onPressed: () => _handleActionClick(context),
-                                child: Text(
-                                  buttonText,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                // Campaign Title
+                                Text(
+                                  title,
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 16,
+                                    fontSize: isUrdu ? 23 : 22,
                                     fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.5,
+                                    height: 1.25,
                                     fontFamily: isUrdu
                                         ? AppTypography.urduFontFamily
                                         : AppTypography.englishFontFamily,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black.withValues(alpha: 0.7),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                      Shadow(
+                                        color: const Color(0xFFFDE047).withValues(alpha: 0.25),
+                                        blurRadius: 12,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+
+                                // Subtle Decorative Gold Accent Divider
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      height: 1.5,
+                                      width: 32,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Colors.transparent,
+                                            AppColors.accentGold.withValues(alpha: 0.8),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(horizontal: 8),
+                                      child: Icon(
+                                        Icons.auto_awesome,
+                                        size: 13,
+                                        color: AppColors.accentGold,
+                                      ),
+                                    ),
+                                    Container(
+                                      height: 1.5,
+                                      width: 32,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            AppColors.accentGold.withValues(alpha: 0.8),
+                                            Colors.transparent,
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+
+                                // Campaign Details / Body Text
+                                Text(
+                                  details,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.92),
+                                    fontSize: isUrdu ? 15 : 14,
+                                    fontWeight: FontWeight.w400,
+                                    height: 1.5,
+                                    fontFamily: isUrdu
+                                        ? AppTypography.urduFontFamily
+                                        : AppTypography.englishFontFamily,
+                                    shadows: const [
+                                      Shadow(
+                                        color: Colors.black45,
+                                        blurRadius: 4,
+                                        offset: Offset(0, 1),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // 3. Bottom Action CTA Area (Only rendered if showActionButton is true)
+                          if (showBtn)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(22, 0, 22, 22),
+                              child: SizedBox(
+                                width: double.infinity,
+                                height: 48,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFD4A017), // Rich Royal Gold
+                                    foregroundColor: Colors.white,
+                                    elevation: 4,
+                                    shadowColor: Colors.black45,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  ),
+                                  onPressed: () => _handleActionClick(context),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        buttonText,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.4,
+                                          fontFamily: isUrdu
+                                              ? AppTypography.urduFontFamily
+                                              : AppTypography.englishFontFamily,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Icon(
+                                        isUrdu
+                                            ? Icons.arrow_back_rounded
+                                            : Icons.arrow_forward_rounded,
+                                        size: 18,
+                                        color: Colors.white,
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 16),
+                        ],
+                      ),
+                    ),
 
-                            // Bottom Image Artwork
-                            _buildBottomGraphic(context),
-                          ],
+                    // Floating Close 'X' Button at Top Corner (Top-Right in LTR / Top-Left in RTL)
+                    PositionedDirectional(
+                      top: 12,
+                      end: 12,
+                      child: GestureDetector(
+                        onTap: () {
+                          if (!isPreview) {
+                            Navigator.of(context, rootNavigator: true).pop();
+                          }
+                        },
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.55),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.35),
+                              width: 1.2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.close_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                         ),
                       ),
                     ),
@@ -298,10 +367,13 @@ class CampaignPopupDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomGraphic(BuildContext context) {
+  /// Builds the top half media banner with rounded top corners and a smooth bottom blend
+  Widget _buildTopGraphic(BuildContext context) {
     final imageType = config.imageType;
     final imageUrl = config.imageUrl;
     final imageBase64 = config.imageBase64;
+
+    Widget imageContent;
 
     // 1. Base64 Image
     if (imageType == CampaignPopupModel.imageTypeBase64 &&
@@ -309,92 +381,104 @@ class CampaignPopupDialog extends StatelessWidget {
         imageBase64.trim().isNotEmpty) {
       try {
         final bytes = base64Decode(imageBase64.trim());
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Image.memory(
-            bytes,
-            width: double.infinity,
-            height: 160,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => _buildDefaultGraphicBanner(),
-          ),
+        imageContent = Image.memory(
+          bytes,
+          width: double.infinity,
+          height: 185,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _buildDefaultSpiritualBanner(),
         );
       } catch (_) {
-        return _buildDefaultGraphicBanner();
+        imageContent = _buildDefaultSpiritualBanner();
       }
     }
-
     // 2. Network Image URL
-    if (imageUrl != null && imageUrl.trim().isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Image.network(
-          imageUrl.trim(),
-          width: double.infinity,
-          height: 160,
-          fit: BoxFit.cover,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Container(
-              height: 140,
-              decoration: BoxDecoration(
-                color: Colors.black26,
-                borderRadius: BorderRadius.circular(16),
+    else if (imageUrl != null && imageUrl.trim().isNotEmpty) {
+      imageContent = Image.network(
+        imageUrl.trim(),
+        width: double.infinity,
+        height: 185,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            height: 185,
+            decoration: const BoxDecoration(color: Color(0xFF052B1B)),
+            child: const Center(
+              child: CircularProgressIndicator(
+                color: AppColors.accentGold,
+                strokeWidth: 2,
               ),
-              child: const Center(
-                child: CircularProgressIndicator(
-                  color: AppColors.accentGold,
-                  strokeWidth: 2,
-                ),
-              ),
-            );
-          },
-          errorBuilder: (context, error, stackTrace) => _buildDefaultGraphicBanner(),
-        ),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) => _buildDefaultSpiritualBanner(),
       );
     }
-
     // 3. High Quality Default Spiritual Graphic Banner
-    return _buildDefaultGraphicBanner();
+    else {
+      imageContent = _buildDefaultSpiritualBanner();
+    }
+
+    return SizedBox(
+      height: 185,
+      width: double.infinity,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // The Media Image
+          imageContent,
+
+          // Bottom Gradient Scrim (Smooth Transition into Card Body)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 60,
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.transparent,
+                    Color(0xFF063B26),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  Widget _buildDefaultGraphicBanner() {
+  Widget _buildDefaultSpiritualBanner() {
     return Container(
       width: double.infinity,
-      height: 150,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          colors: [
-            Colors.black.withValues(alpha: 0.15),
-            Colors.black.withValues(alpha: 0.35),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
+      height: 185,
+      decoration: const BoxDecoration(
+        color: Color(0xFF052B1B),
       ),
       child: Stack(
         alignment: Alignment.center,
         children: [
           // Masjid Nabawi background asset
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Image.asset(
-              'assets/images/masjid_nabawi_header.jpeg',
-              width: double.infinity,
-              height: 150,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
-            ),
+          Image.asset(
+            'assets/images/masjid_nabawi_header.jpeg',
+            width: double.infinity,
+            height: 185,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
           ),
           // Dark glass gradient overlay
           Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
               gradient: LinearGradient(
                 colors: [
-                  const Color(0xFF063B26).withValues(alpha: 0.3),
-                  const Color(0xFF094E32).withValues(alpha: 0.7),
+                  const Color(0xFF063B26).withValues(alpha: 0.45),
+                  const Color(0xFF084B30).withValues(alpha: 0.75),
+                  const Color(0xFF063B26).withValues(alpha: 0.95),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -406,26 +490,44 @@ class CampaignPopupDialog extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFD4A017).withValues(alpha: 0.2),
-                  border: Border.all(color: const Color(0xFFD4A017), width: 1.5),
+                  color: const Color(0xFFD4A017).withValues(alpha: 0.22),
+                  border: Border.all(color: const Color(0xFFFDE047), width: 1.8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFDE047).withValues(alpha: 0.3),
+                      blurRadius: 16,
+                      spreadRadius: 2,
+                    ),
+                  ],
                 ),
                 child: const Icon(
                   Icons.mosque_rounded,
                   color: Color(0xFFFDE047),
-                  size: 42,
+                  size: 40,
                 ),
               ),
-              const SizedBox(height: 6),
-              const Text(
-                'صلوات و سلام',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  letterSpacing: 0.5,
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFD4A017).withValues(alpha: 0.6),
+                    width: 1,
+                  ),
+                ),
+                child: const Text(
+                  'صلوات و سلام',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ],
@@ -434,91 +536,4 @@ class CampaignPopupDialog extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Custom painter to draw decorative hanging Islamic lanterns on the card's top left & right
-class _LanternsDecorationPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final goldPaint = Paint()
-      ..color = const Color(0xFFF59E0B).withValues(alpha: 0.85)
-      ..style = PaintingStyle.fill;
-
-    final stringPaint = Paint()
-      ..color = const Color(0xFFFBBF24).withValues(alpha: 0.6)
-      ..strokeWidth = 1.2
-      ..style = PaintingStyle.stroke;
-
-    final glowPaint = Paint()
-      ..color = const Color(0xFFFEF08A).withValues(alpha: 0.95)
-      ..style = PaintingStyle.fill;
-
-    // Left Lantern
-    _drawLantern(canvas, 32, 110, stringPaint, goldPaint, glowPaint);
-    // Far Left Small Lantern
-    _drawLantern(canvas, 10, 80, stringPaint, goldPaint, glowPaint, scale: 0.7);
-
-    // Right Lantern
-    _drawLantern(canvas, size.width - 32, 110, stringPaint, goldPaint, glowPaint);
-    // Far Right Small Lantern
-    _drawLantern(canvas, size.width - 10, 80, stringPaint, goldPaint, glowPaint, scale: 0.7);
-  }
-
-  void _drawLantern(
-    Canvas canvas,
-    double cx,
-    double bottomY,
-    Paint stringPaint,
-    Paint goldPaint,
-    Paint glowPaint, {
-    double scale = 1.0,
-  }) {
-    final topY = 0.0;
-    final lanternHeight = 36.0 * scale;
-    final lanternWidth = 20.0 * scale;
-    final startY = bottomY - lanternHeight;
-
-    // Hanging string
-    canvas.drawLine(Offset(cx, topY), Offset(cx, startY), stringPaint);
-
-    // Top cap
-    final capPath = Path();
-    capPath.moveTo(cx - (lanternWidth * 0.4), startY + 4 * scale);
-    capPath.lineTo(cx, startY);
-    capPath.lineTo(cx + (lanternWidth * 0.4), startY + 4 * scale);
-    capPath.close();
-    canvas.drawPath(capPath, goldPaint);
-
-    // Main body (hexagon lantern)
-    final bodyPath = Path();
-    bodyPath.moveTo(cx - (lanternWidth * 0.5), startY + 6 * scale);
-    bodyPath.lineTo(cx + (lanternWidth * 0.5), startY + 6 * scale);
-    bodyPath.lineTo(cx + (lanternWidth * 0.35), startY + lanternHeight - 6 * scale);
-    bodyPath.lineTo(cx - (lanternWidth * 0.35), startY + lanternHeight - 6 * scale);
-    bodyPath.close();
-
-    canvas.drawPath(bodyPath, goldPaint);
-
-    // Center glow
-    final glowRect = RRect.fromRectAndRadius(
-      Rect.fromCenter(
-        center: Offset(cx, startY + (lanternHeight / 2)),
-        width: lanternWidth * 0.5,
-        height: lanternHeight * 0.45,
-      ),
-      Radius.circular(3 * scale),
-    );
-    canvas.drawRRect(glowRect, glowPaint);
-
-    // Bottom finial / tassel
-    final tasselPath = Path();
-    tasselPath.moveTo(cx - 3 * scale, startY + lanternHeight - 4 * scale);
-    tasselPath.lineTo(cx, startY + lanternHeight);
-    tasselPath.lineTo(cx + 3 * scale, startY + lanternHeight - 4 * scale);
-    tasselPath.close();
-    canvas.drawPath(tasselPath, goldPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

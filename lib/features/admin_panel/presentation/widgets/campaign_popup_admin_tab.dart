@@ -22,6 +22,7 @@ class _CampaignPopupAdminTabState extends State<CampaignPopupAdminTab> {
   bool _isUploadingImage = false;
 
   bool _isActive = true;
+  bool _showActionButton = true;
   String _targetRoute = '/events';
   String _imageType = CampaignPopupModel.imageTypeUrl; // 'url' | 'base64'
   String? _imageBase64;
@@ -74,6 +75,7 @@ class _CampaignPopupAdminTabState extends State<CampaignPopupAdminTab> {
 
       setState(() {
         _isActive = config.isActive;
+        _showActionButton = config.showActionButton;
         _titleEnController.text = config.titleEnglish;
         _titleUrController.text = config.titleUrdu;
         _detailsEnController.text = config.detailsEnglish;
@@ -106,6 +108,7 @@ class _CampaignPopupAdminTabState extends State<CampaignPopupAdminTab> {
   CampaignPopupModel get _currentLiveConfig {
     return CampaignPopupModel(
       isActive: _isActive,
+      showActionButton: _showActionButton,
       titleEnglish: _titleEnController.text.trim().isNotEmpty
           ? _titleEnController.text.trim()
           : "Rabi'ul Awwal 2026",
@@ -476,85 +479,157 @@ class _CampaignPopupAdminTabState extends State<CampaignPopupAdminTab> {
           maxLines: 3,
           isUrdu: true,
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 22),
 
-        // Button Action Text (EN & UR)
-        Row(
-          children: [
-            Expanded(
-              child: _buildTextField(
-                controller: _buttonTextEnController,
-                label: lp.tr('popup_btn_en'),
-                hint: 'e.g., Get Started',
-                icon: Icons.smart_button_rounded,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _buildTextField(
-                controller: _buttonTextUrController,
-                label: lp.tr('popup_btn_ur'),
-                hint: 'مثال: شروع کریں',
-                icon: Icons.touch_app_outlined,
-                isUrdu: true,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-
-        // Target Navigation Dropdown
-        const Row(
-          children: [
-            Icon(Icons.alt_route_rounded, size: 20, color: AppColors.primaryEmerald),
-            SizedBox(width: 8),
-            Text(
-              'Click Action Navigation Target',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
+        // Action Button Toggle Section
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: AppColors.bgOffWhite,
+            color: _showActionButton
+                ? AppColors.primaryEmerald.withValues(alpha: 0.05)
+                : AppColors.bgOffWhite,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.borderLight),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              isExpanded: true,
-              value: _targetRoute,
-              icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.primaryEmerald),
-              items: _availableRoutes.map((item) {
-                return DropdownMenuItem<String>(
-                  value: item['route'],
-                  child: Row(
-                    children: [
-                      const Icon(Icons.arrow_circle_right_outlined, size: 18, color: AppColors.primaryEmerald),
-                      const SizedBox(width: 10),
-                      Text(
-                        item['label'] ?? '',
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                      ),
-                      const Spacer(),
-                      Text(
-                        item['route'] ?? '',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-              onChanged: (val) {
-                if (val != null) {
-                  setState(() => _targetRoute = val);
-                }
-              },
+            border: Border.all(
+              color: _showActionButton
+                  ? AppColors.primaryEmerald.withValues(alpha: 0.35)
+                  : AppColors.borderLight,
             ),
           ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _showActionButton
+                      ? AppColors.primaryEmerald.withValues(alpha: 0.12)
+                      : Colors.grey.shade200,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.smart_button_rounded,
+                  size: 20,
+                  color: _showActionButton
+                      ? AppColors.primaryEmerald
+                      : Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${lp.tr('show_action_button')} / بٹن شامل کریں',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      lp.tr('show_action_button_desc'),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch.adaptive(
+                value: _showActionButton,
+                activeTrackColor: AppColors.primaryEmerald,
+                onChanged: (val) {
+                  setState(() => _showActionButton = val);
+                },
+              ),
+            ],
+          ),
         ),
+
+        // Conditional CTA Button inputs & Navigation Route
+        if (_showActionButton) ...[
+          const SizedBox(height: 18),
+
+          // Button Action Text (EN & UR)
+          Row(
+            children: [
+              Expanded(
+                child: _buildTextField(
+                  controller: _buttonTextEnController,
+                  label: lp.tr('popup_btn_en'),
+                  hint: 'e.g., Get Started',
+                  icon: Icons.smart_button_rounded,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: _buildTextField(
+                  controller: _buttonTextUrController,
+                  label: lp.tr('popup_btn_ur'),
+                  hint: 'مثال: شروع کریں',
+                  icon: Icons.touch_app_outlined,
+                  isUrdu: true,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Target Navigation Dropdown
+          const Row(
+            children: [
+              Icon(Icons.alt_route_rounded, size: 20, color: AppColors.primaryEmerald),
+              SizedBox(width: 8),
+              Text(
+                'Click Action Navigation Target',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.bgOffWhite,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.borderLight),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                isExpanded: true,
+                value: _targetRoute,
+                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.primaryEmerald),
+                items: _availableRoutes.map((item) {
+                  return DropdownMenuItem<String>(
+                    value: item['route'],
+                    child: Row(
+                      children: [
+                        const Icon(Icons.arrow_circle_right_outlined, size: 18, color: AppColors.primaryEmerald),
+                        const SizedBox(width: 10),
+                        Text(
+                          item['label'] ?? '',
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                        ),
+                        const Spacer(),
+                        Text(
+                          item['route'] ?? '',
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() => _targetRoute = val);
+                  }
+                },
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: 24),
 
         // Image Selection Options
@@ -803,7 +878,7 @@ class _CampaignPopupAdminTabState extends State<CampaignPopupAdminTab> {
 
                 // Mockup App Body with Modal Display
                 Container(
-                  height: 480,
+                  height: 520,
                   width: double.infinity,
                   decoration: const BoxDecoration(
                     color: Color(0xFF0F172A),
@@ -827,6 +902,7 @@ class _CampaignPopupAdminTabState extends State<CampaignPopupAdminTab> {
                           child: CampaignPopupDialog(
                             config: _currentLiveConfig,
                             isPreview: true,
+                            previewLanguageUrdu: _previewInUrdu,
                           ),
                         ),
                       ),

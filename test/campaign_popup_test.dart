@@ -9,6 +9,7 @@ void main() {
     test('Default model contains valid fallback values', () {
       final model = CampaignPopupModel.defaultConfig();
       expect(model.isActive, isTrue);
+      expect(model.showActionButton, isTrue);
       expect(model.titleEnglish, contains("Rabi'ul Awwal"));
       expect(model.titleUrdu, contains('ربیع الاول'));
       expect(model.buttonTextEnglish, 'Get Started');
@@ -38,10 +39,11 @@ void main() {
       expect(model.getButtonText(true), 'ابھی شامل ہوں');
     });
 
-    test('Serialization toMap and fromMap works seamlessly', () {
+    test('Serialization toMap and fromMap works seamlessly with showActionButton', () {
       const original = CampaignPopupModel(
         id: 'launch_popup',
         isActive: false,
+        showActionButton: false,
         titleEnglish: 'Ramadan 2026',
         titleUrdu: 'رمضان المبارک',
         detailsEnglish: 'Fast and pray',
@@ -57,6 +59,7 @@ void main() {
       final restored = CampaignPopupModel.fromMap('launch_popup', map);
 
       expect(restored.isActive, isFalse);
+      expect(restored.showActionButton, isFalse);
       expect(restored.titleEnglish, 'Ramadan 2026');
       expect(restored.titleUrdu, 'رمضان المبارک');
       expect(restored.targetRoute, '/counter');
@@ -79,7 +82,7 @@ void main() {
   });
 
   group('CampaignPopupDialog Widget Tests', () {
-    testWidgets('Renders modal dialog with English text and action button', (WidgetTester tester) async {
+    testWidgets('Renders modal dialog with CTA button when showActionButton is true', (WidgetTester tester) async {
       final config = CampaignPopupModel.defaultConfig();
 
       await tester.pumpWidget(
@@ -97,6 +100,27 @@ void main() {
       expect(find.text(config.titleEnglish), findsOneWidget);
       expect(find.text(config.detailsEnglish), findsOneWidget);
       expect(find.text(config.buttonTextEnglish), findsOneWidget);
+      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+    });
+
+    testWidgets('Renders modal dialog without CTA button when showActionButton is false', (WidgetTester tester) async {
+      final config = CampaignPopupModel.defaultConfig().copyWith(showActionButton: false);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: CampaignPopupDialog(
+              config: config,
+              isPreview: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(config.titleEnglish), findsOneWidget);
+      expect(find.text(config.detailsEnglish), findsOneWidget);
+      expect(find.text(config.buttonTextEnglish), findsNothing);
       expect(find.byIcon(Icons.close_rounded), findsOneWidget);
     });
   });
