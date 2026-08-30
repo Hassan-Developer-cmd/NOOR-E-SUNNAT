@@ -276,9 +276,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (context, _) {
         final lp = globalLanguageProvider;
         final user = FirebaseAuth.instance.currentUser;
-        final displayName = (user?.displayName != null && user!.displayName!.isNotEmpty)
-            ? user.displayName!
-            : lp.tr('user_profile_guest');
 
         return Scaffold(
           backgroundColor: const Color(0xFFF8FAFC),
@@ -507,24 +504,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       child: Column(
                         children: [
-                          // Edit Profile Name
-                          ListTile(
-                            leading: const Icon(Icons.badge_rounded,
-                                color: AppColors.primaryEmerald),
-                            title: Text(
-                              lp.tr('edit_display_name'),
-                              style: const TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            subtitle: Text(
-                              displayName,
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            trailing: const Icon(Icons.arrow_forward_ios_rounded,
-                                size: 14, color: Colors.grey),
-                            onTap: () => _showEditNameDialog(context, displayName),
-                          ),
-                          const Divider(height: 1),
-
                           // My Questions
                           ListTile(
                             leading: const Icon(Icons.question_answer_rounded,
