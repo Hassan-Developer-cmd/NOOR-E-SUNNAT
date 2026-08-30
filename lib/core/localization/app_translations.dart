@@ -683,7 +683,7 @@ class AppTranslations {
       // ── Profile Tabs & Settings Tab Features ──
       'tab_profile': 'پروفائل',
       'tab_settings': 'ترتیبات',
-      'settings_about_us': 'ہماری بابت',
+      'settings_about_us': 'ہمارا تعارف',
       'settings_about_us_sub': 'مقاصد، خصوصیات اور ایپ کی معلومات',
       'settings_our_team': 'ہماری ٹیم',
       'settings_our_team_sub': 'ڈویلپرز، علمائے کرام اور معاونین',

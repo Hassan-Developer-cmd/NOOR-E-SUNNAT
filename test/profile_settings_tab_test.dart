@@ -15,7 +15,7 @@ void main() {
       final ur = AppTranslations.translations['ur']!;
 
       expect(en['settings_about_us'], 'About Us');
-      expect(ur['settings_about_us'], 'ہماری بابت');
+      expect(ur['settings_about_us'], 'ہمارا تعارف');
 
       expect(en['settings_our_team'], 'Our Team');
       expect(ur['settings_our_team'], 'ہماری ٹیم');

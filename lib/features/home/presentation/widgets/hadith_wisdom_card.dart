@@ -597,7 +597,7 @@ class _TopicOfTheDayCardState extends State<TopicOfTheDayCard> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    isUrdu ? 'آج کا اہم موضوع' : 'TOPIC OF THE DAY',
+                    isUrdu ? 'آج کا موضوع' : 'TOPIC OF THE DAY',
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
