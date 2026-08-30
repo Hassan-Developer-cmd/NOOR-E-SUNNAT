@@ -669,7 +669,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             trailing: const Icon(Icons.arrow_forward_ios_rounded,
                                 size: 14, color: Colors.grey),
-                            onTap: () => ProfileSettingsSheets.showShareAppSheet(context),
+                            onTap: () => ProfileSettingsSheets.shareApp(context),
                           ),
                           const Divider(height: 1),
 

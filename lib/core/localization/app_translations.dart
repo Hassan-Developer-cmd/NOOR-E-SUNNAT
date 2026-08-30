@@ -304,7 +304,8 @@ class AppTranslations {
       'share_app_title': 'Share NOOR E SUNNAT',
       'share_app_subtitle': 'Spread the blessings of Durood Sharif',
       'sharing_text': 'Sharing Text',
-      'share_app_msg': '🌙 ✨ Explore the life of Prophet Muhammad ﷺ, count daily Durood Sharif, learn authentic Masail & Aqaid with NOOR E SUNNAT (Faizan-e-Durood). Download now from Google Play Store: https://play.google.com/store/apps/details?id=com.nooresunnat.islamic_app',
+      'share_app_msg':
+          '🌙 ✨ Explore the life of Prophet Muhammad ﷺ, count daily Durood Sharif, learn authentic Masail & Aqaid with NOOR E SUNNAT .\nDownload now from Google Play Store: https://play.google.com/store/apps/details?id=com.nooresunnat.islamic_app',
       'copy_invitation': 'Copy Sharing Text',
       'invitation_copied': 'Play Store invitation copied to clipboard!',
       'open_play_store': 'Open Google Play Store',
@@ -719,7 +720,8 @@ class AppTranslations {
       'share_app_title': 'نورِ سنت ایپ شیئر کریں',
       'share_app_subtitle': 'درود و سلام کی برکات کو عام کریں',
       'sharing_text': 'شیئرنگ ٹیکسٹ',
-      'share_app_msg': '🌙 ✨ نبی کریم ﷺ کی مبارک سیرت، روزانہ درود شریف کا شمار، اور مستند مسائل و عقائد سیکھنے کے لیے نورِ سنت (فیضانِ درود) ایپ استعمال کریں۔ گوگل پلے اسٹور سے ابھی ڈاؤن لوڈ کریں: https://play.google.com/store/apps/details?id=com.nooresunnat.islamic_app',
+      'share_app_msg':
+          '🌙 ✨ حضرت محمد ﷺ کی سیرتِ طیبہ، روزانہ درود شریف کا شمار اور مستند مسائل و عقائد جانیے نورِ سنت ایپ کے ساتھ۔\nگوگل پلے اسٹور سے ابھی ڈاؤن لوڈ کریں:\nhttps://play.google.com/store/apps/details?id=com.nooresunnat.islamic_app',
       'copy_invitation': 'شیئرنگ ٹیکسٹ کاپی کریں',
       'invitation_copied': 'پلے اسٹور کا دعوتی پیغام کاپی ہو گیا ہے!',
       'open_play_store': 'گوگل پلے اسٹور کھولیں',

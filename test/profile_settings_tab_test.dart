@@ -81,30 +81,27 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Our Dedicated Team'), findsOneWidget);
-      expect(find.text('Engineering & Technology'), findsOneWidget);
+      expect(find.text('Hassan Awan'), findsOneWidget);
       expect(find.text('Shariah & Hadith Research'), findsOneWidget);
     });
 
-    testWidgets('Share App sheet opens and displays Play Store link and share options', (WidgetTester tester) async {
+    testWidgets('shareApp executes directly without throwing', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: Builder(
               builder: (context) => ElevatedButton(
-                onPressed: () => ProfileSettingsSheets.showShareAppSheet(context),
-                child: const Text('Open Share App'),
+                onPressed: () => ProfileSettingsSheets.shareApp(context),
+                child: const Text('Direct Share App'),
               ),
             ),
           ),
         ),
       );
 
-      await tester.tap(find.text('Open Share App'));
+      await tester.tap(find.text('Direct Share App'));
       await tester.pumpAndSettle();
-
-      expect(find.text('Share NOOR E SUNNAT'), findsOneWidget);
-      expect(find.text('Open Google Play Store'), findsOneWidget);
-      expect(find.text('Share via Apps'), findsOneWidget);
+      expect(find.text('Direct Share App'), findsOneWidget);
     });
 
     testWidgets('Rate App dialog opens with 5 stars and Play Store rate button', (WidgetTester tester) async {
