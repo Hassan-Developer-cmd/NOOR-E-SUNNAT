@@ -35,5 +35,25 @@ void main() {
     expect(find.text('Continue with Google'), findsOneWidget);
     expect(find.byType(TextField), findsNWidgets(2));
   });
+
+  testWidgets('LoginScreen fits on standard mobile viewport without overflow', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(390 * 2.0, 844 * 2.0);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: LoginScreen(
+          onLoginSuccess: () {},
+          onOpenWebAdmin: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('NOOR E SUNNAT'), findsOneWidget);
+    expect(find.text('Continue with Google'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
 
