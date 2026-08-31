@@ -7,12 +7,14 @@ class EventCard extends StatelessWidget {
   final EventModel event;
   final VoidCallback? onTap;
   final double? width;
+  final double? height;
 
   const EventCard({
     super.key,
     required this.event,
     this.onTap,
     this.width,
+    this.height,
   });
 
   /// Maps event keywords to themed high-resolution Islamic background assets
@@ -186,13 +188,14 @@ class EventCard extends StatelessWidget {
         final isLive = event.status.toLowerCase() == 'ongoing';
 
         final cardWidth = width ??
-            (MediaQuery.of(context).size.width * 0.82).clamp(280.0, 340.0);
+            (MediaQuery.of(context).size.width * 0.88).clamp(280.0, 360.0);
+        final cardHeight = height ?? 150.0;
 
         return Directionality(
           textDirection: lp.textDirection,
           child: SizedBox(
             width: cardWidth,
-            height: 180,
+            height: cardHeight,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
               clipBehavior: Clip.antiAlias,
@@ -212,7 +215,7 @@ class EventCard extends StatelessWidget {
                           end: Alignment.bottomCenter,
                           colors: [
                             Colors.black.withValues(alpha: 0.35),
-                            Colors.black.withValues(alpha: 0.85),
+                            Colors.black.withValues(alpha: 0.88),
                           ],
                         ),
                       ),
@@ -221,7 +224,7 @@ class EventCard extends StatelessWidget {
 
                   // 3. Card Content (Badges, Title, Date, Location)
                   Padding(
-                    padding: const EdgeInsetsDirectional.all(14.0),
+                    padding: const EdgeInsetsDirectional.all(12.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -237,13 +240,13 @@ class EventCard extends StatelessWidget {
                               event.id,
                             ),
                             CircleAvatar(
-                              radius: 14,
+                              radius: 12,
                               backgroundColor: Colors.white.withValues(alpha: 0.24),
                               child: Icon(
                                 isUrdu
                                     ? Icons.arrow_back_ios_new_rounded
                                     : Icons.arrow_forward_ios_rounded,
-                                size: 12,
+                                size: 10,
                                 color: Colors.white,
                               ),
                             ),
@@ -257,10 +260,10 @@ class EventCard extends StatelessWidget {
                           key: ValueKey('title_${event.id}_${lp.locale.languageCode}'),
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 16,
+                            fontSize: 14.5,
                             fontWeight: FontWeight.bold,
                             fontFamily: isUrdu ? 'UrduFont' : null,
-                            height: 1.3,
+                            height: 1.25,
                             shadows: const [
                               Shadow(
                                 color: Colors.black87,
@@ -272,14 +275,14 @@ class EventCard extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
 
                         // Footer Date & Location Info
                         Row(
                           children: [
                             const Icon(
                               Icons.calendar_today_outlined,
-                              size: 13,
+                              size: 11.5,
                               color: Colors.white70,
                             ),
                             const SizedBox(width: 4),
@@ -288,7 +291,7 @@ class EventCard extends StatelessWidget {
                                 event.dateTime,
                                 style: const TextStyle(
                                   color: Colors.white70,
-                                  fontSize: 11,
+                                  fontSize: 10.5,
                                   fontWeight: FontWeight.w500,
                                 ),
                                 maxLines: 1,
@@ -300,7 +303,7 @@ class EventCard extends StatelessWidget {
                               isLive
                                   ? Icons.sensors_rounded
                                   : Icons.location_on_outlined,
-                              size: 13,
+                              size: 11.5,
                               color: Colors.white70,
                             ),
                             const SizedBox(width: 4),
@@ -310,7 +313,7 @@ class EventCard extends StatelessWidget {
                                 key: ValueKey('loc_${event.id}_${lp.locale.languageCode}'),
                                 style: const TextStyle(
                                   color: Colors.white70,
-                                  fontSize: 11,
+                                  fontSize: 10.5,
                                   fontWeight: FontWeight.w500,
                                 ),
                                 maxLines: 1,

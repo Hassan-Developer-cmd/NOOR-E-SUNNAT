@@ -8,11 +8,55 @@ import '../../../../core/models/team_member.dart';
 import '../../../../main.dart';
 
 class ProfileSettingsSheets {
+  // Official Contact & Support Email
+  static const String contactEmail = 'nooresunnatinfo@gmail.com';
+
   // Official Play Store URL & Intent URI
   static const String playStoreUrl =
       'https://play.google.com/store/apps/details?id=com.nooresunnat.islamic_app';
   static const String playStoreMarketUri =
       'market://details?id=com.nooresunnat.islamic_app';
+
+  /// Launch email client with pre-filled subject and body
+  static Future<void> launchEmail({
+    String? subject,
+    String? body,
+    BuildContext? context,
+  }) async {
+    final uri = Uri(
+      scheme: 'mailto',
+      path: contactEmail,
+      queryParameters: {
+        if (subject != null && subject.isNotEmpty) 'subject': subject,
+        if (body != null && body.isNotEmpty) 'body': body,
+      },
+    );
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    } catch (_) {}
+
+    try {
+      await launchUrl(uri);
+      return;
+    } catch (_) {}
+
+    // Fallback: copy email to clipboard if email client is unavailable
+    if (context != null && context.mounted) {
+      await Clipboard.setData(const ClipboardData(text: contactEmail));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('$contactEmail copied to clipboard!'),
+            backgroundColor: Color(0xFF064E3B),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
 
   /// Directly launch Google Play Store App / URL
   static Future<void> openPlayStore() async {
@@ -353,6 +397,10 @@ class ProfileSettingsSheets {
                       _buildFeatureTile(Icons.menu_book_rounded, lp.tr('about_feat_3')),
                       _buildFeatureTile(Icons.question_answer_rounded, lp.tr('about_feat_4')),
                       _buildFeatureTile(Icons.military_tech_rounded, lp.tr('about_feat_5')),
+                      const SizedBox(height: 18),
+
+                      // Contact Support Box
+                      _buildContactSupportBox(context, lp),
                     ],
                   ),
                 ),
@@ -506,56 +554,7 @@ class ProfileSettingsSheets {
                       const SizedBox(height: 24),
 
                       // Contact Support Box
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.borderLight),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: AppColors.emeraldContainer,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.mail_outline_rounded,
-                                color: AppColors.primaryEmerald,
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    lp.tr('contact_support'),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    lp.tr('contact_email_label'),
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.primaryEmerald,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      _buildContactSupportBox(context, lp),
                     ],
                   ),
                 ),
@@ -776,6 +775,12 @@ class ProfileSettingsSheets {
         : 'NS';
 
     final hasImage = member.imagePath != null && member.imagePath!.trim().isNotEmpty;
+    final primaryPath = member.imagePath?.trim() ?? '';
+    final alternatePath = primaryPath.contains('assets/images/team/')
+        ? primaryPath.replaceAll('assets/images/team/', 'assets/team/')
+        : (primaryPath.contains('assets/team/')
+            ? primaryPath.replaceAll('assets/team/', 'assets/images/team/')
+            : '');
 
     return Container(
       width: 56,
@@ -798,12 +803,20 @@ class ProfileSettingsSheets {
       child: ClipOval(
         child: hasImage
             ? Image.asset(
-                member.imagePath!.trim(),
+                primaryPath,
                 width: 56,
                 height: 56,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
-                  debugPrint('Team image load failed for ${member.name} (${member.imagePath}): $error');
+                  if (alternatePath.isNotEmpty && alternatePath != primaryPath) {
+                    return Image.asset(
+                      alternatePath,
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.cover,
+                      errorBuilder: (ctx, err, stack) => _buildAvatarFallback(initials),
+                    );
+                  }
                   return _buildAvatarFallback(initials);
                 },
               )
@@ -993,29 +1006,46 @@ class ProfileSettingsSheets {
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
-                          onPressed: () {
+                          onPressed: () async {
+                            final feedback = commentController.text.trim();
                             Navigator.pop(dialogCtx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Row(
-                                  children: [
-                                    const Icon(Icons.star_rounded, color: Color(0xFFFDE047), size: 20),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        lp.tr('rate_thank_you'),
-                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            if (feedback.isNotEmpty) {
+                              await launchEmail(
+                                subject: 'Noor-e-Sunnat App Feedback ($selectedRating ⭐)',
+                                body:
+                                    'Rating: $selectedRating / 5\nSelected Tags: ${selectedTags.join(", ")}\n\nFeedback / Suggestions:\n$feedback',
+                                context: context,
+                              );
+                            }
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      const Icon(Icons.star_rounded,
+                                          color: Color(0xFFFDE047), size: 20),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          lp.tr('rate_thank_you'),
+                                          style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold),
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
+                                  backgroundColor: const Color(0xFF064E3B),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
                                 ),
-                                backgroundColor: const Color(0xFF064E3B),
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                            );
+                              );
+                            }
                           },
-                          child: Text(lp.tr('rate_submit_btn'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                          child: Text(lp.tr('rate_submit_btn'),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ),
                     ],
@@ -1067,7 +1097,10 @@ class ProfileSettingsSheets {
 
                 Text(
                   lp.tr('terms_policy_title'),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.emeraldDeep),
+                  style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.emeraldDeep),
                 ),
                 const SizedBox(height: 14),
 
@@ -1087,7 +1120,9 @@ class ProfileSettingsSheets {
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             decoration: BoxDecoration(
-                              color: activeTab == 0 ? AppColors.primaryEmerald : Colors.transparent,
+                              color: activeTab == 0
+                                  ? AppColors.primaryEmerald
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             alignment: Alignment.center,
@@ -1096,7 +1131,9 @@ class ProfileSettingsSheets {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
-                                color: activeTab == 0 ? Colors.white : Colors.grey.shade700,
+                                color: activeTab == 0
+                                  ? Colors.white
+                                  : Colors.grey.shade700,
                               ),
                             ),
                           ),
@@ -1108,7 +1145,9 @@ class ProfileSettingsSheets {
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             decoration: BoxDecoration(
-                              color: activeTab == 1 ? AppColors.primaryEmerald : Colors.transparent,
+                              color: activeTab == 1
+                                  ? AppColors.primaryEmerald
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             alignment: Alignment.center,
@@ -1117,7 +1156,9 @@ class ProfileSettingsSheets {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
-                                color: activeTab == 1 ? Colors.white : Colors.grey.shade700,
+                                color: activeTab == 1
+                                  ? Colors.white
+                                  : Colors.grey.shade700,
                               ),
                             ),
                           ),
@@ -1141,17 +1182,25 @@ class ProfileSettingsSheets {
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF0FDF4),
                                   borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(color: const Color(0xFFBBF7D0)),
+                                  border: Border.all(
+                                      color: const Color(0xFFBBF7D0)),
                                 ),
                                 child: Text(
                                   lp.tr('terms_intro'),
-                                  style: TextStyle(fontSize: 13, color: Colors.grey.shade800, height: 1.4),
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey.shade800,
+                                      height: 1.4),
                                 ),
                               ),
                               const SizedBox(height: 14),
-                              _buildPolicyPoint(Icons.verified_rounded, lp.tr('terms_point_1')),
+                              _buildPolicyPoint(Icons.verified_rounded,
+                                  lp.tr('terms_point_1')),
                               const SizedBox(height: 10),
-                              _buildPolicyPoint(Icons.favorite_rounded, lp.tr('terms_point_2')),
+                              _buildPolicyPoint(Icons.favorite_rounded,
+                                  lp.tr('terms_point_2')),
+                              const SizedBox(height: 16),
+                              _buildContactSupportBox(sheetCtx, lp),
                             ],
                           )
                         : Column(
@@ -1162,19 +1211,28 @@ class ProfileSettingsSheets {
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFEFF6FF),
                                   borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(color: const Color(0xFFBFDBFE)),
+                                  border: Border.all(
+                                      color: const Color(0xFFBFDBFE)),
                                 ),
                                 child: Text(
                                   lp.tr('privacy_intro'),
-                                  style: TextStyle(fontSize: 13, color: Colors.grey.shade800, height: 1.4),
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey.shade800,
+                                      height: 1.4),
                                 ),
                               ),
                               const SizedBox(height: 14),
-                              _buildPolicyPoint(Icons.security_rounded, lp.tr('privacy_point_1')),
+                              _buildPolicyPoint(Icons.security_rounded,
+                                  lp.tr('privacy_point_1')),
                               const SizedBox(height: 10),
-                              _buildPolicyPoint(Icons.block_rounded, lp.tr('privacy_point_2')),
+                              _buildPolicyPoint(Icons.block_rounded,
+                                  lp.tr('privacy_point_2')),
                               const SizedBox(height: 10),
-                              _buildPolicyPoint(Icons.lock_outline_rounded, lp.tr('privacy_point_3')),
+                              _buildPolicyPoint(Icons.lock_outline_rounded,
+                                  lp.tr('privacy_point_3')),
+                              const SizedBox(height: 16),
+                              _buildContactSupportBox(sheetCtx, lp),
                             ],
                           ),
                   ),
@@ -1188,10 +1246,12 @@ class ProfileSettingsSheets {
                       backgroundColor: AppColors.primaryEmerald,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
                     ),
                     onPressed: () => Navigator.pop(sheetCtx),
-                    child: Text(lp.tr('close'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                    child: Text(lp.tr('close'),
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -1218,10 +1278,80 @@ class ProfileSettingsSheets {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(fontSize: 13, height: 1.4, color: AppColors.textPrimary),
+              style: const TextStyle(
+                  fontSize: 13, height: 1.4, color: AppColors.textPrimary),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Interactive Contact & Feedback Box that launches the user's email client
+  static Widget _buildContactSupportBox(BuildContext context, dynamic lp) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => launchEmail(
+          subject: 'Noor-e-Sunnat Support & Feedback',
+          context: context,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.borderLight),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  color: AppColors.emeraldContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.mail_outline_rounded,
+                  color: AppColors.primaryEmerald,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      lp.tr('contact_support'),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      contactEmail,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.primaryEmerald,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.open_in_new_rounded,
+                size: 16,
+                color: AppColors.primaryEmerald,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

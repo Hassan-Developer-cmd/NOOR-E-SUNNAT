@@ -36,7 +36,7 @@ class TeamMember {
       role: 'Developer',
       roleUr: 'سافٹ ویئر ڈویلپر',
       category: 'IT TEAM',
-      imagePath: null,
+      imagePath: 'assets/images/team/hassan.png',
       tag: 'DEVELOPER',
       tagUr: 'ڈویلپر',
     ),

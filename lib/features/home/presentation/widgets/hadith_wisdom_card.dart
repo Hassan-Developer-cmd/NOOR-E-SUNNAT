@@ -5,39 +5,16 @@ import '../../../../core/models/daily_content_model.dart';
 import '../../../../main.dart';
 import '../../../../services/content_service.dart';
 
-/// Main container widget rendering the 3 distinct vertically scrolling cards:
-/// 1. Daily Hadith Card (Emerald Theme)
-/// 2. Daily Ayat Card (Deep Teal Theme)
-/// 3. Topic of the Day Card (Gold/Amber Theme)
-class HadithWisdomCard extends StatelessWidget {
+/// Main container widget rendering the Compact Daily Wisdom Card (max height ~115-130px)
+/// with interactive Tab Switcher:
+/// 1. Daily Hadith (Emerald Theme)
+/// 2. Daily Ayat (Deep Teal Theme)
+/// 3. Topic of the Day (Gold/Amber Theme)
+class HadithWisdomCard extends StatefulWidget {
   const HadithWisdomCard({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: globalLanguageProvider,
-      builder: (context, _) {
-        final lp = globalLanguageProvider;
-        final isUrdu = lp.isUrdu;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Card 1: Daily Hadith ──
-            DailyHadithCard(isUrdu: isUrdu),
-            const SizedBox(height: 16),
-
-            // ── Card 2: Daily Ayat ──
-            DailyAyatCard(isUrdu: isUrdu),
-            const SizedBox(height: 16),
-
-            // ── Card 3: Topic of the Day ──
-            TopicOfTheDayCard(isUrdu: isUrdu),
-          ],
-        );
-      },
-    );
-  }
+  State<HadithWisdomCard> createState() => _HadithWisdomCardState();
 
   static void showHistorySheet(BuildContext context, bool isUrdu, {String initialFilter = 'all'}) {
     showModalBottomSheet(
@@ -70,6 +47,257 @@ class HadithWisdomCard extends StatelessWidget {
             : 'Quote copied! Ready to share on WhatsApp & Socials.'),
         backgroundColor: const Color(0xFF0F5132),
         duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+}
+
+class _HadithWisdomCardState extends State<HadithWisdomCard> {
+  int _selectedTab = 0; // 0: Hadith, 1: Ayat, 2: Topic
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: globalLanguageProvider,
+      builder: (context, _) {
+        final lp = globalLanguageProvider;
+        final isUrdu = lp.isUrdu;
+
+        // Determine active theme colors based on selected tab
+        final Color themeColor = _selectedTab == 0
+            ? const Color(0xFF064E3B)
+            : (_selectedTab == 1 ? const Color(0xFF0D5C75) : const Color(0xFFB45309));
+        final Color containerBg = _selectedTab == 0
+            ? const Color(0xFFF0FDF4)
+            : (_selectedTab == 1 ? const Color(0xFFF0F9FF) : const Color(0xFFFFFBEB));
+        final Color borderColor = _selectedTab == 0
+            ? const Color(0xFFBBF7D0)
+            : (_selectedTab == 1 ? const Color(0xFFBAE6FD) : const Color(0xFFFDE68A));
+
+        return Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor, width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: themeColor.withValues(alpha: 0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ── Header: Tab Switcher & Quick Actions ──
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: containerBg,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                  border: Border(bottom: BorderSide(color: borderColor.withValues(alpha: 0.7))),
+                ),
+                child: Row(
+                  children: [
+                    // Tab 0: Hadith
+                    _buildTabPill(0, isUrdu ? 'حدیث' : 'Hadith', Icons.menu_book_rounded, const Color(0xFF064E3B)),
+                    const SizedBox(width: 4),
+                    // Tab 1: Ayat
+                    _buildTabPill(1, isUrdu ? 'آیت' : 'Ayat', Icons.auto_stories_rounded, const Color(0xFF0D5C75)),
+                    const SizedBox(width: 4),
+                    // Tab 2: Topic
+                    _buildTabPill(2, isUrdu ? 'موضوع' : 'Topic', Icons.lightbulb_rounded, const Color(0xFFB45309)),
+                    const Spacer(),
+                    // Archive / History Sheet Button
+                    InkWell(
+                      onTap: () => HadithWisdomCard.showHistorySheet(
+                        context,
+                        isUrdu,
+                        initialFilter: _selectedTab == 0 ? 'hadiths' : (_selectedTab == 1 ? 'ayats' : 'topics'),
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: Icon(Icons.history_edu_rounded, size: 17, color: themeColor),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Dynamic Tab Content Stream ──
+              StreamBuilder<List<DailyContentModel>>(
+                stream: _selectedTab == 0
+                    ? ContentService.dailyHadithsStream
+                    : (_selectedTab == 1 ? ContentService.dailyAyatsStream : ContentService.topicsOfTheDayStream),
+                builder: (context, snap) {
+                  final list = (snap.data != null && snap.data!.isNotEmpty)
+                      ? snap.data!
+                      : [
+                          _selectedTab == 0
+                              ? ContentService.defaultHadith
+                              : (_selectedTab == 1 ? ContentService.defaultAyat : ContentService.defaultTopicOfTheDay)
+                        ];
+                  final item = list.first;
+
+                  final title = item.getTitle(isUrdu);
+                  final content = item.getContent(isUrdu);
+                  final citation = item.getCitation(isUrdu);
+                  final arabic = item.arabicText;
+
+                  return InkWell(
+                    onTap: () => HadithWisdomCard.showHistorySheet(
+                      context,
+                      isUrdu,
+                      initialFilter: _selectedTab == 0 ? 'hadiths' : (_selectedTab == 1 ? 'ayats' : 'topics'),
+                    ),
+                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(15)),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Top Mini-Row: Title & Share Button
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  title,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: themeColor,
+                                    letterSpacing: isUrdu ? 0 : 0.3,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              InkWell(
+                                onTap: () => HadithWisdomCard.shareContent(
+                                  context,
+                                  title: title,
+                                  arabic: arabic,
+                                  content: content,
+                                  citation: citation,
+                                ),
+                                borderRadius: BorderRadius.circular(6),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                  child: Icon(Icons.share_outlined, size: 14, color: themeColor),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          // Optional Arabic line (compact)
+                          if (arabic.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              arabic,
+                              textAlign: TextAlign.start,
+                              textDirection: TextDirection.rtl,
+                              style: TextStyle(
+                                fontFamily: 'Amiri',
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: themeColor,
+                                height: 1.25,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+
+                          const SizedBox(height: 3),
+
+                          // Translation Content (max 2 lines)
+                          Text(
+                            '"$content"',
+                            textAlign: isUrdu ? TextAlign.right : TextAlign.left,
+                            textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: AppColors.textPrimary,
+                              height: 1.3,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+
+                          const SizedBox(height: 5),
+
+                          // Citation / Reference Chip
+                          if (citation.isNotEmpty)
+                            Align(
+                              alignment: isUrdu ? Alignment.centerLeft : Alignment.centerRight,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: containerBg,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: borderColor),
+                                ),
+                                child: Text(
+                                  citation,
+                                  textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: themeColor,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTabPill(int index, String label, IconData icon, Color color) {
+    final isSelected = _selectedTab == index;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedTab = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+        decoration: BoxDecoration(
+          color: isSelected ? color : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isSelected ? color : Colors.grey.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 11.5,
+              color: isSelected ? Colors.white : color,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.bold,
+                color: isSelected ? Colors.white : color,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
