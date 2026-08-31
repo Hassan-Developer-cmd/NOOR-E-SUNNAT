@@ -77,7 +77,6 @@ flutter:
   assets:
     - assets/images/
     - assets/images/team/
-    - assets/images/team/hassan.png
     - assets/images/team/dawood.png
     - assets/images/team/asim.png
     - assets/images/team/ahtesham.png
