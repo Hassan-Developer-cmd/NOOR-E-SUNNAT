@@ -504,7 +504,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       child: Column(
                         children: [
-                          // My Questions
+                          // 1. My Questions & Inquiries
                           ListTile(
                             leading: const Icon(Icons.question_answer_rounded,
                                 color: AppColors.primaryEmerald),
@@ -528,7 +528,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           const Divider(height: 1),
 
-                          // Log Out (Sign Out)
+                          // 2. Delete Account (Permanent Deletion)
+                          ListTile(
+                            leading: const Icon(Icons.delete_forever_rounded,
+                                color: Color(0xFFDC2626)),
+                            title: Text(
+                              lp.tr('delete_account'),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFFDC2626)),
+                            ),
+                            subtitle: Text(
+                              lp.isUrdu
+                                  ? 'تمام ڈیٹا مستقل طور پر ختم ہو جائے گا'
+                                  : 'Irreversible • Erases all Durood & account data',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: const Color(0xFFDC2626).withValues(alpha: 0.8),
+                              ),
+                            ),
+                            trailing: const Icon(Icons.arrow_forward_ios_rounded,
+                                size: 14, color: Colors.grey),
+                            onTap: () => _confirmDeleteAccount(context),
+                          ),
+                          const Divider(height: 1),
+
+                          // 3. Log Out (Sign Out)
                           ListTile(
                             leading: const Icon(Icons.logout_rounded,
                                 color: Color(0xFFE11D48)),
@@ -549,33 +574,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 size: 14, color: Colors.grey),
                             onTap: () => _confirmSignOut(context),
                           ),
-                          const Divider(height: 1),
-
-                          // Delete Account (Permanent Deletion)
-                          ListTile(
-                            leading: const Icon(Icons.delete_forever_rounded,
-                                color: Color(0xFFDC2626)),
-                            title: Text(
-                              lp.tr('delete_account'),
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFFDC2626)),
-                            ),
-                            subtitle: Text(
-                              lp.isUrdu
-                                  ? 'تمام ڈیٹا مستقل طور پر ختم ہو جائے گا'
-                                  : 'Irreversible • Erases all Durood & account data',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: const Color(0xFFDC2626).withValues(alpha: 0.8),
-                              ),
-                            ),
-                            onTap: () => _confirmDeleteAccount(context),
-                          ),
                         ],
                       ),
                     ),
                   ),
+                  const SizedBox(height: 24),
                 ],
 
                 // ── TAB 1: SETTINGS VIEW ──
