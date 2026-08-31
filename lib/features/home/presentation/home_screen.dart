@@ -14,6 +14,8 @@ import '../../../services/events_service.dart';
 import '../../../services/campaign_popup_service.dart';
 import '../../events/presentation/events_screen.dart';
 import 'widgets/event_card.dart';
+import 'widgets/durood_summary_card.dart';
+import 'widgets/gamification_bar.dart';
 import 'widgets/hadith_wisdom_card.dart';
 import 'widgets/notifications_sheet.dart';
 import '../../../services/notification_service.dart';
@@ -54,11 +56,10 @@ class _HomeScreenState extends State<HomeScreen> {
         return Scaffold(
           backgroundColor: AppColors.bgPrimary,
           body: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
             slivers: [
-              // ── Compact Premium App Bar / Header ─────────────────────────
+              // ── Premium App Bar / Header ─────────────────────────────────────
               SliverAppBar(
-                expandedHeight: 132,
+                expandedHeight: 175,
                 pinned: true,
                 backgroundColor: AppColors.primaryEmerald,
                 surfaceTintColor: Colors.transparent,
@@ -102,18 +103,18 @@ class _HomeScreenState extends State<HomeScreen> {
                             colors: [
                               Colors.black.withValues(alpha: 0.2),
                               Colors.transparent,
-                              Colors.black.withValues(alpha: 0.45),
+                              Colors.black.withValues(alpha: 0.4),
                             ],
                             stops: const [0.0, 0.45, 1.0],
                           ),
                         ),
                       ),
 
-                      // 4. Compact User Welcome Greeting & Dynamic Hijri Date Badge
+                      // 3. User Welcome Greeting & Dynamic Hijri Date Badge
                       Positioned(
-                        left: 16,
-                        right: 16,
-                        bottom: 10,
+                        left: 20,
+                        right: 20,
+                        bottom: 16,
                         child: StreamBuilder<AppUser?>(
                           stream: AuthService.currentUserStream,
                           builder: (context, userSnap) {
@@ -153,15 +154,22 @@ class _HomeScreenState extends State<HomeScreen> {
                                               final dateText = hijriDate.getFormatted(lp.isUrdu);
 
                                               return Container(
-                                                margin: const EdgeInsets.only(bottom: 4),
-                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                                                margin: const EdgeInsets.only(bottom: 6),
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
                                                 decoration: BoxDecoration(
                                                   color: Colors.black.withValues(alpha: 0.28),
-                                                  borderRadius: BorderRadius.circular(14),
+                                                  borderRadius: BorderRadius.circular(20),
                                                   border: Border.all(
                                                     color: AppColors.accentGold.withValues(alpha: 0.5),
                                                     width: 1,
                                                   ),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black.withValues(alpha: 0.25),
+                                                      blurRadius: 6,
+                                                      offset: const Offset(0, 2),
+                                                    ),
+                                                  ],
                                                 ),
                                                 child: Row(
                                                   mainAxisSize: MainAxisSize.min,
@@ -169,19 +177,26 @@ class _HomeScreenState extends State<HomeScreen> {
                                                     const Icon(
                                                       Icons.nightlight_round,
                                                       color: AppColors.goldBright,
-                                                      size: 11.5,
+                                                      size: 13,
                                                     ),
-                                                    const SizedBox(width: 5),
+                                                    const SizedBox(width: 6),
                                                     Text(
                                                       dateText,
                                                       style: TextStyle(
                                                         color: Colors.white,
-                                                        fontSize: lp.isUrdu ? 11.5 : 10.5,
+                                                        fontSize: lp.isUrdu ? 12.5 : 11.5,
                                                         fontWeight: FontWeight.w600,
                                                         fontFamily: lp.isUrdu
                                                             ? AppTypography.urduFontFamily
                                                             : AppTypography.englishFontFamily,
-                                                        letterSpacing: lp.isUrdu ? 0 : 0.2,
+                                                        letterSpacing: lp.isUrdu ? 0 : 0.3,
+                                                        shadows: const [
+                                                          Shadow(
+                                                            color: Colors.black54,
+                                                            blurRadius: 4,
+                                                            offset: Offset(0, 1),
+                                                          ),
+                                                        ],
                                                       ),
                                                     ),
                                                   ],
@@ -191,40 +206,47 @@ class _HomeScreenState extends State<HomeScreen> {
                                           );
                                         },
                                       ),
-                                      Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            lp.tr('welcome_greeting'),
-                                            style: const TextStyle(
-                                              color: AppColors.goldBright,
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
-                                              letterSpacing: 0.4,
+                                      Text(
+                                        lp.tr('welcome_greeting'),
+                                        style: TextStyle(
+                                          color: AppColors.goldBright,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          letterSpacing: 0.5,
+                                          shadows: const [
+                                            Shadow(
+                                              color: Colors.black45,
+                                              blurRadius: 4,
+                                              offset: Offset(0, 1),
                                             ),
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Flexible(
-                                            child: Text(
-                                              liveDisplayName,
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 15.5,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        liveDisplayName,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          shadows: const [
+                                            Shadow(
+                                              color: Colors.black54,
+                                              blurRadius: 6,
+                                              offset: Offset(0, 2),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ],
                                   ),
                                 ),
-                                const SizedBox(width: 10),
+                                const SizedBox(width: 12),
                                 // Avatar
                                 UserAvatar(
-                                  radius: 19,
+                                  radius: 22,
                                   profileImageBase64: liveBase64,
                                   photoUrl: livePhotoUrl,
                                   displayName: liveDisplayName,
@@ -249,16 +271,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             GestureDetector(
                               onTap: () => NotificationsSheet.show(context),
                               child: Container(
-                                padding: const EdgeInsets.all(6),
+                                padding: const EdgeInsets.all(7),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(14),
+                                  borderRadius: BorderRadius.circular(16),
                                   border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
                                 ),
                                 child: const Icon(
                                   Icons.notifications_none_rounded,
                                   color: Colors.white,
-                                  size: 18,
+                                  size: 19,
                                 ),
                               ),
                             ),
@@ -267,17 +289,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                 top: -3,
                                 right: -3,
                                 child: Container(
-                                  padding: const EdgeInsets.all(3.5),
+                                  padding: const EdgeInsets.all(4),
                                   decoration: const BoxDecoration(
                                     color: Color(0xFFEF4444),
                                     shape: BoxShape.circle,
                                   ),
-                                  constraints: const BoxConstraints(minWidth: 15, minHeight: 15),
+                                  constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                                   child: Text(
                                     unreadCount > 9 ? '9+' : '$unreadCount',
                                     style: const TextStyle(
                                       color: Colors.white,
-                                      fontSize: 8.5,
+                                      fontSize: 9,
                                       fontWeight: FontWeight.bold,
                                       height: 1,
                                     ),
@@ -300,17 +322,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: GestureDetector(
                         onTap: () => lp.toggleLanguage(),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
                           ),
                           child: Text(
                             lp.isUrdu ? 'EN' : 'اردو',
                             style: const TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
                               color: Colors.white,
                             ),
                           ),
@@ -319,26 +341,96 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ],
+
               ),
 
-              // ── Main Content (Optimized Above-The-Fold Viewport) ──────────
+              // ── Content ─────────────────────────────────────────────────────
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 20),
+                padding: const EdgeInsets.all(16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    // 1. Compact Live Durood & Gamification Hero Card
-                    _CompactDuroodHero(
-                      counterService: widget.counterService,
-                      onSendSalawat: widget.onNavigateToCounter,
+                    // Gamification Row & Durood Summary Card wrapped with StreamBuilder for live launch streaming
+                    StreamBuilder<CounterSnapshot>(
+                      stream: widget.counterService.snapshotStream,
+                      initialData: widget.counterService.snapshot,
+                      builder: (context, snapshot) {
+                        final snap = snapshot.data ?? widget.counterService.snapshot;
+                        return Column(
+                          children: [
+                            GamificationBar(
+                              streakDays: snap.currentStreak,
+                              duroodPoints: snap.duroodPoints,
+                            ),
+                            const SizedBox(height: 16),
+                            DuroodSummaryCard(
+                              counterService: widget.counterService,
+                              onSendSalawat: widget.onNavigateToCounter,
+                            ),
+                          ],
+                        );
+                      },
                     ),
                     const SizedBox(height: 14),
 
-                    // 2. Prominent Upcoming Events Section (Directly Above The Fold)
-                    const _UpcomingEventsSection(),
-                    const SizedBox(height: 14),
+                    // Send Salawat CTA
+                    Container(
+                      width: double.infinity,
+                      constraints: const BoxConstraints(minHeight: 52),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryEmerald,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 2,
+                        ),
+                        onPressed: widget.onNavigateToCounter,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.touch_app_rounded,
+                              size: 20,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  lp.tr('send_salawat_now'),
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.3,
+                                    color: Colors.white,
+                                    fontFamily: lp.isUrdu ? AppTypography.urduFontFamily : AppTypography.englishFontFamily,
+                                  ),
+                                  strutStyle: const StrutStyle(
+                                    forceStrutHeight: true,
+                                    height: 1.3,
+                                  ),
+                                  maxLines: 1,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
 
-                    // 3. Compact Daily Wisdom Card (Hadith / Ayat / Topic Switcher)
+                    const SizedBox(height: 28),
+
+                    // Upgraded Responsive PageView Events Section with Dynamic Dots & Arrow Nav
+                    const _UpcomingEventsSection(),
+                    const SizedBox(height: 24),
+
+                    // Hadith Card
                     const HadithWisdomCard(),
+                    const SizedBox(height: 16),
                   ]),
                 ),
               ),
@@ -350,282 +442,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-/// Compact Live Durood & Gamification Hero Bar
-class _CompactDuroodHero extends StatelessWidget {
-  final CounterService counterService;
-  final VoidCallback onSendSalawat;
+class _UpcomingEventsSection extends StatelessWidget {
+  const _UpcomingEventsSection();
 
-  const _CompactDuroodHero({
-    required this.counterService,
-    required this.onSendSalawat,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final lp = globalLanguageProvider;
-    final isUrdu = lp.isUrdu;
-
-    return StreamBuilder<CounterSnapshot>(
-      stream: counterService.snapshotStream,
-      initialData: counterService.snapshot,
-      builder: (context, snapshot) {
-        final snap = snapshot.data ?? counterService.snapshot;
-
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.borderLight),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Top Row: Streak Pill | Points Pill | Live Pulse Badge
-              Row(
-                children: [
-                  // Streak Pill
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF7ED),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFFED7AA)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.local_fire_department_rounded, size: 12.5, color: Color(0xFFEA580C)),
-                        const SizedBox(width: 3.5),
-                        Text(
-                          '${snap.currentStreak} ${lp.tr('streak_days')}',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFC2410C),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-
-                  // Points Pill
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                    decoration: BoxDecoration(
-                      color: AppColors.goldLight,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFF5D77E)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.star_rounded, size: 12.5, color: AppColors.accentGold),
-                        const SizedBox(width: 3.5),
-                        Text(
-                          '${snap.duroodPoints} ${isUrdu ? 'پوائنٹس' : 'Pts'}',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF854D0E),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const Spacer(),
-
-                  // Live Status Indicator
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6.5, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppColors.emeraldContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 5,
-                          height: 5,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primaryEmerald,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 3.5),
-                        Text(
-                          lp.tr('live_updates'),
-                          style: const TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primaryEmerald,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 8),
-
-              // Bottom Row: Today Stat | Global Stat | Send Salawat CTA
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Personal Today Stat
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          lp.tr('my_today'),
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF64748B),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            _fmt(snap.personalToday),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primaryEmerald,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  Container(
-                    width: 1,
-                    height: 26,
-                    color: AppColors.borderLight,
-                    margin: const EdgeInsets.symmetric(horizontal: 6),
-                  ),
-
-                  // Global Stat
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          lp.tr('global_total'),
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF64748B),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            _fmt(snap.globalTotal),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF0F172A),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(width: 8),
-
-                  // Send Salawat CTA Button
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryEmerald,
-                      foregroundColor: Colors.white,
-                      elevation: 1,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    onPressed: onSendSalawat,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.touch_app_rounded,
-                          size: 14,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          lp.tr('send_salawat_now'),
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                            fontFamily: isUrdu ? AppTypography.urduFontFamily : AppTypography.englishFontFamily,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
+  Widget _buildDirectEventCard(BuildContext context, EventModel event, String languageCode) {
+    return EventCard(
+      key: ValueKey('event_card_${event.id}_$languageCode'),
+      event: event,
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const UpcomingEventsScreen(),
           ),
         );
       },
     );
-  }
-
-  static String _fmt(int n) => n.toString().replaceAllMapped(
-        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-        (m) => '${m[1]},',
-      );
-}
-
-/// Upgraded Responsive Horizontal PageView Events Section with Dots Indicator
-class _UpcomingEventsSection extends StatefulWidget {
-  const _UpcomingEventsSection();
-
-  @override
-  State<_UpcomingEventsSection> createState() => _UpcomingEventsSectionState();
-}
-
-class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
-  late final PageController _pageController;
-  int _currentPage = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(viewportFraction: 0.93);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
   }
 
   @override
@@ -634,26 +466,32 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
       listenable: globalLanguageProvider,
       builder: (context, _) {
         final lp = globalLanguageProvider;
-        final isUrdu = lp.isUrdu;
         final languageCode = lp.locale.languageCode;
 
         return StreamBuilder<List<EventModel>>(
           stream: EventsService.eventsStream,
           builder: (context, snapshot) {
             if (snapshot.hasError) {
-              return const SizedBox.shrink();
-            }
-
-            if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
               return Container(
-                height: 145,
+                height: 100,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: AppColors.borderLight),
                 ),
-                child: const Center(
+                child: Text(
+                  lp.tr('no_upcoming_events'),
+                  style: AppTypography.bodyMedium,
+                ),
+              );
+            }
+
+            if (snapshot.connectionState == ConnectionState.waiting &&
+                !snapshot.hasData) {
+              return const SizedBox(
+                height: 180,
+                child: Center(
                   child: CircularProgressIndicator(
                     color: AppColors.primaryEmerald,
                     strokeWidth: 2,
@@ -665,71 +503,35 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
             final events = snapshot.data ?? [];
             if (events.isEmpty) {
               return Container(
-                height: 75,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
+                height: 100,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: AppColors.borderLight),
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(7),
-                      decoration: BoxDecoration(
-                        color: AppColors.emeraldContainer,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.event_available_rounded, size: 18, color: AppColors.primaryEmerald),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        lp.tr('no_upcoming_events'),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  lp.tr('no_upcoming_events'),
+                  style: AppTypography.bodyMedium,
                 ),
               );
             }
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: [
-                // Header Row
+                // Section Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 3.5,
-                          height: 14,
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryEmerald,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          lp.tr('upcoming_events'),
-                          key: ValueKey('upcoming_events_title_$languageCode'),
-                          style: TextStyle(
-                            fontSize: isUrdu ? 14.5 : 13.5,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF0F172A),
-                            letterSpacing: isUrdu ? 0 : 0.2,
-                          ),
-                        ),
-                      ],
+                    Expanded(
+                      child: Text(
+                        lp.tr('upcoming_events'),
+                        key: ValueKey('upcoming_events_title_$languageCode'),
+                        style: AppTypography.headingMedium,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     InkWell(
                       onTap: () {
@@ -742,89 +544,38 @@ class _UpcomingEventsSectionState extends State<_UpcomingEventsSection> {
                       },
                       borderRadius: BorderRadius.circular(8),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              lp.tr('view_all'),
-                              key: ValueKey('view_all_link_$languageCode'),
-                              style: const TextStyle(
-                                color: AppColors.primaryEmerald,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 11.5,
-                              ),
-                            ),
-                            const SizedBox(width: 2),
-                            Icon(
-                              isUrdu ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
-                              size: 15,
-                              color: AppColors.primaryEmerald,
-                            ),
-                          ],
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        child: Text(
+                          lp.tr('view_all'),
+                          key: ValueKey('view_all_link_$languageCode'),
+                          style: const TextStyle(
+                            color: AppColors.primaryEmerald,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
 
-                // Horizontal PageView Carousel
+                // Bulletproof Horizontal Scrollable List
                 SizedBox(
-                  height: 150,
-                  child: PageView.builder(
-                    controller: _pageController,
-                    itemCount: events.length,
-                    onPageChanged: (idx) {
-                      setState(() => _currentPage = idx);
-                    },
+                  height: 180,
+                  child: ListView.separated(
+                    key: ValueKey('events_listview_$languageCode'),
+                    scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
+                    clipBehavior: Clip.none,
+                    itemCount: events.length,
+                    separatorBuilder: (context, index) => const SizedBox(width: 12),
                     itemBuilder: (context, index) {
                       final event = events[index];
-                      return Padding(
-                        padding: EdgeInsetsDirectional.only(
-                          end: index == events.length - 1 ? 0 : 8,
-                        ),
-                        child: EventCard(
-                          key: ValueKey('event_card_${event.id}_$languageCode'),
-                          event: event,
-                          height: 150,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const UpcomingEventsScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                      );
+                      return _buildDirectEventCard(context, event, languageCode);
                     },
                   ),
                 ),
-
-                // Smooth Page Indicator Dots (rendered when multiple events exist)
-                if (events.length > 1) ...[
-                  const SizedBox(height: 7),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(events.length, (index) {
-                      final isActive = index == _currentPage;
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        margin: const EdgeInsets.symmetric(horizontal: 3),
-                        width: isActive ? 16 : 5,
-                        height: 4.5,
-                        decoration: BoxDecoration(
-                          color: isActive
-                              ? AppColors.primaryEmerald
-                              : AppColors.primaryEmerald.withValues(alpha: 0.22),
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                      );
-                    }),
-                  ),
-                ],
               ],
             );
           },
