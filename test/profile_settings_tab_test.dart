@@ -81,8 +81,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Our Dedicated Team'), findsOneWidget);
-      expect(find.text('Hassan Awan'), findsOneWidget);
-      expect(find.text('Shariah & Hadith Research'), findsOneWidget);
+      expect(find.text('HASSAN AWAN'), findsOneWidget);
+      expect(find.text('IT TEAM'), findsOneWidget);
+      expect(find.text('ISLAMIC RESEARCH TEAM'), findsOneWidget);
     });
 
     testWidgets('shareApp executes directly without throwing', (WidgetTester tester) async {

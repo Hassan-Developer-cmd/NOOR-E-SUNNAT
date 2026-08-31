@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_typography.dart';
+import '../../../../core/models/team_member.dart';
 import '../../../../main.dart';
 
 class ProfileSettingsSheets {
@@ -405,6 +406,7 @@ class ProfileSettingsSheets {
   // ── 2. Our Team Modal Sheet ──────────────────────────────────────────
   static void showOurTeamSheet(BuildContext context) {
     final lp = globalLanguageProvider;
+    final isUrdu = lp.isUrdu;
 
     showModalBottomSheet(
       context: context,
@@ -412,18 +414,19 @@ class ProfileSettingsSheets {
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
+          maxHeight: MediaQuery.of(context).size.height * 0.88,
         ),
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
         child: Directionality(
           textDirection: lp.textDirection,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Grab Handle
               Center(
                 child: Container(
                   width: 44,
@@ -434,7 +437,7 @@ class ProfileSettingsSheets {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
               Expanded(
                 child: SingleChildScrollView(
@@ -451,7 +454,11 @@ class ProfileSettingsSheets {
                               color: AppColors.emeraldContainer,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.groups_rounded, color: AppColors.primaryEmerald, size: 26),
+                            child: const Icon(
+                              Icons.groups_rounded,
+                              color: AppColors.primaryEmerald,
+                              size: 26,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Flexible(
@@ -460,71 +467,67 @@ class ProfileSettingsSheets {
                               children: [
                                 Text(
                                   lp.tr('our_team_title'),
-                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.emeraldDeep),
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.emeraldDeep,
+                                  ),
                                 ),
                                 Text(
                                   lp.tr('our_team_subtitle'),
-                                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                         ],
                       ),
+                      const SizedBox(height: 22),
+
+                      // Section 1: IT TEAM
+                      _buildTeamSection(
+                        context: ctx,
+                        categoryTitle: isUrdu ? 'آئی ٹی ٹیم' : 'IT TEAM',
+                        members: TeamMember.itTeam,
+                        isUrdu: isUrdu,
+                      ),
                       const SizedBox(height: 24),
 
-                      // Team Members 2-Column Grid
-                      GridView.count(
-                        crossAxisCount: 2,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 0.60,
-                        children: [
-                          _buildTeamGridCard(
-                            context: ctx,
-                            name: 'Hassan Awan',
-                            role: lp.tr('App Developer'),
-                            desc: 'Leading mobile app architecture, cloud integrations, and core feature development for Noor e Sunnat.',
-                            imagePath: 'assets/images/team_hassan.jpeg',
-                            fallbackIcon: Icons.code_rounded,
-                            badgeColor: const Color(0xFF0284C7),
-                          ),
-                          _buildTeamGridCard(
-                            context: ctx,
-                            name: lp.tr('team_member_2_name'),
-                            role: lp.tr('team_scholar_role'),
-                            desc: lp.tr('team_scholar_desc'),
-                            imagePath: null, // Placeholder: e.g. 'assets/images/team_scholar.png' or URL
-                            fallbackIcon: Icons.menu_book_rounded,
-                            badgeColor: AppColors.primaryEmerald,
-                          ),
-                          _buildTeamGridCard(
-                            context: ctx,
-                            name: lp.tr('team_member_3_name'),
-                            role: lp.tr('team_design_role'),
-                            desc: lp.tr('team_design_desc'),
-                            imagePath: null, // Placeholder: e.g. 'assets/images/team_design.png' or URL
-                            fallbackIcon: Icons.palette_rounded,
-                            badgeColor: const Color(0xFFD97706),
-                          ),
-                        ],
+                      // Section 2: ISLAMIC RESEARCH TEAM
+                      _buildTeamSection(
+                        context: ctx,
+                        categoryTitle: isUrdu ? 'اسلامک ریسرچ ٹیم' : 'ISLAMIC RESEARCH TEAM',
+                        members: TeamMember.islamicResearchTeam,
+                        isUrdu: isUrdu,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
 
                       // Contact Support Box
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.bgOffWhite,
+                          color: const Color(0xFFF8FAFC),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: AppColors.borderLight),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.mail_outline_rounded, color: AppColors.primaryEmerald, size: 24),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.emeraldContainer,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.mail_outline_rounded,
+                                color: AppColors.primaryEmerald,
+                                size: 20,
+                              ),
+                            ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
@@ -532,11 +535,20 @@ class ProfileSettingsSheets {
                                 children: [
                                   Text(
                                     lp.tr('contact_support'),
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      color: AppColors.textPrimary,
+                                    ),
                                   ),
+                                  const SizedBox(height: 2),
                                   Text(
                                     lp.tr('contact_email_label'),
-                                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.primaryEmerald,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -557,10 +569,15 @@ class ProfileSettingsSheets {
                     backgroundColor: AppColors.primaryEmerald,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                   onPressed: () => Navigator.pop(ctx),
-                  child: Text(lp.tr('close'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                  child: Text(
+                    lp.tr('close'),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ],
@@ -570,381 +587,257 @@ class ProfileSettingsSheets {
     );
   }
 
-  static Widget _buildTeamGridCard({
+  /// Builds a section with a Teal pill header, vertical timeline line, and member cards
+  static Widget _buildTeamSection({
     required BuildContext context,
-    required String name,
-    required String role,
-    String? desc,
-    String? imagePath,
-    required IconData fallbackIcon,
-    required Color badgeColor,
+    required String categoryTitle,
+    required List<TeamMember> members,
+    required bool isUrdu,
   }) {
-    final lp = globalLanguageProvider;
-    final bool hasImage = imagePath != null && imagePath.trim().isNotEmpty;
+    return Column(
+      children: [
+        // Section Header Pill
+        _buildSectionHeaderPill(categoryTitle),
+        const SizedBox(height: 14),
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _showMemberDetailSheet(
-          context,
-          name: name,
-          role: role,
-          desc: desc,
-          imagePath: imagePath,
-          fallbackIcon: fallbackIcon,
-          badgeColor: badgeColor,
+        // Timeline layout: Vertical line on side + List of member cards
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Vertical accent timeline line
+            Container(
+              width: 3.5,
+              margin: const EdgeInsets.only(top: 10, bottom: 10),
+              constraints: BoxConstraints(minHeight: members.length * 80.0),
+              decoration: BoxDecoration(
+                color: const Color(0xFF007A6C),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // Member cards
+            Expanded(
+              child: Column(
+                children: members
+                    .map((member) => _buildTeamMemberCard(context, member, isUrdu))
+                    .toList(),
+              ),
+            ),
+          ],
         ),
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(10, 12, 10, 10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.borderLight),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x08000000),
-                blurRadius: 10,
-                offset: Offset(0, 3),
-              ),
-            ],
+      ],
+    );
+  }
+
+  /// Section Header Pill matching the provided visual design
+  static Widget _buildSectionHeaderPill(String title) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF007A6C),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF007A6C).withValues(alpha: 0.28),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Circular Avatar with Badge
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: badgeColor.withValues(alpha: 0.12),
-                      border: Border.all(color: badgeColor.withValues(alpha: 0.4), width: 2.5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: badgeColor.withValues(alpha: 0.15),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: ClipOval(
-                      child: hasImage
-                          ? (imagePath.startsWith('http')
-                              ? Image.network(
-                                  imagePath,
-                                  fit: BoxFit.cover,
-                                  width: 56,
-                                  height: 56,
-                                  errorBuilder: (_, _, _) => _buildAvatarFallback(fallbackIcon, badgeColor, name, size: 22),
-                                )
-                              : Image.asset(
-                                  imagePath,
-                                  fit: BoxFit.cover,
-                                  width: 56,
-                                  height: 56,
-                                  errorBuilder: (_, _, _) => _buildAvatarFallback(fallbackIcon, badgeColor, name, size: 22),
-                                ))
-                          : _buildAvatarFallback(fallbackIcon, badgeColor, name, size: 22),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: -2,
-                    right: -2,
-                    child: Container(
-                      padding: const EdgeInsets.all(3.5),
-                      decoration: BoxDecoration(
-                        color: badgeColor,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
-                      ),
-                      child: Icon(fallbackIcon, size: 10, color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
+        ],
+      ),
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 13.5,
+          letterSpacing: 1.1,
+        ),
+      ),
+    );
+  }
 
-              // Member Name
-              Text(
-                name,
-                style: const TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 3),
+  /// Individual Member Card Container
+  static Widget _buildTeamMemberCard(
+    BuildContext context,
+    TeamMember member,
+    bool isUrdu,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Circular Avatar (Image or Initial Fallback)
+          _buildMemberAvatar(member),
+          const SizedBox(width: 14),
 
-              // Role Badge Pill
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: badgeColor.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  role,
+          // Member Details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Name
+                Text(
+                  isUrdu ? member.nameUr : member.name.toUpperCase(),
                   style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: badgeColor,
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF0F172A),
+                    letterSpacing: isUrdu ? 0 : 0.4,
+                    fontFamily: isUrdu ? AppTypography.urduFontFamily : null,
                   ),
-                  textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
+                const SizedBox(height: 2),
 
-              if (desc != null && desc.trim().isNotEmpty) ...[
-                const SizedBox(height: 5),
-                Expanded(
-                  child: Text(
-                    desc,
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      color: Colors.grey.shade600,
-                      height: 1.25,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
+                // Role
+                Text(
+                  isUrdu ? member.roleUr : member.role.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF64748B),
+                    letterSpacing: isUrdu ? 0 : 0.3,
+                    fontFamily: isUrdu ? AppTypography.urduFontFamily : null,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
-              const SizedBox(height: 4),
+                const SizedBox(height: 6),
 
-              // Detail Arrow Button
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: badgeColor.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
+                // Mini Pill Tag (Matching screenshot [TEAL] SUB-ROLE)
+                Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      lp.tr('team_view_details'),
-                      style: TextStyle(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.bold,
-                        color: badgeColor,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF007A6C),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        isUrdu ? 'شعبہ' : (member.category == 'IT TEAM' ? 'IT' : 'RESEARCH'),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 3),
-                    Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 9,
-                      color: badgeColor,
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        isUrdu ? member.tagUr : member.tag,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF007A6C),
+                          letterSpacing: 0.3,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Displays the full untruncated profile & bio for a team member
-  static void _showMemberDetailSheet(
-    BuildContext context, {
-    required String name,
-    required String role,
-    String? desc,
-    String? imagePath,
-    required IconData fallbackIcon,
-    required Color badgeColor,
-  }) {
-    final lp = globalLanguageProvider;
-    final bool hasImage = imagePath != null && imagePath.trim().isNotEmpty;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        padding: const EdgeInsets.fromLTRB(22, 16, 22, 28),
-        child: Directionality(
-          textDirection: lp.textDirection,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Large Member Avatar
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: 76,
-                    height: 76,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: badgeColor.withValues(alpha: 0.12),
-                      border: Border.all(color: badgeColor.withValues(alpha: 0.45), width: 3),
-                      boxShadow: [
-                        BoxShadow(
-                          color: badgeColor.withValues(alpha: 0.2),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: ClipOval(
-                      child: hasImage
-                          ? (imagePath.startsWith('http')
-                              ? Image.network(
-                                  imagePath,
-                                  fit: BoxFit.cover,
-                                  width: 76,
-                                  height: 76,
-                                  errorBuilder: (_, _, _) => _buildAvatarFallback(fallbackIcon, badgeColor, name, size: 30),
-                                )
-                              : Image.asset(
-                                  imagePath,
-                                  fit: BoxFit.cover,
-                                  width: 76,
-                                  height: 76,
-                                  errorBuilder: (_, _, _) => _buildAvatarFallback(fallbackIcon, badgeColor, name, size: 30),
-                                ))
-                          : _buildAvatarFallback(fallbackIcon, badgeColor, name, size: 30),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(5),
-                      decoration: BoxDecoration(
-                        color: badgeColor,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: Icon(fallbackIcon, size: 13, color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-
-              // Name
-              Text(
-                name,
-                style: const TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 6),
-
-              // Role Badge Chip
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: badgeColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  role,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: badgeColor,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-
-              // Full Untruncated Description Box
-              if (desc != null && desc.trim().isNotEmpty) ...[
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.borderLight),
-                  ),
-                  child: Text(
-                    desc,
-                    style: TextStyle(
-                      fontSize: 13,
-                      height: 1.5,
-                      color: Colors.grey.shade800,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                const SizedBox(height: 20),
               ],
-
-              // Close Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryEmerald,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text(lp.tr('close'), style: const TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  static Widget _buildAvatarFallback(IconData icon, Color color, String name, {double size = 22}) {
-    final initials = name.trim().isNotEmpty
-        ? name.trim().split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join('').toUpperCase()
-        : '';
+  /// Circular Member Avatar with fallback handling
+  static Widget _buildMemberAvatar(TeamMember member) {
+    final initials = member.name.trim().isNotEmpty
+        ? member.name
+            .trim()
+            .split(' ')
+            .where((e) => e.isNotEmpty)
+            .map((e) => e[0])
+            .take(2)
+            .join()
+        : 'NS';
 
-    if (initials.isNotEmpty && initials.length <= 2 && RegExp(r'^[A-Z0-9]+$').hasMatch(initials)) {
-      return Center(
-        child: Text(
-          initials,
-          style: TextStyle(
-            fontSize: size,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: const Color(0xFFF1F5F9),
+        border: Border.all(
+          color: const Color(0xFF007A6C).withValues(alpha: 0.25),
+          width: 2,
         ),
-      );
-    }
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: member.imagePath != null
+            ? Image.asset(
+                member.imagePath!,
+                width: 56,
+                height: 56,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  // Secondary fallback check for Hassan Awan
+                  if (member.name.contains('Hassan')) {
+                    return Image.asset(
+                      'assets/images/team_hassan.png',
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.cover,
+                      errorBuilder: (ctx, err, stack) => _buildAvatarFallback(initials),
+                    );
+                  }
+                  return _buildAvatarFallback(initials);
+                },
+              )
+            : _buildAvatarFallback(initials),
+      ),
+    );
+  }
 
-    return Center(
-      child: Icon(icon, color: color, size: size + 4),
+  static Widget _buildAvatarFallback(String initials) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF0F766E), Color(0xFF007A6C)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        initials.toUpperCase(),
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 17,
+          letterSpacing: 0.5,
+        ),
+      ),
     );
   }
 
