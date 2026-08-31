@@ -143,8 +143,8 @@ class _MasailGridScreenState extends State<MasailGridScreen> {
                                 const SizedBox(height: 3),
                                 Text(
                                   lp.isUrdu
-                                      ? 'مفتی / ایڈمن سے پوچھیں، 24 گھنٹے میں جواب حاصل کریں۔'
-                                      : 'Ask admin team & get a verified reply within 24h.',
+                                      ? 'اسلامک ریسرچ ٹیم سے پوچھیں، 24 گھنٹے میں جواب حاصل کریں۔'
+                                      : 'Ask Islamic research team & get a verified reply within 24h.',
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.85),
                                     fontSize: 12,
