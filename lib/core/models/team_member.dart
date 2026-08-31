@@ -33,12 +33,12 @@ class TeamMember {
     TeamMember(
       name: 'Hassan Awan',
       nameUr: 'حسن اعوان',
-      role: 'Lead Developer',
-      roleUr: 'لیڈ سافٹ ویئر انجینئر',
+      role: 'Developer',
+      roleUr: 'سافٹ ویئر ڈویلپر',
       category: 'IT TEAM',
       imagePath: 'assets/images/team/hassan.png',
-      tag: 'LEAD ENGINEER',
-      tagUr: 'لیڈ انجینئر',
+      tag: 'DEVELOPER',
+      tagUr: 'ڈویلپر',
     ),
     TeamMember(
       name: 'Muhammad Asim',
