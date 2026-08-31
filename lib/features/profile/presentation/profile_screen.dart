@@ -528,6 +528,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           const Divider(height: 1),
 
+                          // Log Out (Sign Out)
+                          ListTile(
+                            leading: const Icon(Icons.logout_rounded,
+                                color: Color(0xFFE11D48)),
+                            title: Text(
+                              lp.tr('log_out'),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFFE11D48)),
+                            ),
+                            subtitle: Text(
+                              lp.tr('sign_out_sub'),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: const Color(0xFFE11D48).withValues(alpha: 0.8),
+                              ),
+                            ),
+                            trailing: const Icon(Icons.arrow_forward_ios_rounded,
+                                size: 14, color: Colors.grey),
+                            onTap: () => _confirmSignOut(context),
+                          ),
+                          const Divider(height: 1),
+
                           // Delete Account (Permanent Deletion)
                           ListTile(
                             leading: const Icon(Icons.delete_forever_rounded,
@@ -687,33 +710,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             onTap: () => ProfileSettingsSheets.showTermsAndPolicySheet(context),
                           ),
                         ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Card 3: Session (Sign Out)
-                  Material(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    clipBehavior: Clip.antiAlias,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.borderLight),
-                      ),
-                      child: ListTile(
-                        leading: const Icon(Icons.logout_rounded,
-                            color: Color(0xFFE11D48)),
-                        title: Text(
-                          lp.tr('sign_out'),
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFFE11D48)),
-                        ),
-                        trailing: const Icon(Icons.arrow_forward_ios_rounded,
-                            size: 14, color: Colors.grey),
-                        onTap: () => _confirmSignOut(context),
                       ),
                     ),
                   ),
@@ -1206,54 +1202,88 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _navigateToLogin(BuildContext context) {
-    try {
-      Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-        '/login',
-        (route) => false,
-      );
-    } catch (_) {
-      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (context) => LoginScreen(
-            onLoginSuccess: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const MainShell()),
-              );
-            },
-          ),
+    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (context) => LoginScreen(
+          onLoginSuccess: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const MainShell()),
+            );
+          },
         ),
-        (route) => false,
-      );
-    }
+      ),
+      (route) => false,
+    );
   }
 
   void _confirmSignOut(BuildContext context) {
     final lp = globalLanguageProvider;
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(lp.tr('sign_out_confirm_title')),
-        content: Text(lp.tr('sign_out_confirm_msg')),
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF1F2),
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFFECDD3)),
+              ),
+              child: const Icon(
+                Icons.logout_rounded,
+                color: Color(0xFFE11D48),
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                lp.tr('sign_out_confirm_title'),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          lp.tr('sign_out_confirm_msg'),
+          style: const TextStyle(
+            fontSize: 13.5,
+            color: Color(0xFF4B5563),
+            height: 1.45,
+          ),
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(lp.tr('cancel')),
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text(
+              lp.tr('cancel'),
+              style: const TextStyle(color: Color(0xFF6B7280)),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFE11D48),
               foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             onPressed: () async {
-              Navigator.pop(ctx);
+              Navigator.pop(dialogCtx);
               await AuthService.signOut();
               if (context.mounted) {
                 _navigateToLogin(context);
               }
             },
-            child: Text(lp.tr('sign_out')),
+            child: Text(lp.tr('log_out')),
           ),
         ],
       ),
