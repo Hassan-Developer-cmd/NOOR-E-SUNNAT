@@ -175,40 +175,161 @@ class ProfileSettingsSheets {
                       ),
                       const SizedBox(height: 20),
 
-                      // Salawat Quote Banner
+                      // About Us Content Container
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF0FDF4),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(18),
                           border: Border.all(color: const Color(0xFFBBF7D0)),
                         ),
-                        child: Column(
-                          children: [
-                            const Text(
-                              'اللَّهُمَّ صَلِّ عَلَى سَيِّدِنَا مُحَمَّدٍ وَعَلَى آلِ سَيِّدِنَا مُحَمَّدٍ',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.emeraldDark,
-                                height: 1.6,
+                        child: isUrdu
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.info_outline_rounded,
+                                          color: AppColors.primaryEmerald, size: 20),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'ہمارے بارے میں',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.emeraldDeep,
+                                          fontFamily: AppTypography.urduFontFamily,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text.rich(
+                                    TextSpan(
+                                      style: TextStyle(
+                                        fontSize: 13.5,
+                                        height: 1.75,
+                                        color: const Color(0xFF334155),
+                                        fontFamily: AppTypography.urduFontFamily,
+                                      ),
+                                      children: const [
+                                        TextSpan(
+                                          text: 'نورِ سنت ',
+                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.emeraldDark),
+                                        ),
+                                        TextSpan(
+                                          text: 'ایک ڈیجیٹل پلیٹ فارم ہے جس کا مقصد جدید ٹیکنالوجی کے ذریعے مستند اسلامی علم کو عام لوگوں، خصوصاً مسلم نوجوانوں تک آسان انداز میں پہنچانا ہے۔\n\n'
+                                              'ہماری کوشش ہے کہ صارفین ',
+                                        ),
+                                        TextSpan(
+                                          text: 'اسلام کے بنیادی عقائد اور ضروری تعلیمات ',
+                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.emeraldDark),
+                                        ),
+                                        TextSpan(
+                                          text: 'کو سمجھیں اور ہمارے پیارے نبی محمد مصطفیٰ ﷺ کی سنتوں کو اپنی روزمرہ زندگی کا حصہ بنائیں۔\n\n'
+                                              'ایپ میں ',
+                                        ),
+                                        TextSpan(
+                                          text: 'درود و سلام، اسلامی عقائد، ضروری اسلامی رہنمائی اور روزمرہ مسائل کے جوابات ',
+                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.emeraldDark),
+                                        ),
+                                        TextSpan(
+                                          text: 'سمیت مختلف اسلامی سہولیات اور مواد فراہم کیا جاتا ہے۔\n\n'
+                                              'ہمارا اسلامی مواد ',
+                                        ),
+                                        TextSpan(
+                                          text: 'مستند اسلامی ماخذ اور اہلِ سنت کی معتبر کتب ',
+                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.emeraldDark),
+                                        ),
+                                        TextSpan(
+                                          text: 'سے اخذ کیا گیا ہے اور اسے علمائے کرام کی رہنمائی و نگرانی میں مرتب کیا جاتا ہے۔\n\n'
+                                              'نورِ سنت کے ذریعے ہمارا مقصد ٹیکنالوجی کو ',
+                                        ),
+                                        TextSpan(
+                                          text: 'اسلام کی خدمت، نفع بخش علم کی اشاعت اور ہمارے پیارے نبی محمد مصطفیٰ ﷺ کی محبت کو دلوں میں مضبوط کرنے ',
+                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.emeraldDark),
+                                        ),
+                                        TextSpan(
+                                          text: 'کا ذریعہ بنانا ہے۔',
+                                        ),
+                                      ],
+                                    ),
+                                    textAlign: TextAlign.start,
+                                  ),
+                                ],
+                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.info_outline_rounded,
+                                          color: AppColors.primaryEmerald, size: 20),
+                                      const SizedBox(width: 8),
+                                      const Text(
+                                        'About Us',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.emeraldDeep,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text.rich(
+                                    const TextSpan(
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        height: 1.6,
+                                        color: Color(0xFF334155),
+                                      ),
+                                      children: [
+                                        TextSpan(
+                                          text: 'Noor-e-Sunnat ',
+                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.emeraldDark),
+                                        ),
+                                        TextSpan(
+                                          text: 'is a digital platform dedicated to making authentic Islamic knowledge accessible through modern technology, especially for Muslim youth.\n\n'
+                                              'Our mission is to help users understand the ',
+                                        ),
+                                        TextSpan(
+                                          text: 'fundamental beliefs and essential teachings of Islam ',
+                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.emeraldDark),
+                                        ),
+                                        TextSpan(
+                                          text: 'and bring the Sunnahs of our beloved Prophet Muhammad ﷺ into their daily lives.\n\n'
+                                              'The app offers ',
+                                        ),
+                                        TextSpan(
+                                          text: 'Durood & Salawat, Islamic beliefs, essential Islamic guidance, and answers to everyday questions',
+                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.emeraldDark),
+                                        ),
+                                        TextSpan(
+                                          text: '.\n\nOur content is carefully prepared from ',
+                                        ),
+                                        TextSpan(
+                                          text: 'authentic Islamic sources and recognized books of Ahl al-Sunnah',
+                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.emeraldDark),
+                                        ),
+                                        TextSpan(
+                                          text: ', under the guidance and supervision of Islamic scholars.\n\n'
+                                              'Through Noor-e-Sunnat, we strive to use technology as a means to ',
+                                        ),
+                                        TextSpan(
+                                          text: 'serve Islam, spread beneficial knowledge, and strengthen the love for our beloved Prophet Muhammad ﷺ',
+                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.emeraldDark),
+                                        ),
+                                        TextSpan(
+                                          text: '.',
+                                        ),
+                                      ],
+                                    ),
+                                    textAlign: TextAlign.start,
+                                  ),
+                                ],
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              lp.tr('about_app_desc'),
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 13,
-                                height: 1.5,
-                                color: Colors.grey.shade800,
-                                fontFamily: isUrdu ? AppTypography.urduFontFamily : AppTypography.englishFontFamily,
-                              ),
-                            ),
-                          ],
-                        ),
                       ),
                       const SizedBox(height: 20),
 
