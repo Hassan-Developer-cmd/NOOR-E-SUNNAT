@@ -99,7 +99,7 @@ class TeamMember {
       role: 'Content Researcher',
       roleUr: 'ریسرچ اسکالر',
       category: 'ISLAMIC RESEARCH TEAM',
-      imagePath: 'assets/images/team/dawood_research.png',
+      imagePath: 'assets/images/team/dawood.png',
       tag: 'RESEARCHER',
       tagUr: 'محقق',
     ),

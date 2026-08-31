@@ -801,16 +801,6 @@ class ProfileSettingsSheets {
                 height: 56,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
-                  // Secondary fallback check for Hassan Awan
-                  if (member.name.contains('Hassan')) {
-                    return Image.asset(
-                      'assets/images/team_hassan.png',
-                      width: 56,
-                      height: 56,
-                      fit: BoxFit.cover,
-                      errorBuilder: (ctx, err, stack) => _buildAvatarFallback(initials),
-                    );
-                  }
                   return _buildAvatarFallback(initials);
                 },
               )
