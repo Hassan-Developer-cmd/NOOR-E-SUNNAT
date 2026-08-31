@@ -77,6 +77,14 @@ flutter:
   assets:
     - assets/images/
     - assets/images/team/
+    - assets/images/team/hassan.png
+    - assets/images/team/dawood.png
+    - assets/images/team/asim.png
+    - assets/images/team/ahtesham.png
+    - assets/images/team/ibrahim.png
+    - assets/images/team/awais.png
+    - assets/images/team/haroon.png
+    - assets/images/team/dawood_research.png
     - assets/icons/
 
   # An image asset can refer to one or more resolution-specific "variants", see

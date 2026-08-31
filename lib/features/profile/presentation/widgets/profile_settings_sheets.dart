@@ -775,6 +775,8 @@ class ProfileSettingsSheets {
             .join()
         : 'NS';
 
+    final hasImage = member.imagePath != null && member.imagePath!.trim().isNotEmpty;
+
     return Container(
       width: 56,
       height: 56,
@@ -794,13 +796,14 @@ class ProfileSettingsSheets {
         ],
       ),
       child: ClipOval(
-        child: member.imagePath != null
+        child: hasImage
             ? Image.asset(
-                member.imagePath!,
+                member.imagePath!.trim(),
                 width: 56,
                 height: 56,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
+                  debugPrint('Team image load failed for ${member.name} (${member.imagePath}): $error');
                   return _buildAvatarFallback(initials);
                 },
               )
