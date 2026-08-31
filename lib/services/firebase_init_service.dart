@@ -32,8 +32,6 @@ class FirebaseInitService {
     const adminEmails = [
       'admin@nooresunnat.com',
       'admin.portal@nooresunnat.com',
-      'admin@faizanedurood.com',
-      'admin.portal@faizanedurood.com',
     ];
 
     try {

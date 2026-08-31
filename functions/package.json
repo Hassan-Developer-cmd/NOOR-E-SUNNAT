@@ -1,6 +1,6 @@
 {
   "name": "functions",
-  "description": "Firebase Cloud Functions for Noor E Sunnat / Faizan-e-Durood",
+  "description": "Firebase Cloud Functions for NOOR E SUNNAT",
   "scripts": {
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",

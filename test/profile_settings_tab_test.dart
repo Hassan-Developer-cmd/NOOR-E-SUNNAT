@@ -59,7 +59,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('About NOOR E SUNNAT'), findsOneWidget);
-      expect(find.text('App Version 1.0.0 (Faizan-e-Durood)'), findsOneWidget);
+      expect(find.text('App Version 1.0.0 (NOOR E SUNNAT)'), findsOneWidget);
       expect(find.text('Close'), findsOneWidget);
     });
 
