@@ -37,17 +37,38 @@ class CampaignPopupService {
         });
   }
 
-  /// One-shot fetch of the campaign popup configuration.
+  /// One-shot fetch of the campaign popup configuration from Firestore.
+  /// Checks settings/launch_popup and app_popups collection for active campaigns.
   static Future<CampaignPopupModel> getCampaignPopup() async {
     try {
+      // 1. Primary check: settings/launch_popup
       final doc = await _firestore.collection(_settingsCollection).doc(_docId).get();
       if (doc.exists && doc.data() != null) {
-        return CampaignPopupModel.fromMap(doc.id, doc.data());
+        final model = CampaignPopupModel.fromMap(doc.id, doc.data());
+        if (model.isActive) return model;
       }
-      // Fallback check on app_popups collection
+
+      // 2. Fallback check: app_popups/launch_popup
       final fallbackDoc = await _firestore.collection(_popupsCollection).doc(_docId).get();
       if (fallbackDoc.exists && fallbackDoc.data() != null) {
-        return CampaignPopupModel.fromMap(fallbackDoc.id, fallbackDoc.data());
+        final model = CampaignPopupModel.fromMap(fallbackDoc.id, fallbackDoc.data());
+        if (model.isActive) return model;
+      }
+
+      // 3. Collection query: app_popups where isActive == true
+      final activeQuery = await _firestore
+          .collection(_popupsCollection)
+          .where('isActive', isEqualTo: true)
+          .limit(1)
+          .get();
+      if (activeQuery.docs.isNotEmpty) {
+        final activeDoc = activeQuery.docs.first;
+        return CampaignPopupModel.fromMap(activeDoc.id, activeDoc.data());
+      }
+
+      // 4. If settings doc exists (even if explicitly inactive), return that config
+      if (doc.exists && doc.data() != null) {
+        return CampaignPopupModel.fromMap(doc.id, doc.data());
       }
     } catch (e) {
       if (kDebugMode) {
@@ -91,10 +112,10 @@ class CampaignPopupService {
     await batch.commit();
   }
 
-  /// Checks Firestore on mobile startup and displays the modal if active.
+  /// Checks Firestore on mobile startup and displays the modal if active on every app open.
   static Future<void> checkAndShowStartupPopup(
     BuildContext context, {
-    bool force = false,
+    bool force = true,
   }) async {
     if (!force && _hasShownInSession) {
       return;
@@ -106,7 +127,7 @@ class CampaignPopupService {
 
       if (!context.mounted) return;
 
-      // Mark as shown in session so user is not interrupted repeatedly
+      // Mark session state
       markShownInSession();
 
       await CampaignPopupDialog.show(context, config);

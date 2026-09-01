@@ -40,7 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        CampaignPopupService.checkAndShowStartupPopup(context);
+        CampaignPopupService.checkAndShowStartupPopup(context, force: true);
       }
     });
   }

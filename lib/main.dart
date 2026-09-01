@@ -21,6 +21,7 @@ import 'features/admin_panel/presentation/admin_dashboard_web.dart';
 import 'features/admin_panel/presentation/admin_login_screen.dart';
 import 'features/auth/presentation/login_screen.dart';
 import 'features/splash/presentation/splash_screen.dart';
+import 'services/auth_service.dart';
 import 'services/counter_service.dart';
 import 'services/firebase_init_service.dart';
 import 'services/notification_service.dart';
@@ -178,7 +179,7 @@ class NoorESunnatApp extends StatelessWidget {
               child: child!,
             );
           },
-          home: kIsWeb ? const _WebAdminEntryGate() : const _AppAuthGate(),
+          home: kIsWeb ? const _WebAdminEntryGate() : const AuthWrapper(),
           routes: {
             '/login': (context) => LoginScreen(
               onLoginSuccess: () {
@@ -250,13 +251,51 @@ class _WebAdminEntryGateState extends State<_WebAdminEntryGate> {
   }
 }
 
-/// Mobile App Gate: displays branded animated SplashScreen first.
-class _AppAuthGate extends StatelessWidget {
-  const _AppAuthGate();
+/// Mobile App Auth Gate & Wrapper: displays branded animated SplashScreen first,
+/// then reacts to FirebaseAuth.instance.authStateChanges() stream directly.
+/// If currentUser != null, navigates immediately to Main Navigation (HomeScreen / MainShell)
+/// without routing to LoginScreen, preserving persistent login sessions across app restarts.
+class AuthWrapper extends StatefulWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  bool _splashCompleted = false;
 
   @override
   Widget build(BuildContext context) {
-    return const SplashScreen();
+    if (!_splashCompleted) {
+      return SplashScreen(
+        onAnimationComplete: () {
+          if (mounted) {
+            setState(() => _splashCompleted = true);
+          }
+        },
+      );
+    }
+
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      initialData: FirebaseAuth.instance.currentUser,
+      builder: (context, snapshot) {
+        final user = snapshot.data ?? FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          AuthService.ensureUserDocExists(user);
+          return const MainShell();
+        }
+
+        return LoginScreen(
+          onLoginSuccess: () {
+            if (mounted) {
+              setState(() {});
+            }
+          },
+        );
+      },
+    );
   }
 }
 

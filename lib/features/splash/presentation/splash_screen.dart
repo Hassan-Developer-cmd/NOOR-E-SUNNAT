@@ -5,7 +5,9 @@ import '../../../services/auth_service.dart';
 import '../../auth/presentation/login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  final VoidCallback? onAnimationComplete;
+
+  const SplashScreen({super.key, this.onAnimationComplete});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -40,10 +42,15 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   }
 
   Future<void> _routeToNext() async {
-    await Future.delayed(const Duration(milliseconds: 2200));
+    await Future.delayed(const Duration(milliseconds: 2000));
     if (!mounted) return;
 
-    // Resolve authenticated user token from Firebase Auth & secure storage
+    if (widget.onAnimationComplete != null) {
+      widget.onAnimationComplete!();
+      return;
+    }
+
+    // Direct fallback if used outside AuthWrapper:
     final user = await AuthService.resolveCurrentUser();
     final hasPersistedSession = await AuthService.isSessionPersisted();
 
