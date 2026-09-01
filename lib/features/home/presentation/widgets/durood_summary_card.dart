@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../main.dart';
 import '../../../../services/counter_service.dart';
 
@@ -22,21 +21,21 @@ class DuroodSummaryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         gradient: const LinearGradient(
           colors: [
-            Color(0xFF064E3B), // Deep Emerald Green
-            Color(0xFF0B5D44), // Rich Islamic Green
+            Color(0xFFF59E0B), // Radiant Amber Gold
+            Color(0xFFD97706), // Deep Golden Saffron
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF064E3B).withValues(alpha: 0.25),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: const Color(0xFFD97706).withValues(alpha: 0.35),
+            blurRadius: 12,
+            offset: const Offset(0, 5),
           ),
         ],
         border: Border.all(
-          color: AppColors.accentGold.withValues(alpha: 0.35),
+          color: Colors.white.withValues(alpha: 0.35),
           width: 1,
         ),
       ),
@@ -44,10 +43,10 @@ class DuroodSummaryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         child: Stack(
           children: [
-            // 1. Islamic Geometric Pattern Background
+            // 1. Islamic Geometric Golden Pattern Background
             Positioned.fill(
               child: Opacity(
-                opacity: 0.38,
+                opacity: 0.30,
                 child: Image.asset(
                   'assets/images/durood_pattern_bg.jpeg',
                   fit: BoxFit.cover,
@@ -63,9 +62,9 @@ class DuroodSummaryCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.black.withValues(alpha: 0.22),
+                      Colors.black.withValues(alpha: 0.08),
                       Colors.transparent,
-                      Colors.black.withValues(alpha: 0.38),
+                      Colors.black.withValues(alpha: 0.22),
                     ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
@@ -93,7 +92,7 @@ class DuroodSummaryCard extends StatelessWidget {
                             letterSpacing: 0.2,
                             shadows: [
                               Shadow(
-                                color: Colors.black54,
+                                color: Colors.black45,
                                 blurRadius: 4,
                                 offset: Offset(0, 1),
                               ),
@@ -104,10 +103,10 @@ class DuroodSummaryCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.3),
+                          color: Colors.black.withValues(alpha: 0.22),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: AppColors.accentGold.withValues(alpha: 0.55),
+                            color: Colors.white.withValues(alpha: 0.55),
                             width: 0.8,
                           ),
                         ),
@@ -135,7 +134,7 @@ class DuroodSummaryCard extends StatelessWidget {
                               style: const TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.goldBright,
+                                color: Colors.white,
                                 letterSpacing: 0.4,
                               ),
                             ),
@@ -154,22 +153,22 @@ class DuroodSummaryCard extends StatelessWidget {
                           lp.tr('global_total'),
                           _fmt(counterService.snapshot.globalTotal),
                           Icons.public_rounded,
-                          AppColors.goldBright,
+                          Colors.white,
                           Colors.white,
                         ),
                       ),
                       Container(
                         width: 1,
                         height: 38,
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: Colors.white.withValues(alpha: 0.28),
                       ),
                       Expanded(
                         child: _buildStat(
                           lp.tr('my_today'),
                           _fmt(counterService.snapshot.personalToday),
                           Icons.today_rounded,
-                          AppColors.goldBright,
-                          AppColors.goldBright,
+                          const Color(0xFFFFFBEB),
+                          Colors.white,
                         ),
                       ),
                     ],
@@ -206,11 +205,11 @@ class DuroodSummaryCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFFD1FAE5), // Mint tinted soft white
+                    color: Color(0xFFFFFBEB), // Soft warm cream white
                     letterSpacing: 0.3,
                     shadows: [
                       Shadow(
-                        color: Colors.black45,
+                        color: Colors.black38,
                         blurRadius: 3,
                         offset: Offset(0, 1),
                       ),
@@ -233,9 +232,9 @@ class DuroodSummaryCard extends StatelessWidget {
               letterSpacing: -0.3,
               shadows: const [
                 Shadow(
-                  color: Colors.black54,
-                  blurRadius: 6,
-                  offset: Offset(0, 2),
+                  color: Colors.black45,
+                  blurRadius: 5,
+                  offset: Offset(0, 1.5),
                 ),
               ],
             ),
