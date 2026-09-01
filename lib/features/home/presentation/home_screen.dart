@@ -56,6 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return Scaffold(
           backgroundColor: AppColors.bgPrimary,
           body: CustomScrollView(
+            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
             slivers: [
               // ── Premium App Bar / Header ─────────────────────────────────────
               SliverAppBar(

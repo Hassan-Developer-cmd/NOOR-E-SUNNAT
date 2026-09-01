@@ -288,6 +288,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             backgroundColor: AppColors.primaryEmerald,
           ),
           body: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
