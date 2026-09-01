@@ -25,11 +25,11 @@ class HadithWisdomCard extends StatelessWidget {
           children: [
             // ── Card 1: Daily Hadith ──
             DailyHadithCard(isUrdu: isUrdu),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
 
             // ── Card 2: Daily Ayat ──
             DailyAyatCard(isUrdu: isUrdu),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
 
             // ── Card 3: Topic of the Day ──
             TopicOfTheDayCard(isUrdu: isUrdu),
@@ -106,7 +106,7 @@ class DailyHadithCard extends StatelessWidget {
         children: [
           // Header Bar
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [Color(0xFF0A4D2E), Color(0xFF0F5132)],
@@ -154,7 +154,7 @@ class DailyHadithCard extends StatelessWidget {
               final arabic = item.arabicText;
 
               return Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -339,7 +339,7 @@ class DailyAyatCard extends StatelessWidget {
         children: [
           // Header Bar
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [Color(0xFF0B4659), Color(0xFF0D5C75)],
@@ -387,7 +387,7 @@ class DailyAyatCard extends StatelessWidget {
               final arabic = item.arabicText;
 
               return Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -579,7 +579,7 @@ class _TopicOfTheDayCardState extends State<TopicOfTheDayCard> {
         children: [
           // Header Bar
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [Color(0xFF78350F), Color(0xFF92400E), Color(0xFFB45309)],
@@ -627,7 +627,7 @@ class _TopicOfTheDayCardState extends State<TopicOfTheDayCard> {
               final arabic = item.arabicText;
 
               return Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

@@ -19,10 +19,10 @@ class DuroodSummaryCard extends StatelessWidget {
     final lp = globalLanguageProvider;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.borderLight),
       ),
       child: Column(
@@ -35,7 +35,7 @@ class DuroodSummaryCard extends StatelessWidget {
                 child: Text(lp.tr('durood_count_summary'), style: AppTypography.titleMedium),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
                 decoration: BoxDecoration(
                   color: AppColors.emeraldContainer,
                   borderRadius: BorderRadius.circular(20),
@@ -66,7 +66,7 @@ class DuroodSummaryCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 10),
           // Stats row
           Row(
             children: [
@@ -80,7 +80,7 @@ class DuroodSummaryCard extends StatelessWidget {
               ),
               Container(
                 width: 1,
-                height: 48,
+                height: 38,
                 color: AppColors.borderLight,
               ),
               Expanded(
@@ -118,7 +118,7 @@ class DuroodSummaryCard extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 2),
         FittedBox(
           fit: BoxFit.scaleDown,
           child: Text(value, style: AppTypography.statValue),

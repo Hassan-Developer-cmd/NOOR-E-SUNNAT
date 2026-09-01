@@ -192,7 +192,7 @@ class EventCard extends StatelessWidget {
           textDirection: lp.textDirection,
           child: SizedBox(
             width: cardWidth,
-            height: 180,
+            height: 165,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
               clipBehavior: Clip.antiAlias,
@@ -221,7 +221,7 @@ class EventCard extends StatelessWidget {
 
                   // 3. Card Content (Badges, Title, Date, Location)
                   Padding(
-                    padding: const EdgeInsetsDirectional.all(14.0),
+                    padding: const EdgeInsetsDirectional.symmetric(horizontal: 14.0, vertical: 11.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -237,13 +237,13 @@ class EventCard extends StatelessWidget {
                               event.id,
                             ),
                             CircleAvatar(
-                              radius: 14,
+                              radius: 13,
                               backgroundColor: Colors.white.withValues(alpha: 0.24),
                               child: Icon(
                                 isUrdu
                                     ? Icons.arrow_back_ios_new_rounded
                                     : Icons.arrow_forward_ios_rounded,
-                                size: 12,
+                                size: 11,
                                 color: Colors.white,
                               ),
                             ),
@@ -257,10 +257,10 @@ class EventCard extends StatelessWidget {
                           key: ValueKey('title_${event.id}_${lp.locale.languageCode}'),
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 16,
+                            fontSize: 15.5,
                             fontWeight: FontWeight.bold,
                             fontFamily: isUrdu ? 'UrduFont' : null,
-                            height: 1.3,
+                            height: 1.25,
                             shadows: const [
                               Shadow(
                                 color: Colors.black87,
@@ -272,7 +272,7 @@ class EventCard extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 5),
 
                         // Footer Date & Location Info
                         Row(

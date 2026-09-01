@@ -59,7 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
             slivers: [
               // ── Premium App Bar / Header ─────────────────────────────────────
               SliverAppBar(
-                expandedHeight: 175,
+                expandedHeight: 142,
                 pinned: true,
                 backgroundColor: AppColors.primaryEmerald,
                 surfaceTintColor: Colors.transparent,
@@ -112,9 +112,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       // 3. User Welcome Greeting & Dynamic Hijri Date Badge
                       Positioned(
-                        left: 20,
-                        right: 20,
-                        bottom: 16,
+                        left: 16,
+                        right: 16,
+                        bottom: 10,
                         child: StreamBuilder<AppUser?>(
                           stream: AuthService.currentUserStream,
                           builder: (context, userSnap) {
@@ -154,8 +154,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                               final dateText = hijriDate.getFormatted(lp.isUrdu);
 
                                               return Container(
-                                                margin: const EdgeInsets.only(bottom: 6),
-                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3.5),
+                                                margin: const EdgeInsets.only(bottom: 4),
+                                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 2.5),
                                                 decoration: BoxDecoration(
                                                   color: Colors.black.withValues(alpha: 0.28),
                                                   borderRadius: BorderRadius.circular(20),
@@ -177,14 +177,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                                     const Icon(
                                                       Icons.nightlight_round,
                                                       color: AppColors.goldBright,
-                                                      size: 13,
+                                                      size: 12,
                                                     ),
-                                                    const SizedBox(width: 6),
+                                                    const SizedBox(width: 5),
                                                     Text(
                                                       dateText,
                                                       style: TextStyle(
                                                         color: Colors.white,
-                                                        fontSize: lp.isUrdu ? 12.5 : 11.5,
+                                                        fontSize: lp.isUrdu ? 12 : 11,
                                                         fontWeight: FontWeight.w600,
                                                         fontFamily: lp.isUrdu
                                                             ? AppTypography.urduFontFamily
@@ -210,7 +210,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         lp.tr('welcome_greeting'),
                                         style: TextStyle(
                                           color: AppColors.goldBright,
-                                          fontSize: 12,
+                                          fontSize: 11.5,
                                           fontWeight: FontWeight.w600,
                                           letterSpacing: 0.5,
                                           shadows: const [
@@ -222,14 +222,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ],
                                         ),
                                       ),
-                                      const SizedBox(height: 2),
+                                      const SizedBox(height: 1),
                                       Text(
                                         liveDisplayName,
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           color: Colors.white,
-                                          fontSize: 18,
+                                          fontSize: 17,
                                           fontWeight: FontWeight.bold,
-                                          shadows: const [
+                                          shadows: [
                                             Shadow(
                                               color: Colors.black54,
                                               blurRadius: 6,
@@ -243,10 +243,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ],
                                   ),
                                 ),
-                                const SizedBox(width: 12),
+                                const SizedBox(width: 10),
                                 // Avatar
                                 UserAvatar(
-                                  radius: 22,
+                                  radius: 20,
                                   profileImageBase64: liveBase64,
                                   photoUrl: livePhotoUrl,
                                   displayName: liveDisplayName,
@@ -346,7 +346,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // ── Content ─────────────────────────────────────────────────────
               SliverPadding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     // Gamification Row & Durood Summary Card wrapped with StreamBuilder for live launch streaming
@@ -361,7 +361,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               streakDays: snap.currentStreak,
                               duroodPoints: snap.duroodPoints,
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 10),
                             DuroodSummaryCard(
                               counterService: widget.counterService,
                               onSendSalawat: widget.onNavigateToCounter,
@@ -370,19 +370,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       },
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 10),
 
                     // Send Salawat CTA
                     Container(
                       width: double.infinity,
-                      constraints: const BoxConstraints(minHeight: 52),
+                      constraints: const BoxConstraints(minHeight: 44),
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryEmerald,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(14),
                           ),
                           elevation: 2,
                         ),
@@ -393,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             const Icon(
                               Icons.touch_app_rounded,
-                              size: 20,
+                              size: 19,
                               color: Colors.white,
                             ),
                             const SizedBox(width: 8),
@@ -403,7 +403,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: Text(
                                   lp.tr('send_salawat_now'),
                                   style: TextStyle(
-                                    fontSize: 15,
+                                    fontSize: 14.5,
                                     fontWeight: FontWeight.w700,
                                     height: 1.3,
                                     color: Colors.white,
@@ -422,15 +422,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 14),
 
                     // Upgraded Responsive PageView Events Section with Dynamic Dots & Arrow Nav
                     const _UpcomingEventsSection(),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 14),
 
                     // Hadith Card
                     const HadithWisdomCard(),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                   ]),
                 ),
               ),
@@ -558,11 +558,11 @@ class _UpcomingEventsSection extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
 
                 // Bulletproof Horizontal Scrollable List
                 SizedBox(
-                  height: 180,
+                  height: 165,
                   child: ListView.separated(
                     key: ValueKey('events_listview_$languageCode'),
                     scrollDirection: Axis.horizontal,
