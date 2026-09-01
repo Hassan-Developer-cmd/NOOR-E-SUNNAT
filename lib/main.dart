@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -109,11 +111,41 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  // 1. Enable Firestore Offline Persistence explicitly for instant cached reads
+  try {
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+    );
+  } catch (_) {}
+
+  // 2. Hydrate language settings from local SharedPreferences memory cache
+  await globalLanguageProvider.init();
+
+  // 3. Immediately launch the UI without blocking on network initializers
+  runApp(const NoorESunnatApp());
+
+  // 4. Non-blocking background initializations (FCM, Seeding, Channels, Topic subscriptions)
+  _initNonBlockingServices();
+}
+
+void _initNonBlockingServices() {
+  // Safe background Firestore collections verification
+  unawaited(FirebaseInitService.seedInitialDatabase());
+
+  // Local notifications & notification stream init
+  unawaited(NotificationService.initialize());
+
+  // Native mobile push messaging & topics
   if (!kIsWeb) {
-    // 1. Register Background Handler
+    unawaited(_initMobileMessaging());
+  }
+}
+
+Future<void> _initMobileMessaging() async {
+  try {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-    // 2. Request Notification Permissions for Foreground/Background
     final messaging = FirebaseMessaging.instance;
     await messaging.requestPermission(
       alert: true,
@@ -122,33 +154,27 @@ void main() async {
       provisional: false,
     );
 
-    // 3. Force Topic Subscription on startup
     try {
       await messaging.subscribeToTopic('all_users');
-      if (kDebugMode) print('Subscribed to all_users topic on boot');
+      if (kDebugMode) print('Subscribed to all_users topic on background boot');
     } catch (e) {
       if (kDebugMode) print('Error subscribing to all_users topic: $e');
     }
 
-    // 4. Setup Android Notification Channel
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
         >()
         ?.createNotificationChannel(highImportanceChannel);
 
-    // 5. Foreground presentation options for iOS/Android
     await messaging.setForegroundNotificationPresentationOptions(
       alert: true,
       badge: true,
       sound: true,
     );
+  } catch (e) {
+    if (kDebugMode) print('Background messaging initialization notice: $e');
   }
-
-  await globalLanguageProvider.init();
-  await FirebaseInitService.seedInitialDatabase();
-  await NotificationService.initialize();
-  runApp(const NoorESunnatApp());
 }
 
 class NoorESunnatApp extends StatelessWidget {

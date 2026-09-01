@@ -23,6 +23,7 @@ class AuthService {
   static const String _keySessionActive = 'auth_session_active';
   static const String _keyUserUid = 'auth_session_uid';
   static const String _keyUserEmail = 'auth_session_email';
+  static final Set<String> _ensuredUids = {};
 
   static User? get currentUser => _auth.currentUser;
   static bool get isLoggedIn => _auth.currentUser != null;
@@ -31,17 +32,17 @@ class AuthService {
   static Stream<User?> get authStateChanges => _auth.authStateChanges();
 
   /// Resolves the current authenticated user safely on startup,
-  /// awaiting token hydration from local storage if needed.
-  static Future<User?> resolveCurrentUser({Duration timeout = const Duration(milliseconds: 2000)}) async {
+  /// immediately returning cached currentUser without blocking network round-trips.
+  static Future<User?> resolveCurrentUser({Duration timeout = const Duration(milliseconds: 300)}) async {
     if (_auth.currentUser != null) {
-      await _saveSessionLocally(_auth.currentUser!);
+      _saveSessionLocally(_auth.currentUser!).catchError((_) {});
       return _auth.currentUser;
     }
 
     try {
       final user = await _auth.authStateChanges().first.timeout(timeout);
       if (user != null) {
-        await _saveSessionLocally(user);
+        _saveSessionLocally(user).catchError((_) {});
       }
       return user ?? _auth.currentUser;
     } catch (_) {
@@ -150,7 +151,11 @@ class AuthService {
   static Future<void> ensureUserDocExists([User? user]) async {
     final firebaseUser = user ?? currentUser;
     if (firebaseUser == null) return;
-    await _createUserDocIfNeeded(firebaseUser);
+    if (_ensuredUids.contains(firebaseUser.uid)) return;
+    _ensuredUids.add(firebaseUser.uid);
+    try {
+      await _createUserDocIfNeeded(firebaseUser);
+    } catch (_) {}
   }
 
   /// Creates the Firestore user doc only if it doesn't exist yet.
