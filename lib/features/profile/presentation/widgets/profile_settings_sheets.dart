@@ -747,13 +747,15 @@ class ProfileSettingsSheets {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: const Color(0xFF007A6C),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        isUrdu ? 'شعبہ' : (member.category == 'IT TEAM' ? 'IT' : 'RESEARCH'),
+                        isUrdu ? 'شعبہ' : 'DEPARTMENT',
+                        maxLines: 1,
+                        softWrap: false,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 9,

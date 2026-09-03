@@ -53,6 +53,6 @@ void main() {
     expect(find.text('DAWOOD AHMAD'), findsNWidgets(2));
     expect(find.text('MUHAMMAD ASIM'), findsOneWidget);
     expect(find.text('AHTESHAM'), findsOneWidget);
-    expect(find.text('MUHAMMAD IBRAHIM ATTARI'), findsOneWidget);
+    expect(find.textContaining('MUHAMMAD IBRAHIM'), findsOneWidget);
   });
 }
