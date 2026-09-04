@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/models/app_user.dart';
@@ -350,25 +351,43 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    // Gamification Row & Durood Summary Card wrapped with StreamBuilder for live launch streaming
-                    StreamBuilder<CounterSnapshot>(
-                      stream: widget.counterService.snapshotStream,
-                      initialData: widget.counterService.snapshot,
-                      builder: (context, snapshot) {
-                        final snap = snapshot.data ?? widget.counterService.snapshot;
-                        return Column(
-                          children: [
-                            GamificationBar(
-                              streakDays: snap.currentStreak,
-                              duroodPoints: snap.duroodPoints,
-                            ),
-                            const SizedBox(height: 10),
-                            DuroodSummaryCard(
-                              counterService: widget.counterService,
-                              snapshot: snap,
-                              onSendSalawat: widget.onNavigateToCounter,
-                            ),
-                          ],
+                    // Real-time StreamBuilder listening to Firestore global counter document ('counters/durood_stats')
+                    StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                      stream: widget.counterService.globalCounterStream,
+                      builder: (context, globalSnap) {
+                        final globalData = globalSnap.data?.data() ?? {};
+                        final int firestoreGlobalTotal = (globalData['globalTotal'] as num?)?.toInt() ?? 0;
+                        final int firestoreTodayTotal = (globalData['todayTotal'] as num?)?.toInt() ?? 0;
+
+                        return StreamBuilder<CounterSnapshot>(
+                          stream: widget.counterService.snapshotStream,
+                          initialData: widget.counterService.snapshot,
+                          builder: (context, snapshot) {
+                            final snap = snapshot.data ?? widget.counterService.snapshot;
+                            final int effectiveGlobalTotal = snap.globalTotal > firestoreGlobalTotal
+                                ? snap.globalTotal
+                                : firestoreGlobalTotal;
+                            final int effectiveTodayTotal = snap.globalToday > firestoreTodayTotal
+                                ? snap.globalToday
+                                : firestoreTodayTotal;
+
+                            return Column(
+                              children: [
+                                GamificationBar(
+                                  streakDays: snap.currentStreak,
+                                  duroodPoints: snap.duroodPoints,
+                                ),
+                                const SizedBox(height: 10),
+                                DuroodSummaryCard(
+                                  counterService: widget.counterService,
+                                  snapshot: snap,
+                                  globalTotal: effectiveGlobalTotal,
+                                  todayTotal: effectiveTodayTotal,
+                                  onSendSalawat: widget.onNavigateToCounter,
+                                ),
+                              ],
+                            );
+                          },
                         );
                       },
                     ),

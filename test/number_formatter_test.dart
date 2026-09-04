@@ -11,33 +11,33 @@ void main() {
       expect(NumberFormatter.formatCompact(9999), '9,999');
     });
 
-    test('formats thousands (10k to < 1M) with K', () {
-      expect(NumberFormatter.formatCompact(10000), '10 K');
-      expect(NumberFormatter.formatCompact(12500), '12.5 K');
-      expect(NumberFormatter.formatCompact(100000), '100 K');
-      expect(NumberFormatter.formatCompact(999900), '999.9 K');
+    test('formats thousands (10k to < 1M) with K suffix', () {
+      expect(NumberFormatter.formatCompact(10000), '10K');
+      expect(NumberFormatter.formatCompact(12500), '12.5K');
+      expect(NumberFormatter.formatCompact(100000), '100K');
+      expect(NumberFormatter.formatCompact(999900), '999.9K');
     });
 
-    test('formats millions with M', () {
-      expect(NumberFormatter.formatCompact(1000000), '1 M');
-      expect(NumberFormatter.formatCompact(1200000), '1.2 M');
-      expect(NumberFormatter.formatCompact(15000000), '15 M');
-      expect(NumberFormatter.formatCompact(250400000), '250.4 M');
+    test('formats millions with M suffix', () {
+      expect(NumberFormatter.formatCompact(1000000), '1M');
+      expect(NumberFormatter.formatCompact(1200000), '1.2M');
+      expect(NumberFormatter.formatCompact(15000000), '15M');
+      expect(NumberFormatter.formatCompact(250400000), '250.4M');
     });
 
-    test('formats billions with B', () {
-      expect(NumberFormatter.formatCompact(1000000000), '1 B');
-      expect(NumberFormatter.formatCompact(1200000000), '1.2 B');
-      expect(NumberFormatter.formatCompact(10000000000), '10 B');
+    test('formats billions with B suffix', () {
+      expect(NumberFormatter.formatCompact(1000000000), '1B');
+      expect(NumberFormatter.formatCompact(1200000000), '1.2B');
+      expect(NumberFormatter.formatCompact(10000000000), '10B');
     });
 
-    test('formats trillions with T', () {
-      expect(NumberFormatter.formatCompact(1000000000000), '1 T');
-      expect(NumberFormatter.formatCompact(1200000000000), '1.2 T');
+    test('formats trillions with T suffix', () {
+      expect(NumberFormatter.formatCompact(1000000000000), '1T');
+      expect(NumberFormatter.formatCompact(1200000000000), '1.2T');
     });
 
     test('handles negative and zero numbers safely', () {
-      expect(NumberFormatter.formatCompact(-12500), '-12.5 K');
+      expect(NumberFormatter.formatCompact(-12500), '-12.5K');
       expect(NumberFormatter.formatCompact(-9842), '-9,842');
       expect(NumberFormatter.formatCompact(-0), '0');
     });

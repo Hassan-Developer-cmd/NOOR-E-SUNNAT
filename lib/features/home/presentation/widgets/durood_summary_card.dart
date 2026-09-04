@@ -7,18 +7,25 @@ class DuroodSummaryCard extends StatelessWidget {
   final CounterService counterService;
   final VoidCallback onSendSalawat;
   final CounterSnapshot? snapshot;
+  final int? globalTotal;
+  final int? todayTotal;
 
   const DuroodSummaryCard({
     super.key,
     required this.counterService,
     required this.onSendSalawat,
     this.snapshot,
+    this.globalTotal,
+    this.todayTotal,
   });
 
   @override
   Widget build(BuildContext context) {
     final lp = globalLanguageProvider;
     final currentSnap = snapshot ?? counterService.snapshot;
+    final effectiveGlobalTotal = globalTotal ?? currentSnap.globalTotal;
+    final effectiveTodayTotal = todayTotal ?? currentSnap.globalToday;
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -152,7 +159,7 @@ class DuroodSummaryCard extends StatelessWidget {
                       Expanded(
                         child: _buildStat(
                           lp.tr('global_total'),
-                          NumberFormatter.formatCompact(currentSnap.globalTotal),
+                          NumberFormatter.formatCompact(effectiveGlobalTotal),
                           Icons.public_rounded,
                           Colors.white,
                           Colors.white,
@@ -166,7 +173,7 @@ class DuroodSummaryCard extends StatelessWidget {
                       Expanded(
                         child: _buildStat(
                           lp.tr('global_today'),
-                          NumberFormatter.formatCompact(currentSnap.globalToday),
+                          NumberFormatter.formatCompact(effectiveTodayTotal),
                           Icons.today_rounded,
                           const Color(0xFFFFFBEB),
                           Colors.white,
@@ -238,20 +245,39 @@ class DuroodSummaryCard extends StatelessWidget {
         const SizedBox(height: 2),
         FittedBox(
           fit: BoxFit.scaleDown,
-          child: Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: valueColor,
-              letterSpacing: -0.3,
-              shadows: const [
-                Shadow(
-                  color: Colors.black45,
-                  blurRadius: 5,
-                  offset: Offset(0, 1.5),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0.0, 0.2),
+                    end: Offset.zero,
+                  ).animate(CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  )),
+                  child: child,
                 ),
-              ],
+              );
+            },
+            child: Text(
+              value,
+              key: ValueKey<String>(value),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: valueColor,
+                letterSpacing: -0.3,
+                shadows: const [
+                  Shadow(
+                    color: Colors.black45,
+                    blurRadius: 5,
+                    offset: Offset(0, 1.5),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
