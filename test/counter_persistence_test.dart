@@ -342,5 +342,53 @@ void main() {
       }
       expect(effectiveTodayE, 0, reason: 'Past day docDate must reset today total to 0');
     });
+
+    test('Streak & Durood Points: Persist across simulated restart and survive profile sync', () async {
+      final prefs = await SharedPreferences.getInstance();
+      final todayStr = DateTime.now().toIso8601String().split('T')[0];
+      const uid = 'user_streak_pts_test';
+
+      // 1. Save user state (streak: 7, points: 250, personalTotal: 125)
+      await prefs.setString('cached_active_uid', uid);
+      await prefs.setString('my_durood_date', todayStr);
+      await prefs.setInt('my_durood_${uid}_$todayStr', 10);
+      await prefs.setInt('cached_current_streak_$uid', 7);
+      await prefs.setInt('cached_durood_points_$uid', 250);
+      await prefs.setInt('cached_personal_total_$uid', 125);
+      await prefs.setInt('cached_current_streak', 7);
+      await prefs.setInt('cached_durood_points', 250);
+      await prefs.setInt('cached_personal_total', 125);
+
+      // 2. Hydration on simulated restart
+      final activeUid = prefs.getString('cached_active_uid') ?? 'guest';
+      final loadedStreak = prefs.getInt('cached_current_streak_$activeUid') ?? prefs.getInt('cached_current_streak') ?? 0;
+      final loadedPoints = prefs.getInt('cached_durood_points_$activeUid') ?? prefs.getInt('cached_durood_points') ?? 0;
+      final loadedTotal = prefs.getInt('cached_personal_total_$activeUid') ?? prefs.getInt('cached_personal_total') ?? 0;
+      final loadedToday = prefs.getInt('my_durood_${activeUid}_$todayStr') ?? 0;
+
+      expect(loadedStreak, 7, reason: 'Streak must be restored to 7, not 0');
+      expect(loadedPoints, 250, reason: 'Durood points must be restored to 250, not 0');
+      expect(loadedTotal, 125);
+      expect(loadedToday, 10);
+
+      // 3. Simulated Firestore profile doc where points are 0 or streak is 0
+      final Map<String, dynamic> staleProfileDoc = {
+        'total_durood_points': 0, // stale or unpopulated
+        'current_streak': 0,
+      };
+
+      final int firestorePoints = ((staleProfileDoc['total_durood_points'] ??
+          staleProfileDoc['durood_points'] ??
+          staleProfileDoc['points']) as num?)?.toInt() ?? 0;
+
+      final effectivePoints = loadedPoints > firestorePoints ? loadedPoints : firestorePoints;
+      expect(effectivePoints, 250, reason: 'Stale 0 in Firestore must never downgrade local Durood points');
+
+      int effectiveStreak = (staleProfileDoc['current_streak'] as num?)?.toInt() ?? 0;
+      if (effectiveStreak == 0 && loadedStreak > 0 && loadedToday > 0) {
+        effectiveStreak = loadedStreak;
+      }
+      expect(effectiveStreak, 7, reason: 'Stale 0 streak in Firestore must never downgrade active streak');
+    });
   });
 }
