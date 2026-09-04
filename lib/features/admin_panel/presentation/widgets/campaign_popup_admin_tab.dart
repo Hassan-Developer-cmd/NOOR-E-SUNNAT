@@ -878,7 +878,7 @@ class _CampaignPopupAdminTabState extends State<CampaignPopupAdminTab> {
 
                 // Mockup App Body with Modal Display
                 Container(
-                  height: 520,
+                  constraints: const BoxConstraints(minHeight: 520, maxHeight: 680),
                   width: double.infinity,
                   decoration: const BoxDecoration(
                     color: Color(0xFF0F172A),

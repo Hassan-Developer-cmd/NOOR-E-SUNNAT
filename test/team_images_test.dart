@@ -55,4 +55,39 @@ void main() {
     expect(find.text('AHTESHAM'), findsOneWidget);
     expect(find.textContaining('MUHAMMAD IBRAHIM'), findsOneWidget);
   });
+
+  testWidgets('Tapping Product Design card opens full modal with image preview, tags and description', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => ProfileSettingsSheets.showOurTeamSheet(context),
+              child: const Text('Open Team'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open Team'));
+    await tester.pumpAndSettle();
+
+    // Scroll until Ahtesham (Product Design member) is completely visible
+    await tester.ensureVisible(find.text('AHTESHAM'));
+    await tester.pumpAndSettle();
+
+    // Tap on Ahtesham (Product Design member)
+    await tester.tap(find.text('AHTESHAM'));
+    await tester.pumpAndSettle();
+
+    // Verify dialog content
+    expect(find.text('PRODUCT DESIGN'), findsWidgets);
+    expect(find.textContaining('Lead UI/UX Designer'), findsOneWidget);
+    expect(find.text('Close'), findsNWidgets(2));
+
+    // Close dialog by tapping the top dialog button
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Close').last);
+    await tester.pumpAndSettle();
+  });
 }

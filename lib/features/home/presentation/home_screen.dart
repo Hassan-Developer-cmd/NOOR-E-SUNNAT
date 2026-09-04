@@ -584,7 +584,7 @@ class _UpcomingEventsSection extends StatelessWidget {
 
                 // Bulletproof Horizontal Scrollable List
                 SizedBox(
-                  height: 165,
+                  height: 185,
                   child: ListView.separated(
                     key: ValueKey('events_listview_$languageCode'),
                     scrollDirection: Axis.horizontal,

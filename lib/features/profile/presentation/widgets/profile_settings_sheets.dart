@@ -414,20 +414,27 @@ class ProfileSettingsSheets {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.88,
-        ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        child: Directionality(
-          textDirection: lp.textDirection,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+      builder: (ctx) => SafeArea(
+        top: false,
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.90,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: EdgeInsets.fromLTRB(
+            20,
+            16,
+            20,
+            20 + MediaQuery.of(ctx).padding.bottom,
+          ),
+          child: Directionality(
+            textDirection: lp.textDirection,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
               // Grab Handle
               Center(
                 child: Container(
@@ -609,8 +616,9 @@ class ProfileSettingsSheets {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   /// Builds a section with a Teal pill header, vertical timeline line, and member cards
   static Widget _buildTeamSection({
@@ -625,31 +633,32 @@ class ProfileSettingsSheets {
         _buildSectionHeaderPill(categoryTitle),
         const SizedBox(height: 14),
 
-        // Timeline layout: Vertical line on side + List of member cards
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Vertical accent timeline line
-            Container(
-              width: 3.5,
-              margin: const EdgeInsets.only(top: 10, bottom: 10),
-              constraints: BoxConstraints(minHeight: members.length * 80.0),
-              decoration: BoxDecoration(
-                color: const Color(0xFF007A6C),
-                borderRadius: BorderRadius.circular(2),
+        // Timeline layout: Vertical line on side + List of member cards wrapped in IntrinsicHeight
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Vertical accent timeline line dynamically sized without overflow
+              Container(
+                width: 3.5,
+                margin: const EdgeInsets.only(top: 8, bottom: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF007A6C),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
+              const SizedBox(width: 12),
 
-            // Member cards
-            Expanded(
-              child: Column(
-                children: members
-                    .map((member) => _buildTeamMemberCard(context, member, isUrdu))
-                    .toList(),
+              // Member cards
+              Expanded(
+                child: Column(
+                  children: members
+                      .map((member) => _buildTeamMemberCard(context, member, isUrdu))
+                      .toList(),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -682,7 +691,7 @@ class ProfileSettingsSheets {
     );
   }
 
-  /// Individual Member Card Container
+  /// Individual Member Card Container with tap interaction to open full detail modal
   static Widget _buildTeamMemberCard(
     BuildContext context,
     TeamMember member,
@@ -690,7 +699,6 @@ class ProfileSettingsSheets {
   ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -703,89 +711,342 @@ class ProfileSettingsSheets {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          // Circular Avatar (Image or Initial Fallback)
-          _buildMemberAvatar(member),
-          const SizedBox(width: 14),
-
-          // Member Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _showMemberDetailDialog(context, member, isUrdu),
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
               children: [
-                // Name
-                Text(
-                  isUrdu ? member.nameUr : member.name.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF0F172A),
-                    letterSpacing: isUrdu ? 0 : 0.4,
-                    fontFamily: isUrdu ? AppTypography.urduFontFamily : null,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
+                // Circular Avatar (Image or Initial Fallback)
+                _buildMemberAvatar(member),
+                const SizedBox(width: 14),
 
-                // Role
-                Text(
-                  isUrdu ? member.roleUr : member.role.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF64748B),
-                    letterSpacing: isUrdu ? 0 : 0.3,
-                    fontFamily: isUrdu ? AppTypography.urduFontFamily : null,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
-
-                // Mini Pill Tag (Matching screenshot [TEAL] SUB-ROLE)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF007A6C),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        isUrdu ? 'شعبہ' : 'DEPARTMENT',
-                        maxLines: 1,
-                        softWrap: false,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        isUrdu ? member.tagUr : member.tag,
-                        style: const TextStyle(
-                          fontSize: 11,
+                // Member Details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Name
+                      Text(
+                        isUrdu ? member.nameUr : member.name.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 15.5,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF007A6C),
-                          letterSpacing: 0.3,
+                          color: const Color(0xFF0F172A),
+                          letterSpacing: isUrdu ? 0 : 0.4,
+                          fontFamily: isUrdu ? AppTypography.urduFontFamily : null,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 2),
+
+                      // Role
+                      Text(
+                        isUrdu ? member.roleUr : member.role.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF64748B),
+                          letterSpacing: isUrdu ? 0 : 0.3,
+                          fontFamily: isUrdu ? AppTypography.urduFontFamily : null,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+
+                      // Mini Pill Tag (Matching screenshot [TEAL] SUB-ROLE)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF007A6C),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              isUrdu ? 'شعبہ' : 'DEPARTMENT',
+                              maxLines: 1,
+                              softWrap: false,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: isUrdu ? Alignment.centerRight : Alignment.centerLeft,
+                              child: Text(
+                                isUrdu ? member.tagUr : member.tag,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF007A6C),
+                                  letterSpacing: 0.3,
+                                ),
+                                maxLines: 1,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Icon(
+                  isUrdu ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
+                  size: 18,
+                  color: const Color(0xFF94A3B8),
                 ),
               ],
             ),
           ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  /// Full Product / Team Member detail card with image preview, tags, description & action button
+  static void _showMemberDetailDialog(
+    BuildContext context,
+    TeamMember member,
+    bool isUrdu,
+  ) {
+    final lp = globalLanguageProvider;
+
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.6),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 380),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Directionality(
+            textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // 1. Top Image Banner / Preview (height: 190, fit: BoxFit.cover)
+                  Stack(
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        height: 190,
+                        color: const Color(0xFF0F172A),
+                        child: member.imagePath != null && member.imagePath!.isNotEmpty
+                            ? Image.asset(
+                                member.imagePath!,
+                                width: double.infinity,
+                                height: 190,
+                                fit: BoxFit.cover,
+                                errorBuilder: (c, e, s) => Container(
+                                  width: double.infinity,
+                                  height: 190,
+                                  color: const Color(0xFF007A6C),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    member.name.isNotEmpty ? member.name[0] : 'NS',
+                                    style: const TextStyle(fontSize: 48, color: Colors.white, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              )
+                            : Container(
+                                width: double.infinity,
+                                height: 190,
+                                color: const Color(0xFF007A6C),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  member.name.isNotEmpty ? member.name[0] : 'NS',
+                                  style: const TextStyle(fontSize: 48, color: Colors.white, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                      ),
+                      // Top gradient scrim for readability of close button
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: 60,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Colors.black54, Colors.transparent],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Floating Close button
+                      PositionedDirectional(
+                        top: 12,
+                        end: 12,
+                        child: GestureDetector(
+                          onTap: () => Navigator.pop(ctx),
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.45),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.close_rounded, color: Colors.white, size: 18),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // 2. Member Info (Name, Role, Tags, Description & Actions)
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Tags Row
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF007A6C),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                isUrdu ? 'شعبہ' : (member.category == 'IT TEAM' ? 'IT TEAM' : 'RESEARCH'),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF007A6C).withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  isUrdu ? member.tagUr : member.tag,
+                                  style: const TextStyle(
+                                    color: Color(0xFF007A6C),
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Name
+                        Text(
+                          isUrdu ? member.nameUr : member.name,
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF0F172A),
+                            fontFamily: isUrdu ? AppTypography.urduFontFamily : null,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+
+                        // Role
+                        Text(
+                          isUrdu ? member.roleUr : member.role,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF64748B),
+                            fontFamily: isUrdu ? AppTypography.urduFontFamily : null,
+                          ),
+                        ),
+
+                        // Description
+                        if (member.description != null && member.description!.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                            ),
+                            child: Text(
+                              isUrdu ? (member.descriptionUr ?? member.description!) : member.description!,
+                              style: TextStyle(
+                                fontSize: 13,
+                                height: 1.5,
+                                color: const Color(0xFF334155),
+                                fontFamily: isUrdu ? AppTypography.urduFontFamily : null,
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 18),
+
+                        // Action Button
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF007A6C),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () => Navigator.pop(ctx),
+                            child: Text(
+                              lp.tr('close'),
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

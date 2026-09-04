@@ -7,12 +7,14 @@ class EventCard extends StatelessWidget {
   final EventModel event;
   final VoidCallback? onTap;
   final double? width;
+  final double? height;
 
   const EventCard({
     super.key,
     required this.event,
     this.onTap,
     this.width,
+    this.height,
   });
 
   /// Maps event keywords to themed high-resolution Islamic background assets
@@ -188,11 +190,13 @@ class EventCard extends StatelessWidget {
         final cardWidth = width ??
             (MediaQuery.of(context).size.width * 0.82).clamp(280.0, 340.0);
 
+        final cardHeight = height ?? 185.0;
+
         return Directionality(
           textDirection: lp.textDirection,
           child: SizedBox(
             width: cardWidth,
-            height: 165,
+            height: cardHeight,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
               clipBehavior: Clip.antiAlias,
