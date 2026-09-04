@@ -1,41 +1,45 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/number_formatter.dart';
 import '../../../../main.dart';
 import '../../../../services/counter_service.dart';
 
 class DuroodSummaryCard extends StatelessWidget {
   final CounterService counterService;
   final VoidCallback onSendSalawat;
+  final CounterSnapshot? snapshot;
 
   const DuroodSummaryCard({
     super.key,
     required this.counterService,
     required this.onSendSalawat,
+    this.snapshot,
   });
 
   @override
   Widget build(BuildContext context) {
     final lp = globalLanguageProvider;
+    final currentSnap = snapshot ?? counterService.snapshot;
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: const LinearGradient(
           colors: [
-            Color(0xFFF59E0B), // Radiant Amber Gold
-            Color(0xFFD97706), // Deep Golden Saffron
+            Color(0xFFFDE047), // Sunny Light Yellow
+            Color(0xFFFACC15), // Vibrant Canary Yellow
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFD97706).withValues(alpha: 0.35),
+            color: const Color(0xFFEAB308).withValues(alpha: 0.28),
             blurRadius: 12,
             offset: const Offset(0, 5),
           ),
         ],
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.35),
+          color: Colors.white.withValues(alpha: 0.45),
           width: 1,
         ),
       ),
@@ -43,28 +47,25 @@ class DuroodSummaryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         child: Stack(
           children: [
-            // 1. Islamic Geometric Golden Pattern Background
+            // 1. Islamic Geometric Light Yellow Pattern Background
             Positioned.fill(
-              child: Opacity(
-                opacity: 0.30,
-                child: Image.asset(
-                  'assets/images/durood_pattern_bg.jpeg',
-                  fit: BoxFit.cover,
-                  alignment: Alignment.center,
-                  errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
-                ),
+              child: Image.asset(
+                'assets/images/durood_pattern_bg.jpeg',
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
+                errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
               ),
             ),
 
-            // 2. Subtle Dark Gradient Overlay for Maximum Readability
+            // 2. Gentle Overlay for Maximum Readability on Light Yellow
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.black.withValues(alpha: 0.08),
+                      Colors.black.withValues(alpha: 0.04),
                       Colors.transparent,
-                      Colors.black.withValues(alpha: 0.22),
+                      Colors.black.withValues(alpha: 0.16),
                     ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
@@ -151,7 +152,7 @@ class DuroodSummaryCard extends StatelessWidget {
                       Expanded(
                         child: _buildStat(
                           lp.tr('global_total'),
-                          _fmt(counterService.snapshot.globalTotal),
+                          NumberFormatter.formatCompact(currentSnap.globalTotal),
                           Icons.public_rounded,
                           Colors.white,
                           Colors.white,
@@ -164,9 +165,23 @@ class DuroodSummaryCard extends StatelessWidget {
                       ),
                       Expanded(
                         child: _buildStat(
-                          lp.tr('my_today'),
-                          _fmt(counterService.snapshot.personalToday),
+                          lp.tr('global_today'),
+                          NumberFormatter.formatCompact(currentSnap.globalToday),
                           Icons.today_rounded,
+                          const Color(0xFFFFFBEB),
+                          Colors.white,
+                        ),
+                      ),
+                      Container(
+                        width: 1,
+                        height: 38,
+                        color: Colors.white.withValues(alpha: 0.28),
+                      ),
+                      Expanded(
+                        child: _buildStat(
+                          lp.tr('my_today'),
+                          NumberFormatter.formatCompact(currentSnap.personalToday),
+                          Icons.timer_rounded,
                           const Color(0xFFFFFBEB),
                           Colors.white,
                         ),
@@ -243,9 +258,4 @@ class DuroodSummaryCard extends StatelessWidget {
       ],
     );
   }
-
-  String _fmt(int n) => n.toString().replaceAllMapped(
-        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-        (m) => '${m[1]},',
-      );
 }

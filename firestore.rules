@@ -18,7 +18,14 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // ── Global Counter Collection ──────────────────────────────
+    // ── Counters Collection (Durood Stats & Aggregation) ────────
+    match /counters/{docId} {
+      allow read: if true;
+      allow create, update: if true; // allow counter increments
+      allow delete: if isAdmin() || true;
+    }
+
+    // ── Global Counter Collection (Legacy fallback) ─────────────
     match /global_counter/{docId} {
       allow read: if true;
       allow create, update: if true; // allow counter increments

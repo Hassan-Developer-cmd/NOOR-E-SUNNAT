@@ -39,9 +39,9 @@ class CounterService extends ChangeNotifier {
   Stream<CounterSnapshot> get snapshotStream => _snapshotController.stream;
 
   // Exposed live streams for UI StreamBuilders
-  /// Stream of global counter document snapshots ('global_counter/main').
+  /// Stream of global counter document snapshots ('counters/durood_stats').
   Stream<DocumentSnapshot<Map<String, dynamic>>> get globalCounterStream =>
-      _firestore.collection('global_counter').doc('main').snapshots();
+      _firestore.collection('counters').doc('durood_stats').snapshots();
 
   /// Stream of current user's document snapshots ('users/{uid}').
   Stream<DocumentSnapshot<Map<String, dynamic>>?> get userCounterStream {
@@ -111,11 +111,11 @@ class CounterService extends ChangeNotifier {
 
   void _processGlobalSnap(Map<String, dynamic> data) {
     final todayStr = StreakHelper.toCalendarDateString(DateTime.now());
-    final lastReset = data['last_reset_date'];
+    final lastReset = data['lastUpdatedDate'] ?? data['last_reset_date'];
     final isSameDay = StreakHelper.isSameDay(lastReset, todayStr);
 
-    final int globalTodayCount = isSameDay ? ((data['today_count'] as num?)?.toInt() ?? 0) : 0;
-    final int globalTotalCount = (data['total_count'] as num?)?.toInt() ?? 0;
+    final int globalTodayCount = isSameDay ? ((data['todayTotal'] ?? data['today_count']) as num?)?.toInt() ?? 0 : 0;
+    final int globalTotalCount = ((data['globalTotal'] ?? data['total_count']) as num?)?.toInt() ?? 0;
 
     _updateSnapshot(CounterSnapshot(
       globalTotal: globalTotalCount,
@@ -126,7 +126,7 @@ class CounterService extends ChangeNotifier {
       duroodPoints: _snapshot.duroodPoints,
     ));
 
-    if (!isSameDay && data['last_reset_date'] != null) {
+    if (!isSameDay && lastReset != null) {
       _resetGlobalTodayInFirestore(todayStr);
     }
   }
@@ -157,9 +157,10 @@ class CounterService extends ChangeNotifier {
 
   Future<void> _resetGlobalTodayInFirestore(String todayStr) async {
     try {
-      await _firestore.collection('global_counter').doc('main').set({
-        'today_count': 0,
-        'last_reset_date': todayStr,
+      await _firestore.collection('counters').doc('durood_stats').set({
+        'todayTotal': 0,
+        'lastUpdatedDate': todayStr,
+        'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (e) {
       if (kDebugMode) print('CounterService._resetGlobalTodayInFirestore error: $e');
@@ -196,19 +197,20 @@ class CounterService extends ChangeNotifier {
       final batch = _firestore.batch();
 
       // 1. Global counter update with daily reset check
-      final globalRef = _firestore.collection('global_counter').doc('main');
+      final globalRef = _firestore.collection('counters').doc('durood_stats');
       final globalSnap = await globalRef.get();
       final globalData = globalSnap.data() ?? {};
-      final globalLastReset = globalData['last_reset_date'];
+      final globalLastReset = globalData['lastUpdatedDate'] ?? globalData['last_reset_date'];
       final isGlobalNewDay = globalLastReset == null || !StreakHelper.isSameDay(globalLastReset, todayStr);
 
       if (isGlobalNewDay) {
         batch.set(
           globalRef,
           {
-            'total_count': FieldValue.increment(count),
-            'today_count': count,
-            'last_reset_date': todayStr,
+            'globalTotal': FieldValue.increment(count),
+            'todayTotal': count,
+            'lastUpdatedDate': todayStr,
+            'updatedAt': FieldValue.serverTimestamp(),
           },
           SetOptions(merge: true),
         );
@@ -216,8 +218,9 @@ class CounterService extends ChangeNotifier {
         batch.set(
           globalRef,
           {
-            'total_count': FieldValue.increment(count),
-            'today_count': FieldValue.increment(count),
+            'globalTotal': FieldValue.increment(count),
+            'todayTotal': FieldValue.increment(count),
+            'updatedAt': FieldValue.serverTimestamp(),
           },
           SetOptions(merge: true),
         );

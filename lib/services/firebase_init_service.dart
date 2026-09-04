@@ -11,7 +11,6 @@ class FirebaseInitService {
     try {
       // Perform automated Firestore collection inspection and safe seeding
       await FirestoreSeeder.checkAndSeedFirestore();
-      await FirestoreSeeder.updateGlobalCounterBaseline(totalCount: 125000, todayCount: 4820);
 
       // Ensure admin roles and metadata are registered in Firestore
       await _ensureAdminMetadataInFirestore(firestore);

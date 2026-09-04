@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/utils/number_formatter.dart';
 import '../../../main.dart';
 import '../../../services/counter_service.dart';
 import 'widgets/stat_card.dart';
@@ -275,23 +276,23 @@ class _CounterScreenState extends State<CounterScreen> {
                             children: [
                               StatCard(
                                 title: lp.tr('global_total'),
-                                value: _fmt(snap.globalTotal),
+                                value: NumberFormatter.formatCompact(snap.globalTotal),
                                 icon: Icons.public_rounded,
                               ),
                               StatCard(
                                 title: lp.tr('global_today'),
-                                value: _fmt(snap.globalToday),
+                                value: NumberFormatter.formatCompact(snap.globalToday),
                                 icon: Icons.today_rounded,
                                 iconColor: AppColors.accentGold,
                               ),
                               StatCard(
                                 title: lp.tr('my_total'),
-                                value: _fmt(snap.personalTotal),
+                                value: NumberFormatter.formatCompact(snap.personalTotal),
                                 icon: Icons.account_circle_rounded,
                               ),
                               StatCard(
                                 title: lp.tr('my_today'),
-                                value: _fmt(snap.personalToday),
+                                value: NumberFormatter.formatCompact(snap.personalToday),
                                 icon: Icons.timer_rounded,
                                 iconColor: AppColors.accentGold,
                               ),
@@ -424,27 +425,5 @@ class _CounterScreenState extends State<CounterScreen> {
     );
   }
 
-  String _formatCount(int val) {
-    final absVal = val.abs();
-    if (absVal >= 1000000000000) {
-      final formatted = (val / 1000000000000).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '');
-      return '${formatted}T';
-    } else if (absVal >= 1000000000) {
-      final formatted = (val / 1000000000).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '');
-      return '${formatted}B';
-    } else if (absVal >= 1000000) {
-      final formatted = (val / 1000000).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '');
-      return '${formatted}M';
-    } else if (absVal >= 100000) {
-      final formatted = (val / 1000).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '');
-      return '${formatted}K';
-    } else {
-      return _fmt(val);
-    }
-  }
-
-  String _fmt(int val) => val.toString().replaceAllMapped(
-        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-        (m) => '${m[1]},',
-      );
+  String _formatCount(int val) => NumberFormatter.formatCompact(val);
 }

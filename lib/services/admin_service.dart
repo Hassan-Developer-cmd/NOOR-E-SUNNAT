@@ -755,8 +755,8 @@ class AdminService {
 
   static Stream<Map<String, dynamic>> get globalCounterStream {
     return _firestore
-        .collection('global_counter')
-        .doc('main')
+        .collection('counters')
+        .doc('durood_stats')
         .snapshots()
         .map((snap) => snap.data() ?? {});
   }

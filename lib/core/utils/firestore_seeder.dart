@@ -8,7 +8,7 @@ import '../models/event_model.dart';
 class FirestoreSeeder {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Checks essential Firestore collections (`masail_entries`, `aqaid_entries`, `daily_content`, `events`, `global_counter`).
+  /// Checks essential Firestore collections (`masail_entries`, `aqaid_entries`, `daily_content`, `events`, `counters`).
   ///
   /// If a collection already contains documents (`count > 0`), seeding is skipped for that collection.
   /// If a collection is empty (`count == 0`), default data is safely seeded.
@@ -18,6 +18,7 @@ class FirestoreSeeder {
       'aqaid_entries': {'count': 0, 'seeded': false, 'status': ''},
       'daily_content': {'count': 0, 'seeded': false, 'status': ''},
       'events': {'count': 0, 'seeded': false, 'status': ''},
+      'counters': {'count': 0, 'seeded': false, 'status': ''},
       'global_counter': {'count': 0, 'seeded': false, 'status': ''},
     };
 
@@ -135,22 +136,22 @@ class FirestoreSeeder {
       }
 
       // 5. Check & Seed Global Counter
-      final counterRef = _firestore.collection('global_counter').doc('main');
+      final counterRef = _firestore.collection('counters').doc('durood_stats');
       final counterSnap = await counterRef.get();
-      results['global_counter']['count'] = counterSnap.exists ? 1 : 0;
+      results['counters'] = {'count': counterSnap.exists ? 1 : 0};
 
       if (counterSnap.exists && !force) {
-        results['global_counter']['status'] = 'Skipped (Already exists)';
+        results['counters']['status'] = 'Skipped (Already exists)';
       } else {
         final todayStr = DateTime.now().toIso8601String().split('T').first;
         await counterRef.set({
-          'total_count': 125000,
-          'today_count': 4820,
-          'last_reset_date': todayStr,
-          'created_at': FieldValue.serverTimestamp(),
+          'globalTotal': 0,
+          'todayTotal': 0,
+          'lastUpdatedDate': todayStr,
+          'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
-        results['global_counter']['seeded'] = true;
-        results['global_counter']['status'] = 'Seeded global counter main doc';
+        results['counters']['seeded'] = true;
+        results['counters']['status'] = 'Seeded counters/durood_stats doc';
       }
 
       // 6. Check & Seed Launch Campaign Popup
@@ -187,16 +188,16 @@ class FirestoreSeeder {
 
   /// Sets initial baseline starting numbers for global counter.
   static Future<bool> updateGlobalCounterBaseline({
-    int totalCount = 125000,
-    int todayCount = 4820,
+    int totalCount = 0,
+    int todayCount = 0,
   }) async {
     try {
       final todayStr = DateTime.now().toIso8601String().split('T').first;
-      await _firestore.collection('global_counter').doc('main').set({
-        'total_count': totalCount,
-        'today_count': todayCount,
-        'last_reset_date': todayStr,
-        'created_at': FieldValue.serverTimestamp(),
+      await _firestore.collection('counters').doc('durood_stats').set({
+        'globalTotal': totalCount,
+        'todayTotal': todayCount,
+        'lastUpdatedDate': todayStr,
+        'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
       return true;
     } catch (e) {
