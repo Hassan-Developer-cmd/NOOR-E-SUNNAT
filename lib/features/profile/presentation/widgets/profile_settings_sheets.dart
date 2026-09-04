@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
@@ -6,6 +7,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_typography.dart';
 import '../../../../core/models/team_member.dart';
 import '../../../../main.dart';
+import '../../../../services/auth_service.dart';
 
 class ProfileSettingsSheets {
   // Official Play Store URL & Intent URI
@@ -1249,5 +1251,212 @@ class ProfileSettingsSheets {
         ],
       ),
     );
+  }
+
+  /// Displays the Delete Account confirmation dialog.
+  static void showDeleteAccountDialog(BuildContext context) {
+    final lp = globalLanguageProvider;
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEE2E2),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFFCA5A5)),
+              ),
+              child: const Icon(
+                Icons.warning_amber_rounded,
+                color: Color(0xFFDC2626),
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                lp.tr('delete_account_confirm_title'),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF991B1B),
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          lp.tr('delete_account_confirm_msg'),
+          style: const TextStyle(
+            fontSize: 13.5,
+            color: Color(0xFF4B5563),
+            height: 1.45,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text(
+              lp.tr('cancel'),
+              style: const TextStyle(color: Color(0xFF6B7280)),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () async {
+              Navigator.pop(dialogCtx);
+              await executeAccountDeletion(context);
+            },
+            child: Text(lp.tr('delete_account_action')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Executes full account deletion, Firestore purge, SharedPreferences wipe, dialog dismiss, and navigation reset.
+  static Future<void> executeAccountDeletion(BuildContext context, {String? reauthPassword}) async {
+    final lp = globalLanguageProvider;
+
+    // Show loading indicator dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFDC2626)),
+                ),
+              ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Text(
+                  lp.tr('deleting_account'),
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    try {
+      await AuthService.deleteAccount(reauthPassword: reauthPassword);
+
+      if (!context.mounted) return;
+
+      // 1. Dismiss the "Deleting Account..." dialog using rootNavigator
+      if (Navigator.of(context, rootNavigator: true).canPop()) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+
+      // 2. Clear entire navigation stack and reset to Login/AuthWrapper
+      if (context.mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'اکاؤنٹ اور تمام ڈیٹا کامیابی سے ختم کر دیا گیا ہے / Account and all associated data deleted successfully',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (!context.mounted) return;
+
+      // 1. Dismiss the "Deleting Account..." dialog using rootNavigator
+      if (Navigator.of(context, rootNavigator: true).canPop()) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+
+      if (e.code == 'requires-recent-login') {
+        if (context.mounted) {
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Row(
+                children: [
+                  const Icon(Icons.security_rounded, color: Color(0xFFDC2626), size: 24),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      lp.isUrdu ? 'سیکیورٹی تصدیق' : 'Security Verification',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  ),
+                ],
+              ),
+              content: const Text(
+                'For security, please log out and log in again before deleting your account. / سیکیورٹی کی تصدیق کے لیے اکاؤنٹ ختم کرنے سے پہلے دوبارہ لاگ ان کریں۔',
+                style: TextStyle(fontSize: 13.5, height: 1.45),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(lp.tr('cancel')),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFDC2626),
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await AuthService.signOut();
+                    if (context.mounted) {
+                      Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                    }
+                  },
+                  child: Text(lp.isUrdu ? 'لاگ آؤٹ کریں' : 'Log Out Now'),
+                ),
+              ],
+            ),
+          );
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Deletion error: ${e.message ?? e.code}'),
+              backgroundColor: const Color(0xFFDC2626),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      if (Navigator.of(context, rootNavigator: true).canPop()) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Deletion failed: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    }
   }
 }

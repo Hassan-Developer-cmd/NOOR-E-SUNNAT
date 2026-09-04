@@ -4,6 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import '../core/models/app_user.dart';
+import 'counter_service.dart';
 
 class GoogleSignInResult {
   final User? user;
@@ -317,63 +318,150 @@ class AuthService {
     }
   }
 
-  /// Permanently deletes user data documents from Firestore and deletes the Firebase Auth account.
-  /// Handles cleanup of 'users/{uid}', questions submitted by user, and user notifications.
+  /// Permanently purges ALL user data from Firestore (user doc, subcollections, questions, notifications),
+  /// clears all device storage (SharedPreferences), resets in-memory counter state, disconnects Google session,
+  /// and deletes the Firebase Auth account.
   static Future<void> deleteAccount({String? reauthPassword}) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('No authenticated user found');
     final uid = user.uid;
+    final email = user.email ?? '';
 
-    // 1. Clean up Firestore user records
+    // 1. Comprehensive Firestore data purge BEFORE Auth deletion (while still authenticated)
     try {
-      final batch = _firestore.batch();
+      final List<DocumentReference> docsToDelete = [];
 
-      // Delete user document
+      // A. Main user document: users/{uid}
       final userDocRef = _firestore.collection('users').doc(uid);
-      batch.delete(userDocRef);
+      docsToDelete.add(userDocRef);
 
-      // Query and delete user questions
-      final questionsSnap = await _firestore
-          .collection('user_questions')
-          .where('user_id', isEqualTo: uid)
-          .get();
-      for (final doc in questionsSnap.docs) {
-        batch.delete(doc.reference);
+      // B. Subcollections under users/{uid}: daily_stats, history, queries, notifications, streak_history, bookmarks
+      final subcollections = [
+        'daily_stats',
+        'history',
+        'queries',
+        'notifications',
+        'streak_history',
+        'bookmarks',
+      ];
+      for (final subcol in subcollections) {
+        try {
+          final subSnap = await userDocRef.collection(subcol).get();
+          for (final doc in subSnap.docs) {
+            docsToDelete.add(doc.reference);
+          }
+        } catch (e) {
+          if (kDebugMode) print('deleteAccount subcollection $subcol error: $e');
+        }
       }
 
-      // Query and delete targeted notifications
-      final notificationsSnap = await _firestore
-          .collection('notifications')
-          .where('target', isEqualTo: uid)
-          .get();
-      for (final doc in notificationsSnap.docs) {
-        batch.delete(doc.reference);
+      // C. Remove user-specific questions/inquiries (user_questions and questions)
+      for (final col in ['user_questions', 'questions']) {
+        try {
+          final snap1 = await _firestore.collection(col).where('user_id', isEqualTo: uid).get();
+          for (final doc in snap1.docs) {
+            docsToDelete.add(doc.reference);
+          }
+
+          final snap2 = await _firestore.collection(col).where('userId', isEqualTo: uid).get();
+          for (final doc in snap2.docs) {
+            docsToDelete.add(doc.reference);
+          }
+
+          if (email.isNotEmpty) {
+            final snap3 = await _firestore.collection(col).where('userEmail', isEqualTo: email).get();
+            for (final doc in snap3.docs) {
+              docsToDelete.add(doc.reference);
+            }
+
+            final snap4 = await _firestore.collection(col).where('email', isEqualTo: email).get();
+            for (final doc in snap4.docs) {
+              docsToDelete.add(doc.reference);
+            }
+          }
+        } catch (e) {
+          if (kDebugMode) print('deleteAccount $col error: $e');
+        }
       }
 
-      await batch.commit();
+      // D. Remove user-specific notifications
+      try {
+        final notifSnap1 = await _firestore.collection('notifications').where('target', isEqualTo: uid).get();
+        for (final doc in notifSnap1.docs) {
+          docsToDelete.add(doc.reference);
+        }
+
+        final notifSnap2 = await _firestore.collection('notifications').where('userId', isEqualTo: uid).get();
+        for (final doc in notifSnap2.docs) {
+          docsToDelete.add(doc.reference);
+        }
+
+        final notifSnap3 = await _firestore.collection('notifications').where('user_id', isEqualTo: uid).get();
+        for (final doc in notifSnap3.docs) {
+          docsToDelete.add(doc.reference);
+        }
+      } catch (e) {
+        if (kDebugMode) print('deleteAccount notifications error: $e');
+      }
+
+      // Deduplicate document references by path
+      final uniqueRefs = <String, DocumentReference>{};
+      for (final ref in docsToDelete) {
+        uniqueRefs[ref.path] = ref;
+      }
+
+      // Execute atomic batched deletions (chunked up to 400 operations per batch)
+      const int batchLimit = 400;
+      final refList = uniqueRefs.values.toList();
+      for (int i = 0; i < refList.length; i += batchLimit) {
+        final end = (i + batchLimit < refList.length) ? i + batchLimit : refList.length;
+        final chunk = refList.sublist(i, end);
+        final batch = _firestore.batch();
+        for (final ref in chunk) {
+          batch.delete(ref);
+        }
+        await batch.commit();
+      }
     } catch (e) {
       if (kDebugMode) print('AuthService.deleteAccount Firestore cleanup warning: $e');
     }
 
-    // 2. Delete Firebase Auth user (with re-auth handling if required)
+    // 2. Clear all device storage: wipe all streak, points, daily Durood caches, and tokens
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+    } catch (e) {
+      if (kDebugMode) print('AuthService.deleteAccount prefs.clear error: $e');
+    }
+
+    // 3. Reset in-memory CounterService state
+    try {
+      CounterService().resetLocalState();
+    } catch (_) {}
+
+    // 4. Disconnect Google Sign-In session explicitly so it doesn't auto-link old tokens
+    try {
+      await _googleSignIn.signOut();
+      await _googleSignIn.disconnect();
+    } catch (_) {}
+
+    _ensuredUids.clear();
+
+    // 5. Delete the Firebase Auth User
     try {
       await user.delete();
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
-        if (kDebugMode) print('AuthService.deleteAccount: requires-recent-login, attempting re-auth');
-        await reauthenticateUser(password: reauthPassword);
-        // Retry delete after successful re-auth
-        await _auth.currentUser?.delete();
+        if (reauthPassword != null && reauthPassword.isNotEmpty) {
+          await reauthenticateUser(password: reauthPassword);
+          await _auth.currentUser?.delete();
+        } else {
+          rethrow;
+        }
       } else {
         rethrow;
       }
     }
-
-    // 3. Clear local session cache
-    await _clearLocalSession();
-    try {
-      await _googleSignIn.signOut();
-    } catch (_) {}
   }
 
   /// Explicitly signs out of Firebase Auth and clears local session persistence.

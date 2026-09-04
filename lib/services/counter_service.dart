@@ -164,6 +164,31 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  String? _activeUid;
+
+  /// Completely resets in-memory and local cached personal counter state on sign out or account deletion.
+  void resetLocalState() {
+    _activeUid = null;
+    _pendingBuffer = 0;
+    _debounceTimer?.cancel();
+    _debounceTimer = null;
+    _updateSnapshot(CounterSnapshot(
+      globalTotal: _snapshot.globalTotal,
+      globalToday: _snapshot.globalToday,
+      personalTotal: 0,
+      personalToday: 0,
+      currentStreak: 0,
+      duroodPoints: 0,
+    ));
+    try {
+      _prefs?.remove(_keyPersonalTotal);
+      _prefs?.remove(_keyStreak);
+      _prefs?.remove(_keyPoints);
+      final todayStr = StreakHelper.toCalendarDateString(DateTime.now());
+      _prefs?.remove('$_prefixMyToday$todayStr');
+    } catch (_) {}
+  }
+
   // ── Streams ────────────────────────────────────────────────
 
   void _startStreams() {
@@ -180,6 +205,19 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     _authSub = _auth.authStateChanges().listen((user) async {
       await _userSub?.cancel();
       if (user != null) {
+        if (user.uid != _activeUid) {
+          _activeUid = user.uid;
+          // Fresh or switched user session: reset personal counts in memory so no previous user data leaks!
+          _updateSnapshot(CounterSnapshot(
+            globalTotal: _snapshot.globalTotal,
+            globalToday: _snapshot.globalToday,
+            personalTotal: 0,
+            personalToday: 0,
+            currentStreak: 0,
+            duroodPoints: 0,
+          ));
+        }
+
         // Ensure user doc exists in Firestore safely without overwriting existing counts
         await AuthService.ensureUserDocExists(user);
 
@@ -194,15 +232,8 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
           if (kDebugMode) print('CounterService user stream error: $e');
         });
       } else {
-        // Do NOT wipe personal counts to 0! Preserve local cached values.
-        _updateSnapshot(CounterSnapshot(
-          globalTotal: _snapshot.globalTotal,
-          globalToday: _snapshot.globalToday,
-          personalTotal: _snapshot.personalTotal,
-          personalToday: _snapshot.personalToday,
-          currentStreak: _snapshot.currentStreak,
-          duroodPoints: _snapshot.duroodPoints,
-        ));
+        _activeUid = null;
+        resetLocalState();
       }
     });
   }
@@ -283,13 +314,13 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         ? (((data['personal_today_durood'] ?? data['todayCount']) as num?)?.toInt() ?? 0)
         : 0;
 
-    // Never regress local personal counts if offline/local has higher count
-    final int effectivePersonalTotal = firestorePersonalTotal >= _snapshot.personalTotal
-        ? firestorePersonalTotal
-        : _snapshot.personalTotal;
-    final int effectivePersonalToday = firestorePersonalToday >= _snapshot.personalToday
-        ? firestorePersonalToday
-        : _snapshot.personalToday;
+    // Use firestore counts directly unless local buffer has uncommitted increments in flight
+    final int effectivePersonalTotal = _pendingBuffer > 0
+        ? (_snapshot.personalTotal >= firestorePersonalTotal ? _snapshot.personalTotal : firestorePersonalTotal)
+        : firestorePersonalTotal;
+    final int effectivePersonalToday = _pendingBuffer > 0
+        ? (_snapshot.personalToday >= firestorePersonalToday ? _snapshot.personalToday : firestorePersonalToday)
+        : firestorePersonalToday;
 
     _updateSnapshot(CounterSnapshot(
       globalTotal: _snapshot.globalTotal,
