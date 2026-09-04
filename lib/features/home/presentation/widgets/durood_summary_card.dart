@@ -9,6 +9,7 @@ class DuroodSummaryCard extends StatelessWidget {
   final CounterSnapshot? snapshot;
   final int? globalTotal;
   final int? todayTotal;
+  final int? myToday;
 
   const DuroodSummaryCard({
     super.key,
@@ -17,6 +18,7 @@ class DuroodSummaryCard extends StatelessWidget {
     this.snapshot,
     this.globalTotal,
     this.todayTotal,
+    this.myToday,
   });
 
   @override
@@ -25,6 +27,7 @@ class DuroodSummaryCard extends StatelessWidget {
     final currentSnap = snapshot ?? counterService.snapshot;
     final effectiveGlobalTotal = globalTotal ?? currentSnap.globalTotal;
     final effectiveTodayTotal = todayTotal ?? currentSnap.globalToday;
+    final effectiveMyToday = myToday ?? currentSnap.personalToday;
 
     return Container(
       width: double.infinity,
@@ -187,7 +190,7 @@ class DuroodSummaryCard extends StatelessWidget {
                       Expanded(
                         child: _buildStat(
                           lp.tr('my_today'),
-                          NumberFormatter.formatCompact(currentSnap.personalToday),
+                          NumberFormatter.formatCompact(effectiveMyToday),
                           Icons.timer_rounded,
                           const Color(0xFFFFFBEB),
                           Colors.white,

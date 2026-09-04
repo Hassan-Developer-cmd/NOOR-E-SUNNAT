@@ -351,14 +351,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    // Real-time StreamBuilder listening to Firestore global counter document ('counters/durood_stats')
+                    // Real-time StreamBuilder listening strictly to Firestore global counter document ('counters/durood_stats')
                     StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                       stream: widget.counterService.globalCounterStream,
                       builder: (context, globalSnap) {
                         final hasGlobalData = globalSnap.hasData && globalSnap.data?.data() != null;
                         final globalData = globalSnap.data?.data() ?? {};
+                        final String todayDateString = DateTime.now().toIso8601String().split('T')[0];
+                        final String? docDate = (globalData['date'] ?? globalData['lastUpdatedDate'] ?? globalData['last_reset_date'])?.toString();
+                        final bool isSameDay = docDate == todayDateString;
+
                         final int firestoreGlobalTotal = (globalData['globalTotal'] as num?)?.toInt() ?? 0;
-                        final int firestoreTodayTotal = (globalData['todayTotal'] as num?)?.toInt() ?? 0;
+                        // StreamBuilder Fallback: If doc['date'] != todayDateString on render, immediately treat todayTotal as 0 in UI
+                        final int firestoreTodayTotal = isSameDay
+                            ? ((globalData['todayTotal'] as num?)?.toInt() ?? 0)
+                            : 0;
 
                         return StreamBuilder<CounterSnapshot>(
                           stream: widget.counterService.snapshotStream,
@@ -368,9 +375,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             final int effectiveGlobalTotal = hasGlobalData
                                 ? (firestoreGlobalTotal > snap.globalTotal ? firestoreGlobalTotal : snap.globalTotal)
                                 : snap.globalTotal;
-                            final int effectiveTodayTotal = hasGlobalData
-                                ? (firestoreTodayTotal > snap.globalToday ? firestoreTodayTotal : snap.globalToday)
-                                : snap.globalToday;
+                            final int effectiveTodayTotal = isSameDay
+                                ? (hasGlobalData ? (firestoreTodayTotal > snap.globalToday ? firestoreTodayTotal : snap.globalToday) : snap.globalToday)
+                                : 0;
 
                             return Column(
                               children: [
@@ -384,6 +391,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   snapshot: snap,
                                   globalTotal: effectiveGlobalTotal,
                                   todayTotal: effectiveTodayTotal,
+                                  myToday: snap.personalToday,
                                   onSendSalawat: widget.onNavigateToCounter,
                                 ),
                               ],
