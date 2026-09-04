@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:islamic_app/core/utils/streak_helper.dart';
+import 'package:islamic_app/services/counter_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -62,6 +63,23 @@ void main() {
       // Cumulative totals remain intact!
       expect(personalTotal, 150);
       expect(globalTotal, 5000);
+    });
+
+    test('CounterService singleton auto-recovers and does not throw after disposal', () {
+      final service1 = CounterService();
+      expect(service1.isDisposed, false);
+
+      // Simulate disposal
+      service1.dispose();
+      expect(service1.isDisposed, true);
+
+      // notifyListeners should not throw on disposed instance
+      expect(() => service1.notifyListeners(), returnsNormally);
+
+      // Next access to CounterService singleton automatically yields an active, usable instance
+      final service2 = CounterService();
+      expect(service2.isDisposed, false);
+      expect(() => service2.notifyListeners(), returnsNormally);
     });
   });
 }

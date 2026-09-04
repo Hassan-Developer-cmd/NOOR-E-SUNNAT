@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -45,8 +46,16 @@ class CounterSnapshot {
 }
 
 class CounterService extends ChangeNotifier with WidgetsBindingObserver {
-  static final CounterService _instance = CounterService._internal();
-  factory CounterService() => _instance;
+  static CounterService _instance = CounterService._internal();
+  factory CounterService() {
+    if (_instance._isDisposed) {
+      _instance = CounterService._internal();
+    }
+    return _instance;
+  }
+
+  bool _isDisposed = false;
+  bool get isDisposed => _isDisposed;
 
   static final _firestore = FirebaseFirestore.instance;
   static final _auth = FirebaseAuth.instance;
@@ -157,11 +166,18 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _updateSnapshot(CounterSnapshot newSnap) {
+    if (_isDisposed) return;
     _snapshot = newSnap;
     if (!_snapshotController.isClosed) {
       _snapshotController.add(_snapshot);
     }
     notifyListeners();
+  }
+
+  @override
+  void notifyListeners() {
+    if (_isDisposed) return;
+    super.notifyListeners();
   }
 
   String? _activeUid;
@@ -192,6 +208,12 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
   // ── Streams ────────────────────────────────────────────────
 
   void _startStreams() {
+    try {
+      if (Firebase.apps.isEmpty) return;
+    } catch (_) {
+      return;
+    }
+
     // 1. Global counter stream ('counters/durood_stats')
     _globalSub = globalCounterStream.listen((snap) {
       if (snap.exists && snap.data() != null) {
@@ -520,6 +542,8 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    if (_isDisposed) return;
+    _isDisposed = true;
     WidgetsBinding.instance.removeObserver(this);
     flushImmediately();
     _saveToStorage();
@@ -527,7 +551,9 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     _authSub?.cancel();
     _globalSub?.cancel();
     _userSub?.cancel();
-    _snapshotController.close();
+    if (!_snapshotController.isClosed) {
+      _snapshotController.close();
+    }
     super.dispose();
   }
 }

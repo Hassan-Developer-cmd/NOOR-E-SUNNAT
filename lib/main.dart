@@ -348,7 +348,8 @@ class _MainShellState extends State<MainShell> {
 
   @override
   void dispose() {
-    _counterService.dispose();
+    // Flush pending increments before unmounting shell, preserving the app-wide singleton
+    _counterService.flushImmediately();
     super.dispose();
   }
 
