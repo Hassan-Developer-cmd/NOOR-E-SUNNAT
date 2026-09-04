@@ -78,13 +78,20 @@ class AppUser {
       updatedDate = DateTime.fromMillisecondsSinceEpoch(rawUpdated);
     }
 
-    final int rawStreak = ((map['current_streak'] ?? map['streak'] ?? map['daily_streak']) as num?)?.toInt() ?? 0;
+    final int rawStreak = ((map['streak'] ??
+            map['current_streak'] ??
+            map['currentStreak'] ??
+            map['daily_streak']) as num?)
+            ?.toInt() ??
+        0;
     final int rawLongest = ((map['longest_streak'] ?? map['best_streak']) as num?)?.toInt() ?? rawStreak;
 
-    final int effectiveStreak = StreakHelper.calculateEffectiveStreak(
+    final int calculatedStreak = StreakHelper.calculateEffectiveStreak(
       storedStreak: rawStreak,
       lastActiveDate: rawDate ?? activeDate,
     );
+    // If calculated streak is > 0 use it; otherwise fallback to rawStreak if account has stored streak
+    final int effectiveStreak = calculatedStreak > 0 ? calculatedStreak : rawStreak;
 
     final resolvedName = (map['name'] as String?)?.trim().isNotEmpty == true
         ? (map['name'] as String).trim()
@@ -116,7 +123,13 @@ class AppUser {
           0,
       currentStreak: effectiveStreak,
       longestStreak: rawLongest >= effectiveStreak ? rawLongest : effectiveStreak,
-      totalDuroodPoints: ((map['total_durood_points'] ?? map['points']) as num?)?.toInt() ?? 0,
+      totalDuroodPoints: ((map['duroodPoints'] ??
+              map['durood_points'] ??
+              map['total_durood_points'] ??
+              map['points'] ??
+              map['totalPoints']) as num?)
+              ?.toInt() ??
+          0,
       lastActiveDuroodDate: activeDate,
       createdAt: createdDate,
       updatedAt: updatedDate,
@@ -134,8 +147,12 @@ class AppUser {
         'personal_total_durood': personalTotalDurood,
         'personal_today_durood': personalTodayDurood,
         'current_streak': currentStreak,
+        'streak': currentStreak,
         'longest_streak': longestStreak,
         'total_durood_points': totalDuroodPoints,
+        'durood_points': totalDuroodPoints,
+        'duroodPoints': totalDuroodPoints,
+        'points': totalDuroodPoints,
         'last_active_durood_date':
             lastActiveDuroodDate?.toIso8601String().split('T').first,
         if (createdAt != null) 'created_at': createdAt?.toIso8601String(),

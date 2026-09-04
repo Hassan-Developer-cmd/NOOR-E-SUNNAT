@@ -58,6 +58,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
   void initState() {
     super.initState();
     _loadHijriConfig();
+    AdminService.fetchGlobalCounterStats();
   }
 
   Future<void> _loadHijriConfig() async {
@@ -297,37 +298,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                                 const SizedBox(width: 8),
                               ],
 
-                              // Admin Avatar Profile Pill
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryEmerald.withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(18),
-                                  border: Border.all(color: AppColors.primaryEmerald.withValues(alpha: 0.2)),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 13,
-                                      backgroundColor: AppColors.primaryEmerald,
-                                      child: Text(
-                                        'A',
-                                        style: TextStyle(color: AppColors.accentGold, fontWeight: FontWeight.bold, fontSize: 11),
-                                      ),
-                                    ),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      'Admin',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.primaryEmerald,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                              // Active Admin Avatar Profile Pill with real-time Streak and Points
+                              _buildActiveUserProfilePill(),
                             ],
                           ),
                   ),
@@ -457,6 +429,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
             ),
           ),
           const Divider(color: Colors.white24),
+          _buildSidebarActiveUserCard(),
           Material(
             color: Colors.transparent,
             child: ListTile(
@@ -614,14 +587,43 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
   Widget _buildDashboardKpiCards(double screenWidth) {
     return StreamBuilder<int>(
       stream: AdminService.usersCountStream,
+      initialData: AdminService.currentUsersCount,
       builder: (context, userSnap) {
-        final totalUsers = userSnap.data ?? 0;
+        final totalUsers = userSnap.data ?? AdminService.currentUsersCount;
         return StreamBuilder<Map<String, dynamic>>(
           stream: AdminService.globalCounterStream,
+          initialData: AdminService.currentGlobalCounterData,
           builder: (context, snap) {
-            final data = snap.data ?? {};
-            final total = ((data['globalTotal'] ?? data['total_count']) as num?)?.toInt() ?? 0;
-            final today = ((data['todayTotal'] ?? data['globalToday'] ?? data['todayCount'] ?? data['today_count']) as num?)?.toInt() ?? 0;
+            final data = snap.data ?? AdminService.currentGlobalCounterData;
+
+            // Total Durood: check globalTotal, totalDurood, total_durood, total_count, totalCount, count
+            final total = ((data['globalTotal'] ??
+                    data['totalDurood'] ??
+                    data['total_durood'] ??
+                    data['total_count'] ??
+                    data['totalCount'] ??
+                    data['count']) as num?)
+                    ?.toInt() ??
+                0;
+
+            // Today's Durood: check todayTotal, todayDurood, today_durood, globalToday, todayCount, today_count
+            final rawToday = ((data['todayTotal'] ??
+                    data['todayDurood'] ??
+                    data['today_durood'] ??
+                    data['globalToday'] ??
+                    data['todayCount'] ??
+                    data['today_count']) as num?)
+                    ?.toInt() ??
+                0;
+
+            // Midnight rollover verification
+            final docDate = (data['date'] ??
+                    data['lastUpdatedDate'] ??
+                    data['last_reset_date'])
+                ?.toString();
+            final todayDate = DateTime.now().toIso8601String().split('T')[0];
+            final int today =
+                (docDate != null && docDate != todayDate) ? 0 : rawToday;
 
             final cards = [
               _kpiCardContent('Total Users', _fmt(totalUsers), Icons.people_alt_rounded, AppColors.primaryEmerald),
@@ -5660,6 +5662,328 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     );
   }
 
+
+  Widget _buildActiveUserProfilePill() {
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>?>(
+      stream: AdminService.activeUserDocStream,
+      builder: (context, snap) {
+        final data = snap.data?.data() ?? {};
+        final streak = ((data['streak'] ??
+                data['current_streak'] ??
+                data['currentStreak'] ??
+                data['daily_streak']) as num?)
+                ?.toInt() ??
+            0;
+        final points = ((data['duroodPoints'] ??
+                data['durood_points'] ??
+                data['total_durood_points'] ??
+                data['points'] ??
+                data['totalPoints']) as num?)
+                ?.toInt() ??
+            0;
+        final name = (data['username'] ??
+                data['displayName'] ??
+                data['name'] ??
+                'Admin')
+            .toString();
+        final photoUrl = (data['photo_url'] ?? data['photoUrl'] ?? '').toString();
+        final base64Img = (data['profileImageBase64'] ?? data['profile_image_base64'])?.toString();
+
+        return Tooltip(
+          message: 'Active User Profile & Durood Stats (Click for details)',
+          child: InkWell(
+            onTap: () => _showActiveAdminProfileDialog(context, data, streak, points, name),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: AppColors.primaryEmerald.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.primaryEmerald.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  UserAvatar(
+                    radius: 13,
+                    profileImageBase64: base64Img,
+                    photoUrl: photoUrl,
+                    displayName: name,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primaryEmerald,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Current Streak Badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.orange.shade200),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.local_fire_department_rounded, size: 13, color: Colors.orange.shade800),
+                        const SizedBox(width: 3),
+                        Text(
+                          '$streak Days',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange.shade900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  // Durood Points Badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: AppColors.emeraldContainer,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.primaryEmerald.withValues(alpha: 0.2)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.stars_rounded, size: 13, color: AppColors.primaryEmerald),
+                        const SizedBox(width: 3),
+                        Text(
+                          '${_fmt(points)} pts',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.emeraldDeep,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showActiveAdminProfileDialog(
+    BuildContext context,
+    Map<String, dynamic> data,
+    int streak,
+    int points,
+    String name,
+  ) {
+    final personalTotal = ((data['personal_total_durood'] ??
+            data['totalDurood'] ??
+            data['total_durood_count'] ??
+            data['total_count']) as num?)
+            ?.toInt() ??
+        0;
+    final personalToday = ((data['personal_today_durood'] ??
+            data['todayDurood'] ??
+            data['todayDuroodCount'] ??
+            data['today_count']) as num?)
+            ?.toInt() ??
+        0;
+    final email = data['email']?.toString() ?? '';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Row(
+          children: [
+            const Icon(Icons.account_circle, color: AppColors.primaryEmerald),
+            const SizedBox(width: 10),
+            Expanded(child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold))),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (email.isNotEmpty) ...[
+              Text(email, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+              const SizedBox(height: 14),
+            ],
+            const Divider(),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildUserMetricTile(
+                    'Current Streak',
+                    '$streak Days',
+                    Icons.local_fire_department_rounded,
+                    Colors.orange.shade700,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildUserMetricTile(
+                    'Durood Points',
+                    '${_fmt(points)} pts',
+                    Icons.stars_rounded,
+                    Colors.teal,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildUserMetricTile(
+                    'Total Durood',
+                    _fmt(personalTotal),
+                    Icons.auto_awesome,
+                    AppColors.primaryEmerald,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildUserMetricTile(
+                    'Today\'s Durood',
+                    _fmt(personalToday),
+                    Icons.today_rounded,
+                    AppColors.emeraldLight,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarActiveUserCard() {
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>?>(
+      stream: AdminService.activeUserDocStream,
+      builder: (context, snap) {
+        final data = snap.data?.data() ?? {};
+        final streak = ((data['streak'] ??
+                data['current_streak'] ??
+                data['currentStreak'] ??
+                data['daily_streak']) as num?)
+                ?.toInt() ??
+            0;
+        final points = ((data['duroodPoints'] ??
+                data['durood_points'] ??
+                data['total_durood_points'] ??
+                data['points'] ??
+                data['totalPoints']) as num?)
+                ?.toInt() ??
+            0;
+        final name = (data['username'] ??
+                data['displayName'] ??
+                data['name'] ??
+                'Admin')
+            .toString();
+
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 12,
+                    backgroundColor: AppColors.accentGold,
+                    child: Text(
+                      name.isNotEmpty ? name[0].toUpperCase() : 'A',
+                      style: const TextStyle(
+                        color: AppColors.primaryEmerald,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.local_fire_department_rounded,
+                          color: Colors.orangeAccent, size: 13),
+                      const SizedBox(width: 3),
+                      Text(
+                        '$streak Days',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.stars_rounded,
+                          color: AppColors.accentGold, size: 13),
+                      const SizedBox(width: 3),
+                      Text(
+                        '${_fmt(points)} pts',
+                        style: const TextStyle(
+                          color: AppColors.goldBright,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   String _fmt(int n) {
     return n.toString().replaceAllMapped(

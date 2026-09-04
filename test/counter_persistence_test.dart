@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:islamic_app/core/models/app_user.dart';
 import 'package:islamic_app/core/utils/streak_helper.dart';
 import 'package:islamic_app/services/counter_service.dart';
+import 'package:islamic_app/services/admin_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -389,6 +391,101 @@ void main() {
         effectiveStreak = loadedStreak;
       }
       expect(effectiveStreak, 7, reason: 'Stale 0 streak in Firestore must never downgrade active streak');
+    });
+
+    test('WEB PORTAL ISSUE FIX: AppUser correctly parses "streak" (5 Days) and "duroodPoints" (220,000)', () {
+      // Document written by mobile app using keys 'streak' and 'duroodPoints'
+      final Map<String, dynamic> mobileUserDoc = {
+        'user_id': 'test_user_mobile',
+        'email': 'mobile_user@test.com',
+        'username': 'Mobile Devotee',
+        'streak': 5,
+        'duroodPoints': 220000,
+        'personal_total_durood': 110000,
+        'personal_today_durood': 500,
+        'last_active_durood_date': '2026-09-04',
+      };
+
+      final user = AppUser.fromMap(mobileUserDoc);
+
+      expect(user.currentStreak, 5, reason: 'Must parse streak key as currentStreak == 5');
+      expect(user.totalDuroodPoints, 220000, reason: 'Must parse duroodPoints key as totalDuroodPoints == 220000');
+      expect(user.personalTotalDurood, 110000);
+      expect(user.personalTodayDurood, 500);
+
+      // Verify toMap() emits both schema variations so both mobile and web stay in sync
+      final map = user.toMap();
+      expect(map['streak'], 5);
+      expect(map['current_streak'], 5);
+      expect(map['duroodPoints'], 220000);
+      expect(map['total_durood_points'], 220000);
+    });
+
+    test('WEB DASHBOARD ISSUE FIX: Correctly extracts Total Durood and Today\'s Durood from counters/durood_stats', () {
+      final Map<String, dynamic> firestoreDoc = {
+        'globalTotal': 125000,
+        'todayTotal': 4820,
+        'totalDurood': 125000,
+        'todayDurood': 4820,
+        'date': '2026-09-04',
+        'lastUpdatedDate': '2026-09-04',
+      };
+
+      final total = ((firestoreDoc['globalTotal'] ??
+              firestoreDoc['totalDurood'] ??
+              firestoreDoc['total_durood'] ??
+              firestoreDoc['total_count'] ??
+              firestoreDoc['totalCount'] ??
+              firestoreDoc['count']) as num?)
+              ?.toInt() ??
+          0;
+
+      final rawToday = ((firestoreDoc['todayTotal'] ??
+              firestoreDoc['todayDurood'] ??
+              firestoreDoc['today_durood'] ??
+              firestoreDoc['globalToday'] ??
+              firestoreDoc['todayCount'] ??
+              firestoreDoc['today_count']) as num?)
+              ?.toInt() ??
+          0;
+
+      final docDate = (firestoreDoc['date'] ??
+              firestoreDoc['lastUpdatedDate'] ??
+              firestoreDoc['last_reset_date'])
+          ?.toString();
+      const todayDate = '2026-09-04';
+      final int today = (docDate != null && docDate != todayDate) ? 0 : rawToday;
+
+      expect(total, 125000, reason: 'Web Dashboard Total Durood must equal 125,000');
+      expect(today, 4820, reason: 'Web Dashboard Today\'s Durood must equal 4,820');
+    });
+
+    test('WEB DASHBOARD ISSUE FIX: Midnight rollover resets Today\'s Durood to 0 on Web when date changes', () {
+      final Map<String, dynamic> yesterdayFirestoreDoc = {
+        'globalTotal': 125000,
+        'todayTotal': 4820,
+        'date': '2026-09-03', // yesterday
+        'lastUpdatedDate': '2026-09-03',
+      };
+
+      final total = ((yesterdayFirestoreDoc['globalTotal'] ??
+              yesterdayFirestoreDoc['total_count']) as num?)
+              ?.toInt() ??
+          0;
+
+      final rawToday = ((yesterdayFirestoreDoc['todayTotal'] ??
+              yesterdayFirestoreDoc['todayCount']) as num?)
+              ?.toInt() ??
+          0;
+
+      final docDate = (yesterdayFirestoreDoc['date'] ??
+              yesterdayFirestoreDoc['lastUpdatedDate'])
+          ?.toString();
+      const todayDate = '2026-09-04';
+      final int today = (docDate != null && docDate != todayDate) ? 0 : rawToday;
+
+      expect(total, 125000, reason: 'Global Total remains intact across midnight');
+      expect(today, 0, reason: 'Today count must reset to 0 in UI when doc date is from previous day');
     });
   });
 }

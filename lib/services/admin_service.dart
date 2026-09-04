@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'fcm_v1_service.dart';
@@ -753,31 +754,110 @@ class AdminService {
 
   // ── Global Counter Stats ─────────────────────────────────────
 
+  static Stream<Map<String, dynamic>>? _globalCounterStreamCache;
+  static Map<String, dynamic> _lastGlobalCounterData = {
+    'globalTotal': 0,
+    'todayTotal': 0,
+    'totalDurood': 0,
+    'todayDurood': 0,
+    'total_count': 0,
+    'today_count': 0,
+  };
+
+  /// Synchronously returns the most recent in-memory global counter data snapshot.
+  static Map<String, dynamic> get currentGlobalCounterData => _lastGlobalCounterData;
+
+  /// Resilient real-time broadcast stream listening directly to 'counters/durood_stats'.
   static Stream<Map<String, dynamic>> get globalCounterStream {
-    return _firestore
+    _globalCounterStreamCache ??= _firestore
         .collection('counters')
         .doc('durood_stats')
         .snapshots()
-        .map((snap) => snap.data() ?? {});
+        .map((snap) {
+          final data = snap.data();
+          if (data != null && data.isNotEmpty) {
+            _lastGlobalCounterData = Map<String, dynamic>.from(data);
+            return _lastGlobalCounterData;
+          }
+          return _lastGlobalCounterData;
+        })
+        .handleError((error) {
+          if (kDebugMode) print('AdminService.globalCounterStream error: $error');
+        })
+        .asBroadcastStream();
+    return _globalCounterStreamCache!;
+  }
+
+  /// One-time fetch of global counter data with automatic fallback if counters/durood_stats is empty.
+  static Future<Map<String, dynamic>> fetchGlobalCounterStats() async {
+    try {
+      final snap = await _firestore.collection('counters').doc('durood_stats').get();
+      if (snap.exists && snap.data() != null && snap.data()!.isNotEmpty) {
+        _lastGlobalCounterData = Map<String, dynamic>.from(snap.data()!);
+        return _lastGlobalCounterData;
+      }
+      // Fallback check on global_counter/main
+      final legacySnap = await _firestore.collection('global_counter').doc('main').get();
+      if (legacySnap.exists && legacySnap.data() != null) {
+        final d = legacySnap.data()!;
+        final fallbackData = <String, dynamic>{
+          'globalTotal': d['total_count'] ?? d['globalTotal'] ?? 0,
+          'todayTotal': d['today_count'] ?? d['todayTotal'] ?? 0,
+          'totalDurood': d['total_count'] ?? d['totalDurood'] ?? 0,
+          'todayDurood': d['today_count'] ?? d['todayDurood'] ?? 0,
+          'total_count': d['total_count'] ?? 0,
+          'today_count': d['today_count'] ?? 0,
+          'date': d['date'],
+          'lastUpdatedDate': d['lastUpdatedDate'] ?? d['date'],
+        };
+        _lastGlobalCounterData = fallbackData;
+        return fallbackData;
+      }
+    } catch (e) {
+      if (kDebugMode) print('AdminService.fetchGlobalCounterStats error: $e');
+    }
+    return _lastGlobalCounterData;
   }
 
   // ── User Count & Leaderboard ─────────────────────────────────
 
+  static Stream<int>? _usersCountStreamCache;
+  static int _lastUsersCount = 0;
+  static int get currentUsersCount => _lastUsersCount;
+
   static Stream<int> get usersCountStream {
-    return _firestore
+    _usersCountStreamCache ??= _firestore
         .collection('users')
         .snapshots()
-        .map((snap) => snap.docs.length);
+        .map((snap) {
+          _lastUsersCount = snap.docs.length;
+          return _lastUsersCount;
+        })
+        .handleError((error) {
+          if (kDebugMode) print('AdminService.usersCountStream error: $error');
+        })
+        .asBroadcastStream();
+    return _usersCountStreamCache!;
   }
 
+  /// Real-time stream of users for Leaderboard.
+  /// Fetches all user docs without restricting to current_streak index, ensuring
+  /// documents with alternative field names ('streak', 'currentStreak') are fully included,
+  /// and sorts them by effective streak descending.
   static Stream<List<AppUser>> get leaderboardUsersStream {
     return _firestore
         .collection('users')
-        .orderBy('current_streak', descending: true)
         .snapshots()
-        .map((snap) => snap.docs
-            .map((doc) => AppUser.fromMap({'user_id': doc.id, ...doc.data()}))
-            .toList());
+        .map((snap) {
+          final users = snap.docs
+              .map((doc) => AppUser.fromMap({'user_id': doc.id, ...doc.data()}))
+              .toList();
+          users.sort((a, b) => b.currentStreak.compareTo(a.currentStreak));
+          return users;
+        })
+        .handleError((error) {
+          if (kDebugMode) print('AdminService.leaderboardUsersStream error: $error');
+        });
   }
 
   static Future<int> getTotalUserCount() async {
@@ -788,5 +868,30 @@ class AdminService {
       if (kDebugMode) print('AdminService.getTotalUserCount error: $e');
       return 0;
     }
+  }
+
+  // ── Active User Streams ───────────────────────────────────────
+
+  /// Real-time stream of the active authenticated user's Firestore document snapshot ('users/{uid}').
+  static Stream<DocumentSnapshot<Map<String, dynamic>>?> get activeUserDocStream {
+    return FirebaseAuth.instance.authStateChanges().asyncExpand((user) {
+      if (user == null) return Stream.value(null);
+      return _firestore.collection('users').doc(user.uid).snapshots();
+    });
+  }
+
+  /// Real-time stream of the active authenticated AppUser.
+  static Stream<AppUser?> get activeAppUserStream {
+    return FirebaseAuth.instance.authStateChanges().asyncExpand((user) {
+      if (user == null) return Stream.value(null);
+      return _firestore
+          .collection('users')
+          .doc(user.uid)
+          .snapshots()
+          .map((snap) {
+            if (!snap.exists || snap.data() == null) return null;
+            return AppUser.fromMap({'user_id': snap.id, ...snap.data()!});
+          });
+    });
   }
 }

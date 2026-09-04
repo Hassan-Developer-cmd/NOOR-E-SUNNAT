@@ -75,13 +75,14 @@ class AuthService {
 
   /// Stream of the current user's Firestore doc.
   static Stream<AppUser?> get currentUserStream {
-    final uid = currentUser?.uid;
-    if (uid == null) return Stream.value(null);
-    return _firestore
-        .collection('users')
-        .doc(uid)
-        .snapshots()
-        .map((snap) => snap.exists ? AppUser.fromMap(snap.data()!) : null);
+    return _auth.authStateChanges().asyncExpand((user) {
+      if (user == null) return Stream.value(null);
+      return _firestore
+          .collection('users')
+          .doc(user.uid)
+          .snapshots()
+          .map((snap) => snap.exists ? AppUser.fromMap({'user_id': snap.id, ...snap.data()!}) : null);
+    });
   }
 
   /// Sign in with Google. Creates Firestore user doc on first sign-in.

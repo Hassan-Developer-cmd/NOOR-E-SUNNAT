@@ -551,6 +551,8 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     try {
       await _firestore.collection('counters').doc('durood_stats').set({
         'todayTotal': 0,
+        'todayDurood': 0,
+        'today_count': 0,
         'date': todayStr,
         'lastUpdatedDate': todayStr,
         'updatedAt': FieldValue.serverTimestamp(),
@@ -631,6 +633,10 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
           {
             'globalTotal': FieldValue.increment(count),
             'todayTotal': count,
+            'totalDurood': FieldValue.increment(count),
+            'todayDurood': count,
+            'total_count': FieldValue.increment(count),
+            'today_count': count,
             'date': todayStr,
             'lastUpdatedDate': todayStr,
             'updatedAt': FieldValue.serverTimestamp(),
@@ -644,6 +650,10 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
           {
             'globalTotal': FieldValue.increment(count),
             'todayTotal': FieldValue.increment(count),
+            'totalDurood': FieldValue.increment(count),
+            'todayDurood': FieldValue.increment(count),
+            'total_count': FieldValue.increment(count),
+            'today_count': FieldValue.increment(count),
             'date': todayStr,
             'lastUpdatedDate': todayStr,
             'updatedAt': FieldValue.serverTimestamp(),
@@ -706,6 +716,7 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
             'lastDuroodDate': todayStr,
             'total_durood_points': FieldValue.increment(count * 2),
             'durood_points': FieldValue.increment(count * 2),
+            'duroodPoints': FieldValue.increment(count * 2),
             'points': FieldValue.increment(count * 2),
             'last_active_durood_date': todayStr,
             'last_active_timestamp': FieldValue.serverTimestamp(),

@@ -121,6 +121,7 @@ class StreakHelper {
     final newLongest = nextStreak > longestStoredStreak ? nextStreak : longestStoredStreak;
     return {
       'current_streak': nextStreak,
+      'streak': nextStreak,
       'longest_streak': newLongest,
     };
   }
