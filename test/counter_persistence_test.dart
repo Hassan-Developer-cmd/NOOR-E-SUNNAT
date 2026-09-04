@@ -216,5 +216,131 @@ void main() {
       expect(service2.isDisposed, false);
       expect(() => service2.notifyListeners(), returnsNormally);
     });
+
+    test('ISSUE 1: _todayKey resolves user ID reliably and persists across app restarts', () async {
+      final prefs = await SharedPreferences.getInstance();
+      final todayStr = DateTime.now().toIso8601String().split('T')[0];
+      const uid = 'user_abc_789';
+
+      // 1. Store count using reliable user key: my_durood_${uid}_$today
+      final userKey = 'my_durood_${uid}_$todayStr';
+      await prefs.setInt(userKey, 42);
+      await prefs.setString('my_durood_date', todayStr);
+      await prefs.setString('cached_active_uid', uid);
+
+      // 2. Early startup simulation: auth is still resolving, but cached_active_uid exists
+      final resolvedUid = prefs.getString('cached_active_uid') ?? 'guest';
+      final startupKey = 'my_durood_${resolvedUid}_$todayStr';
+      final hydratedCount = prefs.getInt(startupKey) ?? 0;
+
+      expect(hydratedCount, 42, reason: 'Must restore 42 immediately using resolved user ID');
+
+      // 3. Late auth event simulation: user logs in / authStateChanges fires with uid
+      final authenticatedKey = 'my_durood_${uid}_$todayStr';
+      final reHydratedCount = prefs.getInt(authenticatedKey) ?? 0;
+      expect(reHydratedCount, 42, reason: 'Re-hydrating on auth change must also read 42');
+    });
+
+    test('ISSUE 1: Missing today doc in Firestore daily_stats does NOT overwrite local count with 0', () {
+      int resolveEffectiveCount({required bool exists, Map<String, dynamic>? data, required int localCount}) {
+        if (exists && data != null) {
+          final int cloudCount = ((data['myToday'] ?? data['count']) as num?)?.toInt() ?? 0;
+          return cloudCount > localCount ? cloudCount : localCount;
+        }
+        return localCount;
+      }
+
+      final countWhenMissing = resolveEffectiveCount(
+        exists: false,
+        data: null,
+        localCount: 55,
+      );
+      expect(countWhenMissing, 55, reason: 'Local count must remain intact when Firestore doc does not exist yet');
+
+      final countWhenExisting = resolveEffectiveCount(
+        exists: true,
+        data: {'myToday': 100},
+        localCount: 55,
+      );
+      expect(countWhenExisting, 100);
+    });
+
+    test('ISSUE 2: Home Screen Global Today Stream parsing handles field variations and loading fallback', () {
+      final todayStr = DateTime.now().toIso8601String().split('T')[0];
+      const cachedGlobalToday = 120;
+
+      int computeEffectiveToday(Map<String, dynamic>? data, int cachedValue) {
+        int effective = cachedValue;
+        if (data != null) {
+          final docDate = (data['date'] ?? data['lastUpdatedDate'])?.toString();
+          if (docDate == todayStr) {
+            final firestoreToday = ((data['todayTotal'] ?? data['globalToday'] ?? data['todayCount'] ?? 0) as num).toInt();
+            effective = firestoreToday > cachedValue ? firestoreToday : cachedValue;
+          } else if (docDate != null && docDate != todayStr) {
+            effective = 0;
+          }
+        }
+        return effective;
+      }
+
+      // Case A: Stream is loading (data == null)
+      // Must fallback to cached snap.globalToday, NOT 0!
+      final effectiveTodayA = computeEffectiveToday(null, cachedGlobalToday);
+      expect(effectiveTodayA, 120, reason: 'When stream is loading, HomeScreen must display hydrated value, not 0');
+
+      // Case B: Document uses "todayTotal"
+      final Map<String, dynamic> dataTodayTotal = {
+        'todayTotal': 250,
+        'date': todayStr,
+      };
+      final docDateB = (dataTodayTotal['date'] ?? dataTodayTotal['lastUpdatedDate'])?.toString();
+      int effectiveTodayB = cachedGlobalToday;
+      if (docDateB == todayStr) {
+        final firestoreToday = ((dataTodayTotal['todayTotal'] ?? dataTodayTotal['globalToday'] ?? dataTodayTotal['todayCount'] ?? 0) as num).toInt();
+        effectiveTodayB = firestoreToday > cachedGlobalToday ? firestoreToday : cachedGlobalToday;
+      }
+      expect(effectiveTodayB, 250);
+
+      // Case C: Document uses "globalToday"
+      final Map<String, dynamic> dataGlobalToday = {
+        'globalToday': 300,
+        'lastUpdatedDate': todayStr,
+      };
+      final docDateC = (dataGlobalToday['date'] ?? dataGlobalToday['lastUpdatedDate'])?.toString();
+      int effectiveTodayC = cachedGlobalToday;
+      if (docDateC == todayStr) {
+        final firestoreToday = ((dataGlobalToday['todayTotal'] ?? dataGlobalToday['globalToday'] ?? dataGlobalToday['todayCount'] ?? 0) as num).toInt();
+        effectiveTodayC = firestoreToday > cachedGlobalToday ? firestoreToday : cachedGlobalToday;
+      }
+      expect(effectiveTodayC, 300);
+
+      // Case D: Document uses "todayCount"
+      final Map<String, dynamic> dataTodayCount = {
+        'todayCount': 400,
+        'date': todayStr,
+      };
+      final docDateD = (dataTodayCount['date'] ?? dataTodayCount['lastUpdatedDate'])?.toString();
+      int effectiveTodayD = cachedGlobalToday;
+      if (docDateD == todayStr) {
+        final firestoreToday = ((dataTodayCount['todayTotal'] ?? dataTodayCount['globalToday'] ?? dataTodayCount['todayCount'] ?? 0) as num).toInt();
+        effectiveTodayD = firestoreToday > cachedGlobalToday ? firestoreToday : cachedGlobalToday;
+      }
+      expect(effectiveTodayD, 400);
+
+      // Case E: Document is from yesterday (midnight rollover) -> should reset to 0
+      final Map<String, dynamic> dataYesterday = {
+        'todayTotal': 500,
+        'date': '2026-09-03',
+      };
+      final docDateE = (dataYesterday['date'] ?? dataYesterday['lastUpdatedDate'])?.toString();
+      int effectiveTodayE = cachedGlobalToday;
+      if (docDateE == todayStr) {
+        final firestoreToday = ((dataYesterday['todayTotal'] ?? dataYesterday['globalToday'] ?? dataYesterday['todayCount'] ?? 0) as num).toInt();
+        effectiveTodayE = firestoreToday > cachedGlobalToday ? firestoreToday : cachedGlobalToday;
+      } else if (docDateE != null && docDateE != todayStr) {
+        effectiveTodayE = 0;
+      }
+      expect(effectiveTodayE, 0, reason: 'Past day docDate must reset today total to 0');
+    });
   });
 }

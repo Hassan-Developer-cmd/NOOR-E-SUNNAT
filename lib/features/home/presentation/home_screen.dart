@@ -355,29 +355,36 @@ class _HomeScreenState extends State<HomeScreen> {
                     StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                       stream: widget.counterService.globalCounterStream,
                       builder: (context, globalSnap) {
-                        final hasGlobalData = globalSnap.hasData && globalSnap.data?.data() != null;
-                        final globalData = globalSnap.data?.data() ?? {};
-                        final String todayDateString = DateTime.now().toIso8601String().split('T')[0];
-                        final String? docDate = (globalData['date'] ?? globalData['lastUpdatedDate'] ?? globalData['last_reset_date'])?.toString();
-                        final bool isSameDay = docDate == todayDateString;
-
-                        final int firestoreGlobalTotal = (globalData['globalTotal'] as num?)?.toInt() ?? 0;
-                        // StreamBuilder Fallback: If doc['date'] != todayDateString on render, immediately treat todayTotal as 0 in UI
-                        final int firestoreTodayTotal = isSameDay
-                            ? ((globalData['todayTotal'] as num?)?.toInt() ?? 0)
-                            : 0;
+                        final data = globalSnap.data?.data();
+                        final docDate = (data?['date'] ?? data?['lastUpdatedDate'] ?? data?['last_reset_date'])?.toString();
+                        final todayDate = DateTime.now().toIso8601String().split('T')[0];
 
                         return StreamBuilder<CounterSnapshot>(
                           stream: widget.counterService.snapshotStream,
                           initialData: widget.counterService.snapshot,
                           builder: (context, snapshot) {
                             final snap = snapshot.data ?? widget.counterService.snapshot;
-                            final int effectiveGlobalTotal = hasGlobalData
-                                ? (firestoreGlobalTotal > snap.globalTotal ? firestoreGlobalTotal : snap.globalTotal)
-                                : snap.globalTotal;
-                            final int effectiveTodayTotal = isSameDay
-                                ? (hasGlobalData ? (firestoreTodayTotal > snap.globalToday ? firestoreTodayTotal : snap.globalToday) : snap.globalToday)
-                                : 0;
+
+                            // Global Total with fallback to service snapshot
+                            int effectiveGlobalTotal = snap.globalTotal;
+                            if (data != null) {
+                              final firestoreTotal = ((data['globalTotal'] ?? data['total_count']) as num?)?.toInt() ?? 0;
+                              if (firestoreTotal > effectiveGlobalTotal) {
+                                effectiveGlobalTotal = firestoreTotal;
+                              }
+                            }
+
+                            // Global Today: fallback across possible field names, synchronized with snap.globalToday
+                            int effectiveTodayTotal = snap.globalToday;
+                            if (data != null) {
+                              if (docDate == todayDate) {
+                                final firestoreToday = ((data['todayTotal'] ?? data['globalToday'] ?? data['todayCount'] ?? data['today_count'] ?? 0) as num).toInt();
+                                effectiveTodayTotal = firestoreToday > snap.globalToday ? firestoreToday : snap.globalToday;
+                              } else if (docDate != null && docDate != todayDate) {
+                                // Midnight rollover: if doc date is from previous day, today's count resets to 0
+                                effectiveTodayTotal = 0;
+                              }
+                            }
 
                             return Column(
                               children: [

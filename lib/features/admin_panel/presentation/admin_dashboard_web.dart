@@ -621,7 +621,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
           builder: (context, snap) {
             final data = snap.data ?? {};
             final total = ((data['globalTotal'] ?? data['total_count']) as num?)?.toInt() ?? 0;
-            final today = ((data['todayTotal'] ?? data['today_count']) as num?)?.toInt() ?? 0;
+            final today = ((data['todayTotal'] ?? data['globalToday'] ?? data['todayCount'] ?? data['today_count']) as num?)?.toInt() ?? 0;
 
             final cards = [
               _kpiCardContent('Total Users', _fmt(totalUsers), Icons.people_alt_rounded, AppColors.primaryEmerald),

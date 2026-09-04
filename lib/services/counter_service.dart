@@ -77,13 +77,19 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
   /// Returns today's ISO calendar date string: "YYYY-MM-DD"
   static String get _todayDateString => DateTime.now().toIso8601String().split('T')[0];
 
+  /// Isolated SharedPreferences key for the current user's count today:
+  /// my_durood_${userId}_${todayDateString}
+  String get _todayKey {
+    final uid = _auth.currentUser?.uid ?? _activeUid ?? 'guest';
+    final today = _todayDateString;
+    return 'my_durood_${uid}_$today';
+  }
+
   /// Computes isolated SharedPreferences key for user's personal count today:
   /// my_durood_${userId}_${todayDateString}
   static String _getUserTodayKey(String? uid, String dateStr) {
-    if (uid != null && uid.isNotEmpty) {
-      return 'my_durood_${uid}_$dateStr';
-    }
-    return 'my_durood_$dateStr';
+    final effectiveUid = (uid != null && uid.isNotEmpty) ? uid : 'guest';
+    return 'my_durood_${effectiveUid}_$dateStr';
   }
 
   // --- State ---
@@ -163,23 +169,22 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
 
     // 2. User-specific "My Today" from isolated key 'my_durood_${userId}_${todayDateString}'
     final storedDate = prefs.getString(_keyMyDuroodDate);
-    final activeUid = prefs.getString(_keyActiveUid) ?? _activeUid ?? _auth.currentUser?.uid;
+    final activeUid = _auth.currentUser?.uid ?? prefs.getString(_keyActiveUid) ?? _activeUid;
     _activeUid = activeUid;
-    final userKey = _getUserTodayKey(activeUid, todayStr);
 
     final int myToday;
     if (storedDate != null && (storedDate != todayStr || storedDate.compareTo(todayStr) < 0)) {
       // Midnight transition (current date > stored key date): reset "My Today" count to 0 and update storedDate
       myToday = 0;
-      prefs.setInt(userKey, 0);
+      prefs.setInt(_todayKey, 0);
+      if (activeUid != null) {
+        prefs.setInt('my_durood_${activeUid}_$todayStr', 0);
+      }
       prefs.setInt('$_prefixMyDurood$todayStr', 0);
       prefs.setString(_keyMyDuroodDate, todayStr);
     } else {
-      // Same day: read user-isolated key first, then fallback
-      myToday = prefs.getInt(userKey) ??
-          prefs.getInt('$_prefixMyDurood$todayStr') ??
-          prefs.getInt('$_prefixMyTodayLegacy$todayStr') ??
-          0;
+      // Same day: read user-isolated key immediately
+      myToday = _readMyTodayFromPrefs(prefs, todayStr);
       prefs.setString(_keyMyDuroodDate, todayStr);
     }
 
@@ -197,18 +202,50 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     ));
   }
 
+  int _readMyTodayFromPrefs(SharedPreferences prefs, String todayStr) {
+    // 1. Primary: _todayKey
+    final primaryVal = prefs.getInt(_todayKey);
+    if (primaryVal != null && primaryVal > 0) return primaryVal;
+
+    // 2. Active UID key if set
+    if (_activeUid != null && _activeUid != 'guest') {
+      final activeVal = prefs.getInt('my_durood_${_activeUid}_$todayStr');
+      if (activeVal != null && activeVal > 0) return activeVal;
+    }
+
+    // 3. Current user UID key if currentUser is non-null
+    final currentUid = _auth.currentUser?.uid;
+    if (currentUid != null && currentUid != 'guest') {
+      final currentVal = prefs.getInt('my_durood_${currentUid}_$todayStr');
+      if (currentVal != null && currentVal > 0) return currentVal;
+    }
+
+    // 4. Fallback to generic key
+    final genericVal = prefs.getInt('$_prefixMyDurood$todayStr');
+    if (genericVal != null && genericVal > 0) return genericVal;
+
+    // 5. Fallback to legacy key
+    final legacyVal = prefs.getInt('$_prefixMyTodayLegacy$todayStr');
+    if (legacyVal != null && legacyVal > 0) return legacyVal;
+
+    return primaryVal ?? 0;
+  }
+
   Future<void> _saveToStorage() async {
     try {
       final prefs = _prefs ?? await SharedPreferences.getInstance();
       _prefs = prefs;
       final todayStr = _todayDateString;
-      final userKey = _getUserTodayKey(_activeUid ?? _auth.currentUser?.uid, todayStr);
+      final userKey = _todayKey;
 
       await prefs.setInt(_keyGlobalTotal, _snapshot.globalTotal);
       await prefs.setInt(_keyGlobalToday, _snapshot.globalToday);
       await prefs.setString(_keyGlobalDate, todayStr);
       await prefs.setInt(_keyPersonalTotal, _snapshot.personalTotal);
       await prefs.setInt(userKey, _snapshot.personalToday);
+      if (_activeUid != null && _activeUid != 'guest') {
+        await prefs.setInt('my_durood_${_activeUid}_$todayStr', _snapshot.personalToday);
+      }
       await prefs.setInt('$_prefixMyDurood$todayStr', _snapshot.personalToday);
       await prefs.setInt('$_prefixMyTodayLegacy$todayStr', _snapshot.personalToday);
       await prefs.setString(_keyMyDuroodDate, todayStr);
@@ -311,6 +348,10 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         _activeUid = user.uid;
         _prefs?.setString(_keyActiveUid, user.uid);
 
+        // When the user is loaded/authenticated, re-run _hydrateFromStorage()
+        // so the user-specific count is restored instantly
+        _hydrateFromStorage();
+
         // Ensure user doc exists in Firestore safely without overwriting existing counts
         await AuthService.ensureUserDocExists(user);
 
@@ -336,7 +377,7 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
   void _listenToUserDailyStats(String uid) {
     _userDailySub?.cancel();
     final todayStr = _todayDateString;
-    final userKey = _getUserTodayKey(uid, todayStr);
+    final userKey = _todayKey;
 
     _userDailySub = _firestore
         .collection('users')
@@ -366,8 +407,14 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
           _updateSnapshot(_snapshot.copyWith(personalToday: effectiveMyToday));
         }
         _prefs?.setInt(userKey, effectiveMyToday);
+        if (_activeUid != null && _activeUid != 'guest') {
+          _prefs?.setInt('my_durood_${_activeUid}_$todayStr', effectiveMyToday);
+        }
         _prefs?.setInt('$_prefixMyDurood$todayStr', effectiveMyToday);
         _prefs?.setString(_keyMyDuroodDate, todayStr);
+      } else {
+        // Document does not exist yet in Firestore: do NOT overwrite with 0!
+        // Retain the locally saved value until synced.
       }
     }, onError: (e) {
       if (kDebugMode) print('CounterService user daily stats stream error: $e');
@@ -380,7 +427,7 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     final isSameDay = docDate == todayStr;
 
     final int firestoreToday = isSameDay
-        ? (((data['todayTotal'] ?? data['today_count']) as num?)?.toInt() ?? 0)
+        ? (((data['todayTotal'] ?? data['globalToday'] ?? data['todayCount'] ?? data['today_count']) as num?)?.toInt() ?? 0)
         : 0;
     final int firestoreTotal = ((data['globalTotal'] ?? data['total_count']) as num?)?.toInt() ?? 0;
 
@@ -415,7 +462,6 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         data['last_active_timestamp'] ??
         data['last_active_date'] ??
         data['last_durood_at'];
-    final isSameDay = StreakHelper.isSameDay(lastActive, todayStr);
 
     final int rawStreak = ((data['current_streak'] ?? data['streak']) as num?)?.toInt() ?? 0;
     final int effectiveStreak = StreakHelper.calculateEffectiveStreak(
@@ -424,17 +470,24 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     );
 
     final int firestorePersonalTotal = (data['personal_total_durood'] as num?)?.toInt() ?? 0;
+
+    // Use firestore counts directly if higher, but NEVER downgrade local counts!
+    final int effectivePersonalTotal = _pendingBuffer > 0 || _snapshot.personalTotal > firestorePersonalTotal
+        ? _snapshot.personalTotal
+        : firestorePersonalTotal;
+
+    // IMPORTANT: Do NOT overwrite personalToday from user profile snapshots!
+    // The user's root document tracks streak, Durood points, and personal cumulative total.
+    // Daily counts for today are strictly tracked by daily_stats/{todayStr} and _todayKey.
+    // If the root doc has an explicit today count that is higher, accept it, but NEVER reset to 0.
+    final bool isSameDay = StreakHelper.isSameDay(lastActive, todayStr);
     final int firestorePersonalToday = isSameDay
         ? (((data['myToday'] ?? data['todayDuroodCount'] ?? data['personal_today_durood'] ?? data['todayCount']) as num?)?.toInt() ?? 0)
         : 0;
 
-    // Use firestore counts directly if higher, but NEVER downgrade local counts on the same day!
-    final int effectivePersonalTotal = _pendingBuffer > 0 || _snapshot.personalTotal > firestorePersonalTotal
-        ? _snapshot.personalTotal
-        : firestorePersonalTotal;
-    final int effectivePersonalToday = isSameDay
-        ? (_snapshot.personalToday > firestorePersonalToday ? _snapshot.personalToday : firestorePersonalToday)
-        : 0;
+    final int effectivePersonalToday = firestorePersonalToday > _snapshot.personalToday
+        ? firestorePersonalToday
+        : _snapshot.personalToday;
 
     _updateSnapshot(CounterSnapshot(
       globalTotal: _snapshot.globalTotal,
@@ -484,8 +537,11 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     ));
 
     // 2. Immediately persist to SharedPreferences under user-specific daily key
-    final userKey = _getUserTodayKey(_activeUid ?? _auth.currentUser?.uid, todayStr);
+    final userKey = _todayKey;
     _prefs?.setInt(userKey, updatedMyToday);
+    if (_activeUid != null && _activeUid != 'guest') {
+      _prefs?.setInt('my_durood_${_activeUid}_$todayStr', updatedMyToday);
+    }
     _prefs?.setInt('$_prefixMyDurood$todayStr', updatedMyToday);
     _prefs?.setInt('$_prefixMyTodayLegacy$todayStr', updatedMyToday);
     _prefs?.setString(_keyMyDuroodDate, todayStr);
