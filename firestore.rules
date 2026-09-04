@@ -37,6 +37,11 @@ service cloud.firestore {
       allow read: if true;
       allow create, update: if true;
       allow delete: if isOwner(userId) || isAdmin() || true;
+
+      // ── User Daily Stats Subcollection ───────────────────────
+      match /daily_stats/{dateId} {
+        allow read, write: if true;
+      }
     }
 
     // ── Masail Q&A Collection ──────────────────────────────────

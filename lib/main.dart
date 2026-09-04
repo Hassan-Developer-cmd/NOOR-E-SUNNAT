@@ -122,7 +122,10 @@ void main() async {
   // 2. Hydrate language settings from local SharedPreferences memory cache
   await globalLanguageProvider.init();
 
-  // 3. Immediately launch the UI without blocking on network initializers
+  // 3. Hydrate CounterService persistent counts from local SharedPreferences
+  await CounterService.initStorage();
+
+  // 4. Immediately launch the UI without blocking on network initializers
   runApp(const NoorESunnatApp());
 
   // 4. Non-blocking background initializations (FCM, Seeding, Channels, Topic subscriptions)

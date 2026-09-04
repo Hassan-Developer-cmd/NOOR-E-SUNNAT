@@ -355,6 +355,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                       stream: widget.counterService.globalCounterStream,
                       builder: (context, globalSnap) {
+                        final hasGlobalData = globalSnap.hasData && globalSnap.data?.data() != null;
                         final globalData = globalSnap.data?.data() ?? {};
                         final int firestoreGlobalTotal = (globalData['globalTotal'] as num?)?.toInt() ?? 0;
                         final int firestoreTodayTotal = (globalData['todayTotal'] as num?)?.toInt() ?? 0;
@@ -364,12 +365,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           initialData: widget.counterService.snapshot,
                           builder: (context, snapshot) {
                             final snap = snapshot.data ?? widget.counterService.snapshot;
-                            final int effectiveGlobalTotal = snap.globalTotal > firestoreGlobalTotal
-                                ? snap.globalTotal
-                                : firestoreGlobalTotal;
-                            final int effectiveTodayTotal = snap.globalToday > firestoreTodayTotal
-                                ? snap.globalToday
-                                : firestoreTodayTotal;
+                            final int effectiveGlobalTotal = hasGlobalData
+                                ? (firestoreGlobalTotal > snap.globalTotal ? firestoreGlobalTotal : snap.globalTotal)
+                                : snap.globalTotal;
+                            final int effectiveTodayTotal = hasGlobalData
+                                ? (firestoreTodayTotal > snap.globalToday ? firestoreTodayTotal : snap.globalToday)
+                                : snap.globalToday;
 
                             return Column(
                               children: [
