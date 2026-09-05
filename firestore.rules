@@ -36,8 +36,8 @@ service cloud.firestore {
       allow create, update: if true;
       allow delete: if isOwner(userId) || isAdmin() || true;
 
-      // ── User Daily Stats Subcollection ───────────────────────
-      match /daily_stats/{dateId} {
+      // ── User Subcollections (daily_stats, etc.) ───────────────
+      match /{allSubcollections=**} {
         allow read, write: if true;
       }
     }
