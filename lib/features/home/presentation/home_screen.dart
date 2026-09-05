@@ -365,25 +365,43 @@ class _HomeScreenState extends State<HomeScreen> {
                           builder: (context, snapshot) {
                             final snap = snapshot.data ?? widget.counterService.snapshot;
 
-                            // Global Total: prioritize globalTotal, synchronized with snap.globalTotal
-                            int effectiveGlobalTotal = snap.globalTotal;
+                            // Global Total: prioritize Firestore cloud document, with local optimistic buffer & corruption guard
+                            int effectiveGlobalTotal;
                             if (data != null) {
-                              final firestoreTotal = ((data['globalTotal'] ?? data['total_count']) as num?)?.toInt() ?? 0;
-                              if (firestoreTotal > effectiveGlobalTotal) {
+                              final int rawFirestoreTotal = ((data['globalTotal'] ?? data['total_count']) as num?)?.toInt() ?? 0;
+                              final int firestoreTotal = (rawFirestoreTotal > 1000000000 || rawFirestoreTotal < 0) ? 0 : rawFirestoreTotal;
+                              final int sanitizedSnapTotal = (snap.globalTotal > 1000000000 || snap.globalTotal < 0) ? 0 : snap.globalTotal;
+
+                              if (sanitizedSnapTotal == 0 || (sanitizedSnapTotal - firestoreTotal).abs() > 10000) {
                                 effectiveGlobalTotal = firestoreTotal;
+                              } else {
+                                effectiveGlobalTotal = sanitizedSnapTotal >= firestoreTotal ? sanitizedSnapTotal : firestoreTotal;
                               }
+                            } else {
+                              effectiveGlobalTotal = (snap.globalTotal > 1000000000 || snap.globalTotal < 0) ? 0 : snap.globalTotal;
                             }
 
-                            // Global Today: prioritize todayTotal, synchronized with snap.globalToday
-                            int effectiveTodayTotal = snap.globalToday;
+                            // Global Today: prioritize Firestore todayTotal, with local optimistic buffer & corruption guard
+                            int effectiveTodayTotal;
                             if (data != null) {
                               if (docDate == todayDate) {
-                                final firestoreToday = ((data['todayTotal'] ?? data['today_count'] ?? data['globalToday'] ?? 0) as num).toInt();
-                                effectiveTodayTotal = firestoreToday > snap.globalToday ? firestoreToday : snap.globalToday;
+                                final int rawFirestoreToday = ((data['todayTotal'] ?? data['today_count'] ?? data['globalToday'] ?? 0) as num).toInt();
+                                final int firestoreToday = (rawFirestoreToday > 1000000000 || rawFirestoreToday < 0) ? 0 : rawFirestoreToday;
+                                final int sanitizedSnapToday = (snap.globalToday > 1000000000 || snap.globalToday < 0) ? 0 : snap.globalToday;
+
+                                if (sanitizedSnapToday == 0 || (sanitizedSnapToday - firestoreToday).abs() > 10000) {
+                                  effectiveTodayTotal = firestoreToday;
+                                } else {
+                                  effectiveTodayTotal = sanitizedSnapToday >= firestoreToday ? sanitizedSnapToday : firestoreToday;
+                                }
                               } else if (docDate != null && docDate != todayDate) {
                                 // Midnight rollover: if doc date is from previous day, today's count resets to 0
                                 effectiveTodayTotal = 0;
+                              } else {
+                                effectiveTodayTotal = 0;
                               }
+                            } else {
+                              effectiveTodayTotal = (snap.globalToday > 1000000000 || snap.globalToday < 0) ? 0 : snap.globalToday;
                             }
 
                             return Column(

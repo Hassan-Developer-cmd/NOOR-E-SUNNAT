@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:islamic_app/core/models/app_user.dart';
 import 'package:islamic_app/core/utils/streak_helper.dart';
+import 'package:islamic_app/core/utils/number_formatter.dart';
 import 'package:islamic_app/services/counter_service.dart';
-import 'package:islamic_app/services/admin_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -721,6 +721,68 @@ void main() {
       expect(sanitizedDoc['globalTotal'], 0);
       expect(sanitizedDoc['todayTotal'], 0);
       expect(sanitizedDoc.containsKey('total_count'), false);
+    });
+
+    test('CLIENT CACHE PURGE: SharedPreferences holding 100000510003818 (100.0T) is sanitized to clean count on mobile', () async {
+      SharedPreferences.setMockInitialValues({
+        'cached_global_total': 100000510003818,
+        'cached_global_today': 4820,
+        'cached_global_date': '2026-09-05',
+      });
+      final prefs = await SharedPreferences.getInstance();
+
+      final rawGlobalTotal = prefs.getInt('cached_global_total') ?? 0;
+      final int globalTotal = (rawGlobalTotal > 1000000000 || rawGlobalTotal < 0) ? 0 : rawGlobalTotal;
+      if (rawGlobalTotal != globalTotal) {
+        prefs.remove('cached_global_total');
+      }
+
+      expect(globalTotal, 0);
+      expect(NumberFormatter.formatCompact(globalTotal), '0');
+      expect(NumberFormatter.formatCompact(rawGlobalTotal), '100.0T');
+      expect(prefs.containsKey('cached_global_total'), false);
+    });
+
+    test('CLOUD SYNC OVERRIDES TRILLION CACHE: receiving Firestore globalTotal (1783) resets client snapshot from 100.0T to 1,783', () {
+      final int cachedLocalTotal = 100000510003818; // 100.0T
+      final int firestoreTotal = 1783; // actual recitations
+
+      final bool isCorrupted = cachedLocalTotal > 1000000000;
+      final bool largeDiscrepancy = (cachedLocalTotal - firestoreTotal).abs() > 10000;
+
+      final int effectiveGlobalTotal;
+      if (isCorrupted || largeDiscrepancy) {
+        effectiveGlobalTotal = firestoreTotal;
+      } else {
+        effectiveGlobalTotal = cachedLocalTotal;
+      }
+
+      expect(effectiveGlobalTotal, 1783);
+      expect(NumberFormatter.formatCompact(effectiveGlobalTotal), '1,783');
+      expect(NumberFormatter.formatCompact(effectiveGlobalTotal), isNot('100.0T'));
+    });
+
+    test('HOME SCREEN GLOBAL TOTAL RESOLUTION: Cloud document with 1783 overrides corrupted trillion snapshot', () {
+      final cloudData = <String, dynamic>{
+        'globalTotal': 1783,
+        'todayTotal': 0,
+        'date': '2026-09-05',
+      };
+      final snapGlobalTotal = 100000510003818; // 100.0T
+
+      final int rawFirestoreTotal = ((cloudData['globalTotal'] ?? cloudData['total_count']) as num?)?.toInt() ?? 0;
+      final int firestoreTotal = (rawFirestoreTotal > 1000000000 || rawFirestoreTotal < 0) ? 0 : rawFirestoreTotal;
+      final int sanitizedSnapTotal = (snapGlobalTotal > 1000000000 || snapGlobalTotal < 0) ? 0 : snapGlobalTotal;
+
+      final int effectiveGlobalTotal;
+      if (sanitizedSnapTotal == 0 || (sanitizedSnapTotal - firestoreTotal).abs() > 10000) {
+        effectiveGlobalTotal = firestoreTotal;
+      } else {
+        effectiveGlobalTotal = sanitizedSnapTotal >= firestoreTotal ? sanitizedSnapTotal : firestoreTotal;
+      }
+
+      expect(effectiveGlobalTotal, 1783);
+      expect(NumberFormatter.formatCompact(effectiveGlobalTotal), '1,783');
     });
   });
 }

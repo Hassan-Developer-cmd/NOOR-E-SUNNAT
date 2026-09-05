@@ -159,13 +159,22 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
 
     final todayStr = _todayDateString;
 
-    // 1. Global totals from cache
+    // 1. Global totals from cache with corruption purge
     final cachedGlobalDate = prefs.getString(_keyGlobalDate);
     final isGlobalSameDay = StreakHelper.isSameDay(cachedGlobalDate, todayStr);
-    final globalTotal = prefs.getInt(_keyGlobalTotal) ?? _snapshot.globalTotal;
-    final globalToday = isGlobalSameDay
-        ? (prefs.getInt(_keyGlobalToday) ?? _snapshot.globalToday)
+    final rawGlobalTotal = prefs.getInt(_keyGlobalTotal) ?? _snapshot.globalTotal;
+    final int globalTotal = (rawGlobalTotal > 1000000000 || rawGlobalTotal < 0) ? 0 : rawGlobalTotal;
+    if (rawGlobalTotal != globalTotal) {
+      prefs.remove(_keyGlobalTotal);
+    }
+
+    final rawGlobalToday = prefs.getInt(_keyGlobalToday) ?? _snapshot.globalToday;
+    final int globalToday = isGlobalSameDay
+        ? ((rawGlobalToday > 1000000000 || rawGlobalToday < 0) ? 0 : rawGlobalToday)
         : 0;
+    if (rawGlobalToday != globalToday) {
+      prefs.remove(_keyGlobalToday);
+    }
 
     // 2. User-specific "My Today" from isolated key 'my_durood_${userId}_${todayDateString}'
     final storedDate = prefs.getString(_keyMyDuroodDate);
@@ -184,14 +193,16 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
       prefs.setString(_keyMyDuroodDate, todayStr);
     } else {
       // Same day: read user-isolated key immediately
-      myToday = _readMyTodayFromPrefs(prefs, todayStr);
+      final rawMyToday = _readMyTodayFromPrefs(prefs, todayStr);
+      myToday = (rawMyToday > 1000000000 || rawMyToday < 0) ? 0 : rawMyToday;
       prefs.setString(_keyMyDuroodDate, todayStr);
     }
 
     // 3. Personal Total from user key or global fallback
-    final personalTotal = (activeUid != null && activeUid != 'guest')
+    final rawPersonalTotal = (activeUid != null && activeUid != 'guest')
         ? (prefs.getInt('${_keyPersonalTotal}_$activeUid') ?? prefs.getInt(_keyPersonalTotal) ?? _snapshot.personalTotal)
         : (prefs.getInt(_keyPersonalTotal) ?? _snapshot.personalTotal);
+    final int personalTotal = (rawPersonalTotal > 1000000000 || rawPersonalTotal < 0) ? 0 : rawPersonalTotal;
 
     // 4. Streak from user key or global fallback
     final rawCachedStreak = (activeUid != null && activeUid != 'guest')
@@ -207,9 +218,10 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         : (myToday > 0 ? (rawCachedStreak > 0 ? rawCachedStreak : 1) : 0);
 
     // 5. Durood Points from user key or global fallback
-    final points = (activeUid != null && activeUid != 'guest')
+    final rawPoints = (activeUid != null && activeUid != 'guest')
         ? (prefs.getInt('${_keyPoints}_$activeUid') ?? prefs.getInt(_keyPoints) ?? _snapshot.duroodPoints)
         : (prefs.getInt(_keyPoints) ?? _snapshot.duroodPoints);
+    final int points = (rawPoints > 1000000000 || rawPoints < 0) ? 0 : rawPoints;
 
     _updateSnapshot(CounterSnapshot(
       globalTotal: globalTotal,
@@ -258,8 +270,16 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
       final userKey = _todayKey;
       final uid = _activeUid ?? _auth.currentUser?.uid;
 
-      await prefs.setInt(_keyGlobalTotal, _snapshot.globalTotal);
-      await prefs.setInt(_keyGlobalToday, _snapshot.globalToday);
+      if (_snapshot.globalTotal <= 1000000000 && _snapshot.globalTotal >= 0) {
+        await prefs.setInt(_keyGlobalTotal, _snapshot.globalTotal);
+      } else {
+        await prefs.remove(_keyGlobalTotal);
+      }
+      if (_snapshot.globalToday <= 1000000000 && _snapshot.globalToday >= 0) {
+        await prefs.setInt(_keyGlobalToday, _snapshot.globalToday);
+      } else {
+        await prefs.remove(_keyGlobalToday);
+      }
       await prefs.setString(_keyGlobalDate, todayStr);
       await prefs.setInt(_keyPersonalTotal, _snapshot.personalTotal);
       await prefs.setInt(userKey, _snapshot.personalToday);
@@ -436,18 +456,39 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     final docDate = (data['date'] ?? data['last_reset_date'] ?? data['lastUpdatedDate'])?.toString();
     final isSameDay = docDate == todayStr;
 
-    final int firestoreToday = isSameDay
+    final int rawFirestoreToday = isSameDay
         ? (((data['todayTotal'] ?? data['today_count'] ?? data['globalToday']) as num?)?.toInt() ?? 0)
         : 0;
-    final int firestoreTotal = ((data['globalTotal'] ?? data['total_count']) as num?)?.toInt() ?? 0;
+    final int firestoreToday = (rawFirestoreToday > 1000000000 || rawFirestoreToday < 0) ? 0 : rawFirestoreToday;
 
-    // Preserve higher local values if local increments are currently in flight
-    final effectiveGlobalTotal = firestoreTotal >= _snapshot.globalTotal
-        ? firestoreTotal
-        : _snapshot.globalTotal;
-    final effectiveGlobalToday = isSameDay
-        ? (firestoreToday >= _snapshot.globalToday ? firestoreToday : _snapshot.globalToday)
-        : 0;
+    final int rawFirestoreTotal = ((data['globalTotal'] ?? data['total_count']) as num?)?.toInt() ?? 0;
+    final int firestoreTotal = (rawFirestoreTotal > 1000000000 || rawFirestoreTotal < 0) ? 0 : rawFirestoreTotal;
+
+    // Detect if local snapshot was corrupted with astronomical numbers (> 1 billion)
+    final bool isCorrupted = _snapshot.globalTotal > 1000000000 ||
+        _snapshot.globalTotal < 0 ||
+        _snapshot.globalToday > 1000000000 ||
+        _snapshot.globalToday < 0;
+
+    // Detect if database was cleaned/reset or has a massive discrepancy (> 10,000)
+    final bool largeDiscrepancy = (_snapshot.globalTotal - firestoreTotal).abs() > 10000;
+
+    final int effectiveGlobalTotal;
+    final int effectiveGlobalToday;
+
+    if (isCorrupted || largeDiscrepancy || _pendingBuffer <= 0) {
+      // Authoritative cloud value (+ any pending local buffer)
+      effectiveGlobalTotal = firestoreTotal + _pendingBuffer;
+      effectiveGlobalToday = isSameDay ? (firestoreToday + _pendingBuffer) : 0;
+    } else {
+      // Retain optimistic increments if local is close to firestore and not corrupted
+      effectiveGlobalTotal = _snapshot.globalTotal >= firestoreTotal
+          ? _snapshot.globalTotal
+          : firestoreTotal;
+      effectiveGlobalToday = isSameDay
+          ? (_snapshot.globalToday >= firestoreToday ? _snapshot.globalToday : firestoreToday)
+          : 0;
+    }
 
     _updateSnapshot(CounterSnapshot(
       globalTotal: effectiveGlobalTotal,
