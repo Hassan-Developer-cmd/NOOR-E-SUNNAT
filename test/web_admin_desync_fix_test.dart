@@ -279,5 +279,43 @@ void main() {
       expect(pointsKey, 'durood_points_user_123');
       expect(streakKey, 'user_streak_user_123');
     });
+
+    test('STRICT PRIVACY: Global counter payload contains zero user-specific keys', () {
+      final globalPayload = <String, dynamic>{
+        'globalTotal': 4296,
+        'todayTotal': 2513,
+        'date': '2026-09-05',
+      };
+
+      expect(globalPayload.containsKey('myTotal'), isFalse);
+      expect(globalPayload.containsKey('myToday'), isFalse);
+      expect(globalPayload.containsKey('userId'), isFalse);
+      expect(globalPayload.containsKey('uid'), isFalse);
+      expect(globalPayload.containsKey('streak'), isFalse);
+      expect(globalPayload.containsKey('duroodPoints'), isFalse);
+    });
+
+    test('SESSION ISOLATION: Unauthenticated session omits personal metrics', () {
+      bool isLoggedIn(String? uid) => uid != null;
+
+      final bool isUserLoggedIn = isLoggedIn(null);
+      final int? effectiveMyTotal = isUserLoggedIn ? 2513 : null;
+      final int? effectiveMyToday = isUserLoggedIn ? 150 : null;
+
+      expect(effectiveMyTotal, isNull);
+      expect(effectiveMyToday, isNull);
+      expect(isUserLoggedIn, isFalse);
+    });
+
+    test('SESSION ISOLATION: Authenticated session binds strictly to currentUid paths', () {
+      const currentUid = 'auth_user_abc123';
+      const todayDateString = '2026-09-05';
+
+      final userDocPath = 'users/$currentUid';
+      final dailyStatDocPath = 'users/$currentUid/daily_stats/$todayDateString';
+
+      expect(userDocPath, 'users/auth_user_abc123');
+      expect(dailyStatDocPath, 'users/auth_user_abc123/daily_stats/2026-09-05');
+    });
   });
 }

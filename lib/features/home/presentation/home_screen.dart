@@ -404,7 +404,27 @@ class _HomeScreenState extends State<HomeScreen> {
                               effectiveTodayTotal = (snap.globalToday > 1000000000 || snap.globalToday < 0) ? 0 : snap.globalToday;
                             }
 
-                            // Stream current authenticated user document for myTotal
+                            final currentUid = FirebaseAuth.instance.currentUser?.uid;
+                            if (currentUid == null) {
+                              // Unauthenticated / public view: hide personal metrics entirely
+                              return Column(
+                                children: [
+                                  DuroodSummaryCard(
+                                    counterService: widget.counterService,
+                                    snapshot: snap,
+                                    globalTotal: effectiveGlobalTotal,
+                                    todayTotal: effectiveTodayTotal,
+                                    myToday: null,
+                                    myTotal: null,
+                                    isLoggedIn: false,
+                                    onSendSalawat: widget.onNavigateToCounter,
+                                  ),
+                                ],
+                              );
+                            }
+
+                            // Authenticated user session: strictly isolate "My Total" (users/{currentUid})
+                            // and "My Today" (users/{currentUid}/daily_stats/{todayDateString})
                             return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>?>(
                               stream: widget.counterService.userCounterStream,
                               builder: (context, userSnap) {
@@ -420,8 +440,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                     final int? cloudMyToday = (dailyData?['myToday'] as num?)?.toInt();
                                     final int effectiveMyToday = cloudMyToday ?? snap.personalToday;
 
-                                    final isUserLoggedIn = FirebaseAuth.instance.currentUser != null;
-
                                     return Column(
                                       children: [
                                         GamificationBar(
@@ -436,7 +454,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           todayTotal: effectiveTodayTotal,
                                           myToday: effectiveMyToday,
                                           myTotal: effectiveMyTotal,
-                                          isLoggedIn: isUserLoggedIn,
+                                          isLoggedIn: true,
                                           onSendSalawat: widget.onNavigateToCounter,
                                         ),
                                       ],

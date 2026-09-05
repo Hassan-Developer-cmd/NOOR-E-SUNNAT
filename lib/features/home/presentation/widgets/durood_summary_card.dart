@@ -31,8 +31,8 @@ class DuroodSummaryCard extends StatelessWidget {
     final currentSnap = snapshot ?? counterService.snapshot;
     final effectiveGlobalTotal = globalTotal ?? currentSnap.globalTotal;
     final effectiveTodayTotal = todayTotal ?? currentSnap.globalToday;
-    final effectiveMyToday = myToday ?? currentSnap.personalToday;
-    final effectiveMyTotal = myTotal ?? currentSnap.personalTotal;
+    final effectiveMyToday = isLoggedIn ? (myToday ?? currentSnap.personalToday) : null;
+    final effectiveMyTotal = isLoggedIn ? (myTotal ?? currentSnap.personalTotal) : null;
 
     return Container(
       width: double.infinity,
@@ -187,7 +187,7 @@ class DuroodSummaryCard extends StatelessWidget {
                           Colors.white,
                         ),
                       ),
-                      if (isLoggedIn) ...[
+                      if (isLoggedIn && effectiveMyTotal != null) ...[
                         Container(
                           width: 1,
                           height: 38,
@@ -203,20 +203,22 @@ class DuroodSummaryCard extends StatelessWidget {
                           ),
                         ),
                       ],
-                      Container(
-                        width: 1,
-                        height: 38,
-                        color: Colors.white.withValues(alpha: 0.28),
-                      ),
-                      Expanded(
-                        child: _buildStat(
-                          lp.tr('my_today'),
-                          NumberFormatter.formatCompact(effectiveMyToday),
-                          Icons.timer_rounded,
-                          const Color(0xFFFFFBEB),
-                          Colors.white,
+                      if (isLoggedIn && effectiveMyToday != null) ...[
+                        Container(
+                          width: 1,
+                          height: 38,
+                          color: Colors.white.withValues(alpha: 0.28),
                         ),
-                      ),
+                        Expanded(
+                          child: _buildStat(
+                            lp.tr('my_today'),
+                            NumberFormatter.formatCompact(effectiveMyToday),
+                            Icons.timer_rounded,
+                            const Color(0xFFFFFBEB),
+                            Colors.white,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ],

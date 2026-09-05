@@ -14,31 +14,30 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.is_admin == true;
     }
 
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-
     // ── Global Counter Collection (Standardized Path: global_counter/main) ──
     match /global_counter/{docId} {
       allow read: if true;
       allow create, update: if true; // allow counter increments
-      allow delete: if isAdmin() || true;
+      allow delete: if isAdmin();
     }
 
     // ── Counters Collection (Legacy Cleanup) ────────────────────
     match /counters/{docId} {
-      allow read, write, delete: if true;
+      allow read, write, delete: if isAdmin();
     }
 
-    // ── User Profiles Collection ───────────────────────────────
+    // ── User Profiles Collection (Strict User Data Privacy & Isolation) ──
     match /users/{userId} {
-      allow read: if true;
-      allow create, update: if true;
-      allow delete: if isOwner(userId) || isAdmin() || true;
+      allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
 
-      // ── User Subcollections (daily_stats, etc.) ───────────────
+      // ── User Daily Stats Subcollection (Strictly Isolated to Owner & Admin) ──
+      match /daily_stats/{date} {
+        allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      }
+
+      // ── Any other user subcollections (Strictly Isolated to Owner & Admin) ──
       match /{allSubcollections=**} {
-        allow read, write: if true;
+        allow read, write: if request.auth != null && (request.auth.uid == userId || isAdmin());
       }
     }
 
