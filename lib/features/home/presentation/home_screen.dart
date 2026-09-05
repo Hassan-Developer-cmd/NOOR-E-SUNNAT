@@ -430,15 +430,19 @@ class _HomeScreenState extends State<HomeScreen> {
                               builder: (context, userSnap) {
                                 final userData = userSnap.data?.data();
                                 final int? cloudMyTotal = (userData?['myTotal'] as num?)?.toInt();
-                                final int effectiveMyTotal = cloudMyTotal ?? snap.personalTotal;
+                                final int effectiveMyTotal = (cloudMyTotal != null)
+                                    ? (cloudMyTotal + widget.counterService.pendingBuffer)
+                                    : snap.personalTotal;
 
                                 // Stream user daily stats subcollection for myToday
                                 return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>?>(
                                   stream: widget.counterService.userDailyStatsStream,
                                   builder: (context, dailySnap) {
                                     final dailyData = dailySnap.data?.data();
-                                    final int? cloudMyToday = (dailyData?['myToday'] as num?)?.toInt();
-                                    final int effectiveMyToday = cloudMyToday ?? snap.personalToday;
+                                    final int? cloudMyToday = ((dailyData?['myToday'] ?? dailyData?['todayCount']) as num?)?.toInt();
+                                    final int effectiveMyToday = (cloudMyToday != null)
+                                        ? (cloudMyToday + widget.counterService.pendingBuffer)
+                                        : snap.personalToday;
 
                                     return Column(
                                       children: [

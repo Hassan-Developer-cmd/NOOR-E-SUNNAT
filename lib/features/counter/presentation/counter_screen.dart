@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/number_formatter.dart';
@@ -214,211 +215,243 @@ class _CounterScreenState extends State<CounterScreen> {
         initialData: widget.counterService.snapshot,
         builder: (context, snapshot) {
           final snap = snapshot.data ?? widget.counterService.snapshot;
-          final double goalProgress = (_dailyTargetGoal > 0)
-              ? (snap.personalToday / _dailyTargetGoal).clamp(0.0, 1.0)
-              : 0.0;
-          final int percentVal = (goalProgress * 100).toInt();
 
-          return Scaffold(
-            backgroundColor: AppColors.bgPrimary,
-            appBar: AppBar(
-              centerTitle: true,
-              title: Text(
-                lp.tr('durood_counter'),
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-              actions: [
-                // Language toggle button
-                GestureDetector(
-                  onTap: () => lp.toggleLanguage(),
-                  child: Container(
-                    margin: const EdgeInsetsDirectional.only(end: 16),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
-                    ),
-                    child: Text(
-                      lp.isUrdu ? 'EN' : 'اردو',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
+          return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>?>(
+            stream: widget.counterService.userCounterStream,
+            builder: (context, userSnap) {
+              final userData = userSnap.data?.data();
+              final int? cloudMyTotal = (userData?['myTotal'] as num?)?.toInt();
+              final int effectiveMyTotal = (cloudMyTotal != null)
+                  ? (cloudMyTotal + widget.counterService.pendingBuffer)
+                  : snap.personalTotal;
+
+              return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>?>(
+                stream: widget.counterService.userDailyStatsStream,
+                builder: (context, dailySnap) {
+                  final dailyData = dailySnap.data?.data();
+                  final int? cloudMyToday = ((dailyData?['myToday'] ?? dailyData?['todayCount']) as num?)?.toInt();
+                  final int effectiveMyToday = (cloudMyToday != null)
+                      ? (cloudMyToday + widget.counterService.pendingBuffer)
+                      : snap.personalToday;
+
+                  final double goalProgress = (_dailyTargetGoal > 0)
+                      ? (effectiveMyToday / _dailyTargetGoal).clamp(0.0, 1.0)
+                      : 0.0;
+                  final int percentVal = (goalProgress * 100).toInt();
+
+                  return Scaffold(
+                    backgroundColor: AppColors.bgPrimary,
+                    appBar: AppBar(
+                      centerTitle: true,
+                      title: Text(
+                        lp.tr('durood_counter'),
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
                       ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            body: SafeArea(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.all(16),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight - 32 > 0 ? constraints.maxHeight - 32 : 500,
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          // ── Responsive Stats Grid ──
-                          GridView.count(
-                            crossAxisCount: statCrossAxisCount,
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            crossAxisSpacing: 10,
-                            mainAxisSpacing: 10,
-                            childAspectRatio: screenWidth >= 600 ? 2.2 : 1.6,
-                            children: [
-                              StatCard(
-                                title: lp.tr('global_total'),
-                                value: NumberFormatter.formatCompact(snap.globalTotal),
-                                icon: Icons.public_rounded,
-                              ),
-                              StatCard(
-                                title: lp.tr('global_today'),
-                                value: NumberFormatter.formatCompact(snap.globalToday),
-                                icon: Icons.today_rounded,
-                                iconColor: AppColors.accentGold,
-                              ),
-                              StatCard(
-                                title: lp.tr('my_total'),
-                                value: NumberFormatter.formatCompact(snap.personalTotal),
-                                icon: Icons.account_circle_rounded,
-                              ),
-                              StatCard(
-                                title: lp.tr('my_today'),
-                                value: NumberFormatter.formatCompact(snap.personalToday),
-                                icon: Icons.timer_rounded,
-                                iconColor: AppColors.accentGold,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-
-                          // ── Target Goal Tracker Card ──
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      actions: [
+                        // Language toggle button
+                        GestureDetector(
+                          onTap: () => lp.toggleLanguage(),
+                          child: Container(
+                            margin: const EdgeInsetsDirectional.only(end: 16),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: Colors.white.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppColors.borderLight),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.03),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
                             ),
-                            child: Column(
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
+                            child: Text(
+                              lp.isUrdu ? 'EN' : 'اردو',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    body: SafeArea(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return SingleChildScrollView(
+                            physics: const BouncingScrollPhysics(),
+                            padding: const EdgeInsets.all(16),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minHeight: constraints.maxHeight - 32 > 0 ? constraints.maxHeight - 32 : 500,
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  // ── Responsive Stats Grid ──
+                                  GridView.count(
+                                    crossAxisCount: statCrossAxisCount,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    crossAxisSpacing: 10,
+                                    mainAxisSpacing: 10,
+                                    childAspectRatio: screenWidth >= 600 ? 2.2 : 1.6,
+                                    children: [
+                                      StatCard(
+                                        title: lp.tr('global_total'),
+                                        value: NumberFormatter.formatCompact(snap.globalTotal),
+                                        icon: Icons.public_rounded,
+                                      ),
+                                      StatCard(
+                                        title: lp.tr('global_today'),
+                                        value: NumberFormatter.formatCompact(snap.globalToday),
+                                        icon: Icons.today_rounded,
+                                        iconColor: AppColors.accentGold,
+                                      ),
+                                      StatCard(
+                                        title: lp.tr('my_total'),
+                                        value: NumberFormatter.formatCompact(effectiveMyTotal),
+                                        icon: Icons.account_circle_rounded,
+                                      ),
+                                      StatCard(
+                                        title: lp.tr('my_today'),
+                                        value: NumberFormatter.formatCompact(effectiveMyToday),
+                                        icon: Icons.timer_rounded,
+                                        iconColor: AppColors.accentGold,
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 14),
+
+                                  // ── Target Goal Tracker Card ──
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(color: AppColors.borderLight),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.03),
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
                                       children: [
-                                        const Icon(Icons.flag_rounded, color: AppColors.accentGold, size: 20),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          lp.isUrdu ? 'روزانہ کا ہدف' : 'Daily Goal Target',
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF0F172A),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(Icons.flag_rounded, color: AppColors.accentGold, size: 20),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  lp.isUrdu ? 'روزانہ کا ہدف' : 'Daily Goal Target',
+                                                  style: const TextStyle(
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Color(0xFF0F172A),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Flexible(
+                                              child: InkWell(
+                                                onTap: () => _showSetGoalDialog(context),
+                                                borderRadius: BorderRadius.circular(12),
+                                                child: Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                  decoration: BoxDecoration(
+                                                    color: AppColors.emeraldContainer,
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                  child: FittedBox(
+                                                    fit: BoxFit.scaleDown,
+                                                    child: Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        Text(
+                                                          _formatCount(_dailyTargetGoal),
+                                                          style: const TextStyle(
+                                                            fontSize: 12,
+                                                            fontWeight: FontWeight.bold,
+                                                            color: AppColors.primaryEmerald,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(width: 4),
+                                                        const Icon(Icons.edit_rounded, size: 12, color: AppColors.primaryEmerald),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 10),
+
+                                        // Progress Bar
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: LinearProgressIndicator(
+                                            value: goalProgress,
+                                            backgroundColor: AppColors.bgOffWhite,
+                                            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryEmerald),
+                                            minHeight: 8,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+
+                                        // Goal Progress text
+                                        Align(
+                                          alignment: AlignmentDirectional.centerEnd,
+                                          child: Text(
+                                            '$percentVal% ${lp.isUrdu ? 'مکمل' : 'Completed'}',
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: Color(0xFF64748B),
+                                            ),
                                           ),
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(width: 8),
-                                    Flexible(
-                                      child: InkWell(
-                                        onTap: () => _showSetGoalDialog(context),
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.emeraldContainer,
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                          child: FittedBox(
-                                            fit: BoxFit.scaleDown,
-                                            child: Text(
-                                              '${_formatCount(snap.personalToday)} / ${_formatCount(_dailyTargetGoal)}',
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                                color: AppColors.primaryEmerald,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: LinearProgressIndicator(
-                                    value: goalProgress,
-                                    minHeight: 8,
-                                    backgroundColor: const Color(0xFFF1F5F9),
-                                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primaryEmerald),
                                   ),
-                                ),
-                                const SizedBox(height: 6),
-                                Align(
-                                  alignment: AlignmentDirectional.centerEnd,
-                                  child: Text(
-                                    '$percentVal% ${lp.isUrdu ? 'مکمل' : 'Completed'}',
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF64748B),
+                                  const SizedBox(height: 12),
+
+                                  // ── Counter Button Centered ──
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    child: CounterButton(
+                                      onTap: () {
+                                        if (_hapticsEnabled) {
+                                          HapticFeedback.selectionClick();
+                                        }
+                                        widget.counterService.increment(1);
+                                      },
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 12),
+                                  const SizedBox(height: 12),
 
-                          // ── Counter Button Centered ──
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            child: CounterButton(
-                              onTap: () {
-                                if (_hapticsEnabled) {
-                                  HapticFeedback.selectionClick();
-                                }
-                                widget.counterService.increment(1);
-                              },
+                                  // ── Bulk Chips ──
+                                  BulkChips(
+                                    onAddBulk: (amount) {
+                                      _confirmBulkAddDialog(context, amount);
+                                    },
+                                    onCustomAdd: () => _showCustomAddDialog(context),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-
-                          // ── Bulk Chips ──
-                          BulkChips(
-                            onAddBulk: (count) {
-                              _confirmBulkAddDialog(context, count);
-                            },
-                            onCustomAdd: () => _showCustomAddDialog(context),
-                          ),
-                        ],
+                          );
+                        },
                       ),
                     ),
                   );
                 },
-              ),
-            ),
+              );
+            },
           );
         },
       ),

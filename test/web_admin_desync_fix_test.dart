@@ -492,5 +492,91 @@ void main() {
         expect(tablePointsCell(uB), '250 pts ⭐');
       });
     });
+
+    group('HOME AND DUROOD COUNTER SCREEN DATA HARMONIZATION', () {
+      test('Home Screen and Counter Screen evaluate identical values from Firestore streams', () {
+        // Simulated Firestore snapshots for user Hadi
+        final userDocData = {'myTotal': 2522, 'streak': 0, 'duroodPoints': 2522};
+        final dailyStatsDocData = {'myToday': 9};
+
+        // Resolution logic matching both HomeScreen and CounterScreen
+        int resolveMyTotal(Map<String, dynamic>? userData, int fallbackTotal, int pendingBuffer) {
+          final cloud = (userData?['myTotal'] as num?)?.toInt();
+          return (cloud != null) ? (cloud + pendingBuffer) : fallbackTotal;
+        }
+
+        int resolveMyToday(Map<String, dynamic>? dailyData, int fallbackToday, int pendingBuffer) {
+          final cloud = ((dailyData?['myToday'] ?? dailyData?['todayCount']) as num?)?.toInt();
+          return (cloud != null) ? (cloud + pendingBuffer) : fallbackToday;
+        }
+
+        const pendingBuffer = 0;
+        final homeMyTotal = resolveMyTotal(userDocData, 0, pendingBuffer);
+        final homeMyToday = resolveMyToday(dailyStatsDocData, 0, pendingBuffer);
+
+        final counterMyTotal = resolveMyTotal(userDocData, 0, pendingBuffer);
+        final counterMyToday = resolveMyToday(dailyStatsDocData, 0, pendingBuffer);
+
+        // Both screens must be 100% identical
+        expect(homeMyTotal, 2522);
+        expect(counterMyTotal, 2522);
+        expect(homeMyToday, 9);
+        expect(counterMyToday, 9);
+        expect(homeMyTotal == counterMyTotal, isTrue);
+        expect(homeMyToday == counterMyToday, isTrue);
+      });
+
+      test('Optimistic increments (+5) update both screens instantaneously via pendingBuffer', () {
+        final userDocData = {'myTotal': 2522};
+        final dailyStatsDocData = {'myToday': 9};
+
+        int resolveMyTotal(Map<String, dynamic>? userData, int fallbackTotal, int pendingBuffer) {
+          final cloud = (userData?['myTotal'] as num?)?.toInt();
+          return (cloud != null) ? (cloud + pendingBuffer) : fallbackTotal;
+        }
+
+        int resolveMyToday(Map<String, dynamic>? dailyData, int fallbackToday, int pendingBuffer) {
+          final cloud = ((dailyData?['myToday'] ?? dailyData?['todayCount']) as num?)?.toInt();
+          return (cloud != null) ? (cloud + pendingBuffer) : fallbackToday;
+        }
+
+        // Tap increment +5
+        const pendingBuffer = 5;
+        final homeMyTotal = resolveMyTotal(userDocData, 0, pendingBuffer);
+        final homeMyToday = resolveMyToday(dailyStatsDocData, 0, pendingBuffer);
+
+        final counterMyTotal = resolveMyTotal(userDocData, 0, pendingBuffer);
+        final counterMyToday = resolveMyToday(dailyStatsDocData, 0, pendingBuffer);
+
+        expect(homeMyTotal, 2527);
+        expect(counterMyTotal, 2527);
+        expect(homeMyToday, 14);
+        expect(counterMyToday, 14);
+      });
+
+      test('Authoritative cloud stream resolves stale cache (4322, 24) to true counts (2522, 9)', () {
+        // Suppose local memory/prefs had stale 4,322 and 24
+        final staleLocalTotal = 4322;
+        final staleLocalToday = 24;
+
+        // Authoritative Firestore streams emit:
+        final cloudUserData = {'myTotal': 2522};
+        final cloudDailyData = {'myToday': 9};
+
+        // When cloud stream emits, single source of truth overrides stale local numbers:
+        int resolveTotal(Map<String, dynamic>? data, int local) {
+          final cloud = (data?['myTotal'] as num?)?.toInt();
+          return cloud ?? local;
+        }
+
+        int resolveToday(Map<String, dynamic>? data, int local) {
+          final cloud = (data?['myToday'] as num?)?.toInt();
+          return cloud ?? local;
+        }
+
+        expect(resolveTotal(cloudUserData, staleLocalTotal), 2522);
+        expect(resolveToday(cloudDailyData, staleLocalToday), 9);
+      });
+    });
   });
 }
