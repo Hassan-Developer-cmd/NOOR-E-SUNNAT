@@ -143,16 +143,21 @@ class FirestoreSeeder {
       if (!counterSnap.exists || force) {
         await recalculateAndSyncGlobalCounter();
         results['counters']['seeded'] = true;
-        results['counters']['status'] = 'Seeded global_counter/main';
+        results['counters']['status'] = 'Cleaned & seeded global_counter/main';
       } else {
         final d = counterSnap.data();
-        final currentTotal = d?['total_count'] ?? d?['globalTotal'];
-        // Reset stale hardcoded 125,000 / 4,820 mock to true aggregated user count or clean 0
-        if (currentTotal == 125000) {
+        final currentTotal = d?['globalTotal'] ?? d?['total_count'];
+        // Purge corrupted values (e.g. 100000510003818, stale 125000, or redundant fields)
+        final hasCorruptedData = currentTotal == null ||
+            currentTotal == 125000 ||
+            (currentTotal is num && currentTotal > 1000000000) ||
+            (d != null && (d.containsKey('total_count') || d.containsKey('todayDurood') || d.containsKey('today_count')));
+
+        if (hasCorruptedData) {
           await recalculateAndSyncGlobalCounter();
-          results['counters']['status'] = 'Reset stale mock 125,000 to real aggregated user count';
+          results['counters']['status'] = 'Purged corrupted fields and reset to true aggregated count';
         } else {
-          results['counters']['status'] = 'Skipped (Already exists)';
+          results['counters']['status'] = 'Skipped (Already clean)';
         }
       }
 
@@ -197,7 +202,8 @@ class FirestoreSeeder {
   }
 
   /// Aggregates all users' personal_total_durood and today's Durood from Firestore
-  /// and writes true dynamic baseline numbers into global_counter/main.
+  /// and writes clean, standardized baseline numbers into global_counter/main.
+  /// Overwrites the document completely to purge any corrupted/duplicate fields.
   static Future<Map<String, dynamic>> recalculateAndSyncGlobalCounter() async {
     try {
       final todayStr = DateTime.now().toIso8601String().split('T').first;
@@ -218,17 +224,14 @@ class FirestoreSeeder {
       }
 
       final payload = <String, dynamic>{
-        'total_count': aggregatedTotal,
-        'today_count': aggregatedToday,
-        'last_reset_date': todayStr,
         'globalTotal': aggregatedTotal,
         'todayTotal': aggregatedToday,
         'date': todayStr,
-        'lastUpdatedDate': todayStr,
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      await _firestore.collection('global_counter').doc('main').set(payload, SetOptions(merge: true));
+      // Set without merge: wipes corrupted fields like 100000510003818 and duplicate field names
+      await _firestore.collection('global_counter').doc('main').set(payload);
       return payload;
     } catch (e) {
       if (kDebugMode) print('[Seeder] recalculateAndSyncGlobalCounter error: $e');
@@ -244,15 +247,11 @@ class FirestoreSeeder {
     try {
       final todayStr = DateTime.now().toIso8601String().split('T').first;
       await _firestore.collection('global_counter').doc('main').set({
-        'total_count': totalCount,
-        'today_count': todayCount,
-        'last_reset_date': todayStr,
         'globalTotal': totalCount,
         'todayTotal': todayCount,
         'date': todayStr,
-        'lastUpdatedDate': todayStr,
         'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      });
       return true;
     } catch (e) {
       if (kDebugMode) print('[Seeder] Error updating global counter baseline: $e');

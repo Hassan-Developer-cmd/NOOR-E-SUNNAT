@@ -433,13 +433,13 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
 
   void _processGlobalSnap(Map<String, dynamic> data) {
     final todayStr = _todayDateString;
-    final docDate = (data['last_reset_date'] ?? data['date'] ?? data['lastUpdatedDate'])?.toString();
+    final docDate = (data['date'] ?? data['last_reset_date'] ?? data['lastUpdatedDate'])?.toString();
     final isSameDay = docDate == todayStr;
 
     final int firestoreToday = isSameDay
-        ? (((data['today_count'] ?? data['todayTotal'] ?? data['globalToday'] ?? data['todayCount']) as num?)?.toInt() ?? 0)
+        ? (((data['todayTotal'] ?? data['today_count'] ?? data['globalToday']) as num?)?.toInt() ?? 0)
         : 0;
-    final int firestoreTotal = ((data['total_count'] ?? data['globalTotal'] ?? data['totalDurood']) as num?)?.toInt() ?? 0;
+    final int firestoreTotal = ((data['globalTotal'] ?? data['total_count']) as num?)?.toInt() ?? 0;
 
     // Preserve higher local values if local increments are currently in flight
     final effectiveGlobalTotal = firestoreTotal >= _snapshot.globalTotal
@@ -551,12 +551,8 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> _resetGlobalTodayInFirestore(String todayStr) async {
     try {
       await _firestore.collection('global_counter').doc('main').set({
-        'today_count': 0,
-        'last_reset_date': todayStr,
         'todayTotal': 0,
-        'todayDurood': 0,
         'date': todayStr,
-        'lastUpdatedDate': todayStr,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (e) {
@@ -625,41 +621,29 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
       final globalRef = _firestore.collection('global_counter').doc('main');
       final globalSnap = await globalRef.get();
       final globalData = globalSnap.data() ?? {};
-      final String? globalDate = (globalData['last_reset_date'] ?? globalData['date'] ?? globalData['lastUpdatedDate'])?.toString();
+      final String? globalDate = (globalData['date'] ?? globalData['last_reset_date'] ?? globalData['lastUpdatedDate'])?.toString();
 
       if (globalDate != todayStr) {
         // First user recitation after 12:00 AM midnight:
-        // Reset today_count to count, set last_reset_date, and increment total_count
+        // Reset todayTotal to count, set date, and increment globalTotal
         batch.set(
           globalRef,
           {
-            'total_count': FieldValue.increment(count),
-            'today_count': count,
-            'last_reset_date': todayStr,
             'globalTotal': FieldValue.increment(count),
             'todayTotal': count,
-            'totalDurood': FieldValue.increment(count),
-            'todayDurood': count,
             'date': todayStr,
-            'lastUpdatedDate': todayStr,
             'updatedAt': FieldValue.serverTimestamp(),
           },
           SetOptions(merge: true),
         );
       } else {
-        // Same day: atomically increment both total_count and today_count
+        // Same day: atomically increment both globalTotal and todayTotal
         batch.set(
           globalRef,
           {
-            'total_count': FieldValue.increment(count),
-            'today_count': FieldValue.increment(count),
-            'last_reset_date': todayStr,
             'globalTotal': FieldValue.increment(count),
             'todayTotal': FieldValue.increment(count),
-            'totalDurood': FieldValue.increment(count),
-            'todayDurood': FieldValue.increment(count),
             'date': todayStr,
-            'lastUpdatedDate': todayStr,
             'updatedAt': FieldValue.serverTimestamp(),
           },
           SetOptions(merge: true),

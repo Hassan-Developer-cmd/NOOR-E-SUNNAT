@@ -755,13 +755,8 @@ class AdminService {
   // ── Global Counter Stats ─────────────────────────────────────
 
   static Map<String, dynamic> _lastGlobalCounterData = {
-    'total_count': 0,
-    'today_count': 0,
-    'last_reset_date': '',
     'globalTotal': 0,
     'todayTotal': 0,
-    'totalDurood': 0,
-    'todayDurood': 0,
     'date': '',
   };
 

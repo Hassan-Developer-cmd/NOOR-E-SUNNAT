@@ -356,7 +356,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       stream: widget.counterService.globalCounterStream,
                       builder: (context, globalSnap) {
                         final data = globalSnap.data?.data();
-                        final docDate = (data?['last_reset_date'] ?? data?['date'] ?? data?['lastUpdatedDate'])?.toString();
+                        final docDate = (data?['date'] ?? data?['last_reset_date'] ?? data?['lastUpdatedDate'])?.toString();
                         final todayDate = DateTime.now().toIso8601String().split('T')[0];
 
                         return StreamBuilder<CounterSnapshot>(
@@ -365,20 +365,20 @@ class _HomeScreenState extends State<HomeScreen> {
                           builder: (context, snapshot) {
                             final snap = snapshot.data ?? widget.counterService.snapshot;
 
-                            // Global Total: prioritize total_count, synchronized with snap.globalTotal
+                            // Global Total: prioritize globalTotal, synchronized with snap.globalTotal
                             int effectiveGlobalTotal = snap.globalTotal;
                             if (data != null) {
-                              final firestoreTotal = ((data['total_count'] ?? data['globalTotal']) as num?)?.toInt() ?? 0;
+                              final firestoreTotal = ((data['globalTotal'] ?? data['total_count']) as num?)?.toInt() ?? 0;
                               if (firestoreTotal > effectiveGlobalTotal) {
                                 effectiveGlobalTotal = firestoreTotal;
                               }
                             }
 
-                            // Global Today: prioritize today_count, synchronized with snap.globalToday
+                            // Global Today: prioritize todayTotal, synchronized with snap.globalToday
                             int effectiveTodayTotal = snap.globalToday;
                             if (data != null) {
                               if (docDate == todayDate) {
-                                final firestoreToday = ((data['today_count'] ?? data['todayTotal'] ?? data['globalToday'] ?? data['todayCount'] ?? 0) as num).toInt();
+                                final firestoreToday = ((data['todayTotal'] ?? data['today_count'] ?? data['globalToday'] ?? 0) as num).toInt();
                                 effectiveTodayTotal = firestoreToday > snap.globalToday ? firestoreToday : snap.globalToday;
                               } else if (docDate != null && docDate != todayDate) {
                                 // Midnight rollover: if doc date is from previous day, today's count resets to 0

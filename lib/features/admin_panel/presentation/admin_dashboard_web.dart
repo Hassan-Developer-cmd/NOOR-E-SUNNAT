@@ -595,29 +595,25 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
           builder: (context, snap) {
             final data = snap.data ?? AdminService.currentGlobalCounterData;
 
-            // Total Durood: prioritize total_count
-            final total = ((data['total_count'] ??
-                    data['globalTotal'] ??
+            // Total Durood: prioritize globalTotal
+            final total = ((data['globalTotal'] ??
+                    data['total_count'] ??
                     data['totalDurood'] ??
-                    data['total_durood'] ??
-                    data['totalCount'] ??
                     data['count']) as num?)
                     ?.toInt() ??
                 0;
 
-            // Today's Durood: prioritize today_count
-            final rawToday = ((data['today_count'] ??
-                    data['todayTotal'] ??
+            // Today's Durood: prioritize todayTotal
+            final rawToday = ((data['todayTotal'] ??
+                    data['today_count'] ??
                     data['todayDurood'] ??
-                    data['today_durood'] ??
-                    data['globalToday'] ??
-                    data['todayCount']) as num?)
+                    data['globalToday']) as num?)
                     ?.toInt() ??
                 0;
 
-            // Midnight rollover verification: prioritize last_reset_date
-            final docDate = (data['last_reset_date'] ??
-                    data['date'] ??
+            // Midnight rollover verification: prioritize date
+            final docDate = (data['date'] ??
+                    data['last_reset_date'] ??
                     data['lastUpdatedDate'])
                 ?.toString();
             final todayDate = DateTime.now().toIso8601String().split('T')[0];

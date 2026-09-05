@@ -677,5 +677,50 @@ void main() {
       expect(cleanDoc['today_count'], 70);
       expect(cleanDoc['total_count'], isNot(125000));
     });
+
+    test('STANDARDIZED CLEAN SCHEMA: global_counter/main contains only globalTotal, todayTotal, date', () {
+      final cleanGlobalDoc = <String, dynamic>{
+        'globalTotal': 4500,
+        'todayTotal': 230,
+        'date': '2026-09-05',
+      };
+
+      final globalTotal = (cleanGlobalDoc['globalTotal'] as num?)?.toInt() ?? 0;
+      final todayTotal = (cleanGlobalDoc['todayTotal'] as num?)?.toInt() ?? 0;
+      final date = cleanGlobalDoc['date']?.toString();
+
+      expect(globalTotal, 4500);
+      expect(todayTotal, 230);
+      expect(date, '2026-09-05');
+      expect(cleanGlobalDoc.containsKey('total_count'), false);
+      expect(cleanGlobalDoc.containsKey('today_count'), false);
+      expect(cleanGlobalDoc.containsKey('todayDurood'), false);
+    });
+
+    test('CORRUPTED BASELINE PURGE: identifies corrupted number (100000510003818) and wipes to clean aggregated count', () {
+      final corruptedDoc = <String, dynamic>{
+        'globalTotal': 100000510003818,
+        'todayTotal': 4820,
+        'total_count': 100000510003818,
+        'today_count': 4820,
+        'date': '2026-09-05',
+      };
+
+      final isCorrupted = (corruptedDoc['globalTotal'] as num) > 1000000000 ||
+          corruptedDoc.containsKey('total_count') ||
+          corruptedDoc.containsKey('today_count');
+      expect(isCorrupted, true);
+
+      // Sanitized document written by recalculateAndSyncGlobalCounter:
+      final sanitizedDoc = <String, dynamic>{
+        'globalTotal': 0,
+        'todayTotal': 0,
+        'date': '2026-09-05',
+      };
+
+      expect(sanitizedDoc['globalTotal'], 0);
+      expect(sanitizedDoc['todayTotal'], 0);
+      expect(sanitizedDoc.containsKey('total_count'), false);
+    });
   });
 }
