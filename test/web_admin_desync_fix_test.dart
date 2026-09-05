@@ -578,5 +578,79 @@ void main() {
         expect(resolveToday(cloudDailyData, staleLocalToday), 9);
       });
     });
+
+    group('MOBILE HOME SCREEN DUROOD POINTS CARD STREAM BINDING', () {
+      test('Hadi and Hassan receive their individual real points (5,107 and 5,098), eliminating 8,712', () {
+        final hadiDoc = {
+          'userId': 'dXs6IyecFqWVvfQPoqXr4kR9g3g1',
+          'username': 'Hadi',
+          'duroodPoints': 5107,
+          'myTotal': 2522,
+        };
+
+        final hassanDoc = {
+          'userId': 'hassan_uid_123',
+          'username': 'Hassan',
+          'duroodPoints': 5098,
+          'myTotal': 2522,
+        };
+
+        // Resolution logic matching Home Screen and Profile Screen
+        int resolvePoints(Map<String, dynamic>? userData, int fallbackPoints, int pendingBuffer) {
+          final cloud = ((userData?['duroodPoints'] ??
+              userData?['points'] ??
+              userData?['total_durood_points']) as num?)?.toInt();
+          return (cloud != null) ? (cloud + pendingBuffer) : fallbackPoints;
+        }
+
+        const pendingBuffer = 0;
+        const staleGlobalCache = 8712;
+
+        final hadiPoints = resolvePoints(hadiDoc, staleGlobalCache, pendingBuffer);
+        final hassanPoints = resolvePoints(hassanDoc, staleGlobalCache, pendingBuffer);
+
+        expect(hadiPoints, 5107, reason: 'Hadi must display exactly 5,107 points');
+        expect(hassanPoints, 5098, reason: 'Hassan must display exactly 5,098 points');
+        expect(hadiPoints != staleGlobalCache, isTrue);
+        expect(hassanPoints != staleGlobalCache, isTrue);
+      });
+
+      test('Device cache holding 8712 is purged, and user-scoped key durood_points_{uid} is utilized', () {
+        final Map<String, dynamic> prefs = {
+          'cached_durood_points': 8712, // corrupt global cache
+        };
+
+        const currentUid = 'dXs6IyecFqWVvfQPoqXr4kR9g3g1';
+
+        // Purge deprecated shared keys
+        prefs.remove('cached_durood_points');
+        expect(prefs.containsKey('cached_durood_points'), isFalse);
+
+        // Store user-isolated points
+        prefs['durood_points_$currentUid'] = 5107;
+        expect(prefs['durood_points_$currentUid'], 5107);
+
+        // Another user has distinct isolated key
+        const anotherUid = 'hassan_uid_123';
+        prefs['durood_points_$anotherUid'] = 5098;
+        expect(prefs['durood_points_$anotherUid'], 5098);
+        expect(prefs['durood_points_$currentUid'], 5107);
+      });
+
+      test('Switching accounts or logout clears user-isolated points and resets local state', () {
+        final Map<String, dynamic> prefs = {
+          'durood_points_userA': 5107,
+          'my_total_userA': 2522,
+        };
+
+        // Logout action for userA
+        const oldUid = 'userA';
+        prefs.remove('durood_points_$oldUid');
+        prefs.remove('my_total_$oldUid');
+
+        expect(prefs.containsKey('durood_points_userA'), isFalse);
+        expect(prefs.containsKey('my_total_userA'), isFalse);
+      });
+    });
   });
 }

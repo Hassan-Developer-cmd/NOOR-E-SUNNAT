@@ -434,6 +434,24 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ? (cloudMyTotal + widget.counterService.pendingBuffer)
                                     : snap.personalTotal;
 
+                                // Durood Points: strictly bind to authenticated user's Firestore document
+                                final int? cloudPoints = ((userData?['duroodPoints'] ??
+                                    userData?['points'] ??
+                                    userData?['total_durood_points']) as num?)?.toInt();
+                                final int effectivePoints = (cloudPoints != null)
+                                    ? (cloudPoints + widget.counterService.pendingBuffer)
+                                    : snap.duroodPoints;
+
+                                // Streak: calculate Snapchat-style consecutive calendar streak
+                                final int? cloudStreak = ((userData?['streak'] ?? userData?['current_streak']) as num?)?.toInt();
+                                final String? lastStreakDate = (userData?['lastStreakDate'] ?? userData?['lastActiveDate']) as String?;
+                                final int calculatedStreak = cloudStreak != null
+                                    ? StreakHelper.calculateEffectiveStreak(
+                                        storedStreak: cloudStreak,
+                                        lastActiveDate: lastStreakDate,
+                                      )
+                                    : snap.currentStreak;
+
                                 // Stream user daily stats subcollection for myToday
                                 return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>?>(
                                   stream: widget.counterService.userDailyStatsStream,
@@ -444,11 +462,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ? (cloudMyToday + widget.counterService.pendingBuffer)
                                         : snap.personalToday;
 
+                                    final int effectiveStreak = calculatedStreak > 0
+                                        ? calculatedStreak
+                                        : (effectiveMyToday > 0 ? ((cloudStreak != null && cloudStreak > 0) ? cloudStreak : 1) : 0);
+
                                     return Column(
                                       children: [
                                         GamificationBar(
-                                          streakDays: snap.currentStreak,
-                                          duroodPoints: snap.duroodPoints,
+                                          streakDays: effectiveStreak,
+                                          duroodPoints: effectivePoints,
                                         ),
                                         const SizedBox(height: 10),
                                         DuroodSummaryCard(

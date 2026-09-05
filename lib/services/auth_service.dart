@@ -228,6 +228,7 @@ class AuthService {
       await prefs.setBool(_keySessionActive, false);
       await prefs.remove(_keyUserUid);
       await prefs.remove(_keyUserEmail);
+      CounterService().resetLocalState();
     } catch (e) {
       if (kDebugMode) print('AuthService._clearLocalSession error: $e');
     }

@@ -205,15 +205,16 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         ? (prefs.getInt('my_total_$activeUid') ?? prefs.getInt('${_keyPersonalTotal}_$activeUid') ?? 0)
         : 0;
     final int personalTotal = (rawPersonalTotal > 1000000000 || rawPersonalTotal < 0) ? 0 : rawPersonalTotal;
-    // Purge deprecated shared key if present to avoid cross-user contamination
-    if (prefs.containsKey(_keyPersonalTotal)) {
-      prefs.remove(_keyPersonalTotal);
-    }
+    // Purge deprecated shared keys if present to avoid cross-user contamination
+    prefs.remove(_keyPersonalTotal);
+    prefs.remove(_keyStreak);
+    prefs.remove(_keyPoints);
+    prefs.remove('cached_durood_points');
 
-    // 4. Streak from user key or global fallback
+    // 4. Streak from user-isolated key
     final rawCachedStreak = (activeUid != null && activeUid != 'guest')
-        ? (prefs.getInt('user_streak_$activeUid') ?? prefs.getInt('${_keyStreak}_$activeUid') ?? prefs.getInt(_keyStreak) ?? _snapshot.currentStreak)
-        : (prefs.getInt(_keyStreak) ?? _snapshot.currentStreak);
+        ? (prefs.getInt('user_streak_$activeUid') ?? prefs.getInt('${_keyStreak}_$activeUid') ?? 0)
+        : 0;
 
     final cachedLastStreakDate = (activeUid != null && activeUid != 'guest')
         ? (prefs.getString('last_streak_date_$activeUid') ?? prefs.getString('last_active_date_$activeUid') ?? storedDate)
@@ -227,10 +228,10 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         ? effectiveCachedStreak
         : (myToday > 0 ? (rawCachedStreak > 0 ? rawCachedStreak : 1) : 0);
 
-    // 5. Durood Points from user key or global fallback
+    // 5. Durood Points from user-isolated key only (never global/shared fallback)
     final rawPoints = (activeUid != null && activeUid != 'guest')
-        ? (prefs.getInt('durood_points_$activeUid') ?? prefs.getInt('${_keyPoints}_$activeUid') ?? prefs.getInt(_keyPoints) ?? _snapshot.duroodPoints)
-        : (prefs.getInt(_keyPoints) ?? _snapshot.duroodPoints);
+        ? (prefs.getInt('durood_points_$activeUid') ?? prefs.getInt('${_keyPoints}_$activeUid') ?? 0)
+        : 0;
     final int points = (rawPoints > 1000000000 || rawPoints < 0) ? 0 : rawPoints;
 
     _updateSnapshot(CounterSnapshot(
@@ -268,15 +269,11 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
       final prefs = _prefs ?? await SharedPreferences.getInstance();
       _prefs = prefs;
       final todayStr = _todayDateString;
-      final userKey = _todayKey;
       final uid = _activeUid ?? _auth.currentUser?.uid;
+      final userKey = _todayKey;
 
-      if (_snapshot.globalTotal <= 1000000000 && _snapshot.globalTotal >= 0) {
-        await prefs.setInt(_keyGlobalTotal, _snapshot.globalTotal);
-      } else {
-        await prefs.remove(_keyGlobalTotal);
-      }
-      if (_snapshot.globalToday <= 1000000000 && _snapshot.globalToday >= 0) {
+      await prefs.setInt(_keyGlobalTotal, _snapshot.globalTotal);
+      if (StreakHelper.isSameDay(todayStr, prefs.getString(_keyGlobalDate) ?? todayStr)) {
         await prefs.setInt(_keyGlobalToday, _snapshot.globalToday);
       } else {
         await prefs.remove(_keyGlobalToday);
@@ -300,8 +297,11 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
       if (_activeUid != null) {
         await prefs.setString(_keyActiveUid, _activeUid!);
       }
-      await prefs.setInt(_keyStreak, _snapshot.currentStreak);
-      await prefs.setInt(_keyPoints, _snapshot.duroodPoints);
+      // Ensure shared/global keys are never populated with user metrics
+      await prefs.remove(_keyPersonalTotal);
+      await prefs.remove(_keyStreak);
+      await prefs.remove(_keyPoints);
+      await prefs.remove('cached_durood_points');
     } catch (e) {
       if (kDebugMode) print('CounterService._saveToStorage error: $e');
     }
@@ -333,6 +333,8 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     _debounceTimer = null;
     _userDailySub?.cancel();
     _userDailySub = null;
+    _userSub?.cancel();
+    _userSub = null;
     _updateSnapshot(CounterSnapshot(
       globalTotal: _snapshot.globalTotal,
       globalToday: _snapshot.globalToday,
@@ -347,9 +349,19 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
       _prefs?.remove(_keyPersonalTotal);
       _prefs?.remove(_keyStreak);
       _prefs?.remove(_keyPoints);
+      _prefs?.remove('cached_durood_points');
       final todayStr = _todayDateString;
       if (oldUid != null) {
         _prefs?.remove('my_durood_${oldUid}_$todayStr');
+        _prefs?.remove('my_today_${oldUid}_$todayStr');
+        _prefs?.remove('my_total_$oldUid');
+        _prefs?.remove('${_keyPersonalTotal}_$oldUid');
+        _prefs?.remove('durood_points_$oldUid');
+        _prefs?.remove('${_keyPoints}_$oldUid');
+        _prefs?.remove('user_streak_$oldUid');
+        _prefs?.remove('${_keyStreak}_$oldUid');
+        _prefs?.remove('last_streak_date_$oldUid');
+        _prefs?.remove('last_active_date_$oldUid');
       }
       _prefs?.remove('$_prefixMyDurood$todayStr');
       _prefs?.remove('$_prefixMyTodayLegacy$todayStr');

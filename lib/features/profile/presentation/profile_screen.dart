@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/streak_helper.dart';
 import '../../../core/models/app_user.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../../main.dart';
@@ -454,40 +456,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 // ── TAB 0: PROFILE VIEW ──
                 if (_selectedTab == 0) ...[
                   // Stats Row
-                  StreamBuilder<CounterSnapshot>(
-                    stream: widget.counterService.snapshotStream,
-                    initialData: widget.counterService.snapshot,
-                    builder: (context, snapshot) {
-                      final snap = snapshot.data ?? widget.counterService.snapshot;
-                      return Row(
-                        children: [
-                          Expanded(
-                            child: _ProfileStatCard(
-                              title: lp.tr('current_streak'),
-                              value: '${snap.currentStreak} ${lp.tr('streak_days')}',
-                              icon: Icons.local_fire_department_rounded,
-                              color: const Color(0xFFEA580C),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _ProfileStatCard(
-                              title: lp.tr('durood_points'),
-                              value: '${snap.duroodPoints}',
-                              icon: Icons.star_rounded,
-                              color: AppColors.accentGold,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _ProfileStatCard(
-                              title: lp.tr('my_total'),
-                              value: '${snap.personalTotal}',
-                              icon: Icons.touch_app_rounded,
-                              color: AppColors.primaryEmerald,
-                            ),
-                          ),
-                        ],
+                  StreamBuilder<DocumentSnapshot<Map<String, dynamic>>?>(
+                    stream: widget.counterService.userCounterStream,
+                    builder: (context, userSnap) {
+                      final userData = userSnap.data?.data();
+                      final int? cloudPoints = ((userData?['duroodPoints'] ??
+                          userData?['points'] ??
+                          userData?['total_durood_points']) as num?)?.toInt();
+                      final int? cloudMyTotal = (userData?['myTotal'] as num?)?.toInt();
+                      final int? cloudStreak = ((userData?['streak'] ?? userData?['current_streak']) as num?)?.toInt();
+                      final String? lastStreakDate = (userData?['lastStreakDate'] ?? userData?['lastActiveDate']) as String?;
+
+                      return StreamBuilder<CounterSnapshot>(
+                        stream: widget.counterService.snapshotStream,
+                        initialData: widget.counterService.snapshot,
+                        builder: (context, snapshot) {
+                          final snap = snapshot.data ?? widget.counterService.snapshot;
+                          final int effectivePoints = (cloudPoints != null)
+                              ? (cloudPoints + widget.counterService.pendingBuffer)
+                              : snap.duroodPoints;
+                          final int effectiveTotal = (cloudMyTotal != null)
+                              ? (cloudMyTotal + widget.counterService.pendingBuffer)
+                              : snap.personalTotal;
+                          final int calculatedStreak = cloudStreak != null
+                              ? StreakHelper.calculateEffectiveStreak(
+                                  storedStreak: cloudStreak,
+                                  lastActiveDate: lastStreakDate,
+                                )
+                              : snap.currentStreak;
+                          final int effectiveStreak = calculatedStreak > 0
+                              ? calculatedStreak
+                              : (snap.personalToday > 0 ? ((cloudStreak != null && cloudStreak > 0) ? cloudStreak : 1) : 0);
+
+                          return Row(
+                            children: [
+                              Expanded(
+                                child: _ProfileStatCard(
+                                  title: lp.tr('current_streak'),
+                                  value: '$effectiveStreak ${lp.tr('streak_days')}',
+                                  icon: Icons.local_fire_department_rounded,
+                                  color: const Color(0xFFEA580C),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _ProfileStatCard(
+                                  title: lp.tr('durood_points'),
+                                  value: '$effectivePoints',
+                                  icon: Icons.star_rounded,
+                                  color: AppColors.accentGold,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _ProfileStatCard(
+                                  title: lp.tr('my_total'),
+                                  value: '$effectiveTotal',
+                                  icon: Icons.touch_app_rounded,
+                                  color: AppColors.primaryEmerald,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       );
                     },
                   ),
