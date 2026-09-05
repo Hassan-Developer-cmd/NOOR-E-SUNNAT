@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Centralized helper for streak calculation, date parsing, and account streak persistence.
+/// Centralized helper for Snapchat-style consecutive calendar-day streak logic,
+/// date parsing, and account streak persistence.
 class StreakHelper {
   /// Converts any dynamic date value (DateTime, Timestamp, String, int) into a standard YYYY-MM-DD string.
   static String toCalendarDateString(dynamic rawDate) {
@@ -35,19 +36,33 @@ class StreakHelper {
     return '';
   }
 
+  /// Returns today's ISO calendar date string: "YYYY-MM-DD".
+  static String getTodayDateString([DateTime? referenceDate]) {
+    final ref = referenceDate ?? DateTime.now();
+    return toCalendarDateString(ref);
+  }
+
+  /// Returns yesterday's ISO calendar date string: "YYYY-MM-DD".
+  static String getYesterdayDateString([DateTime? referenceDate]) {
+    final ref = referenceDate ?? DateTime.now();
+    final yesterday = ref.subtract(const Duration(days: 1));
+    return toCalendarDateString(yesterday);
+  }
+
   /// Calculates calendar days difference: (toDate - fromDate).
+  /// Returns 999999 if either date string is invalid.
   static int calendarDaysDifference(dynamic fromDate, dynamic toDate) {
     try {
       final s1 = toCalendarDateString(fromDate);
       final s2 = toCalendarDateString(toDate);
-      if (s1.isEmpty || s2.isEmpty) return 0;
+      if (s1.isEmpty || s2.isEmpty) return 999999;
       final p1 = s1.split('-').map(int.parse).toList();
       final p2 = s2.split('-').map(int.parse).toList();
       final d1 = DateTime(p1[0], p1[1], p1[2]);
       final d2 = DateTime(p2[0], p2[1], p2[2]);
       return d2.difference(d1).inDays;
     } catch (_) {
-      return 0;
+      return 999999;
     }
   }
 
@@ -58,71 +73,80 @@ class StreakHelper {
     return s1.isNotEmpty && s1 == s2;
   }
 
-  /// Resolves the current effective streak for an account.
-  /// If the user was active today (diff == 0) or yesterday (diff == 1), their streak is intact.
-  /// Only if more than 1 full day has passed without Durood activity (diff > 1) does the active streak expire.
+  /// Resolves the current displayed streak on App Launch / Midnight Verification.
+  ///
+  /// - If lastStreakDate is today (diff == 0), user recited today: streak is storedStreak.
+  /// - If lastStreakDate is yesterday (diff == 1), user recited yesterday: streak is maintained (user has today to continue).
+  /// - If lastStreakDate is older than yesterday (diff > 1) or empty, the streak is broken: resets to 0.
   static int calculateEffectiveStreak({
     required int storedStreak,
     required dynamic lastActiveDate,
     dynamic referenceDate,
   }) {
     if (storedStreak <= 0) return 0;
-    final ref = referenceDate ?? DateTime.now();
     final lastStr = toCalendarDateString(lastActiveDate);
+    if (lastStr.isEmpty) return 0;
 
-    // If no last active date is available on account, preserve the stored streak from backend
-    if (lastStr.isEmpty) {
-      return storedStreak;
-    }
+    final ref = referenceDate ?? DateTime.now();
+    final todayStr = toCalendarDateString(ref);
 
-    final diff = calendarDaysDifference(lastStr, ref);
-    if (diff <= 1) {
-      // Active today or yesterday: user has today to continue streak!
+    final diff = calendarDaysDifference(lastStr, todayStr);
+    if (diff == 0 || diff == 1) {
+      // Recited today or yesterday: active streak maintained
       return storedStreak;
     } else {
-      // More than 1 day missed without Durood: streak ended
+      // Missed yesterday (> 1 day inactive): streak broken
       return 0;
     }
   }
 
-  /// Computes the updated streak map when the user adds Durood today.
+  /// Computes updated streak on Daily Recitation (Snapchat-style):
+  ///
+  /// Let `today` be current date ("YYYY-MM-DD") and `yesterday` be previous date ("YYYY-MM-DD"):
+  /// - Case 1 (Already recited today):
+  ///   if (lastStreakDate == today) -> Do not change the streak count.
+  /// - Case 2 (Recited yesterday, now active today):
+  ///   if (lastStreakDate == yesterday) -> streak = streak + 1, update lastStreakDate = today.
+  /// - Case 3 (Streak broken / missed yesterday or inactive > 1 day or brand new):
+  ///   if (lastStreakDate != yesterday && lastStreakDate != today) -> Reset streak = 1, update lastStreakDate = today.
   static Map<String, dynamic> computeStreakOnDuroodRecitation({
     required int currentStoredStreak,
     required int longestStoredStreak,
     required dynamic lastActiveDate,
     required String todayDateStr,
+    dynamic referenceDate,
   }) {
     final lastStr = toCalendarDateString(lastActiveDate);
+    final ref = referenceDate ?? (DateTime.tryParse(todayDateStr) ?? DateTime.now());
+    final yesterdayStr = getYesterdayDateString(ref);
 
-    // If already active today, do not increment streak again for today
-    if (lastStr.isNotEmpty && isSameDay(lastStr, todayDateStr)) {
-      return {};
+    // Case 1: Already recited today -> Do not change streak count
+    if (lastStr == todayDateStr) {
+      final safeStreak = currentStoredStreak > 0 ? currentStoredStreak : 1;
+      return {
+        'streak': safeStreak,
+        'current_streak': safeStreak,
+        'lastStreakDate': todayDateStr,
+        'lastActiveDate': todayDateStr,
+      };
     }
 
     int nextStreak;
-    if (lastStr.isNotEmpty) {
-      final diff = calendarDaysDifference(lastStr, todayDateStr);
-      if (diff == 1) {
-        // Consecutive calendar day: increment streak!
-        nextStreak = currentStoredStreak + 1;
-      } else if (diff > 1) {
-        // Missed one or more days: start fresh streak at 1
-        nextStreak = 1;
-      } else {
-        // diff <= 0 (same day or edge case): ensure at least 1
-        nextStreak = currentStoredStreak > 0 ? currentStoredStreak : 1;
-      }
+    // Case 2: Recited yesterday, now active today -> increment streak by 1
+    if (lastStr == yesterdayStr) {
+      nextStreak = currentStoredStreak + 1;
     } else {
-      // No prior active date recorded on account:
-      // If an existing streak was stored on account (e.g. from backend/admin), increment it, else start at 1
-      nextStreak = currentStoredStreak > 0 ? currentStoredStreak + 1 : 1;
+      // Case 3: Streak broken / missed yesterday or inactive > 1 day -> start fresh at 1
+      nextStreak = 1;
     }
 
     final newLongest = nextStreak > longestStoredStreak ? nextStreak : longestStoredStreak;
     return {
-      'current_streak': nextStreak,
       'streak': nextStreak,
+      'current_streak': nextStreak,
       'longest_streak': newLongest,
+      'lastStreakDate': todayDateStr,
+      'lastActiveDate': todayDateStr,
     };
   }
 }

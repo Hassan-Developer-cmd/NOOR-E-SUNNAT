@@ -210,9 +210,13 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         ? (prefs.getInt('user_streak_$activeUid') ?? prefs.getInt('${_keyStreak}_$activeUid') ?? prefs.getInt(_keyStreak) ?? _snapshot.currentStreak)
         : (prefs.getInt(_keyStreak) ?? _snapshot.currentStreak);
 
+    final cachedLastStreakDate = (activeUid != null && activeUid != 'guest')
+        ? (prefs.getString('last_streak_date_$activeUid') ?? prefs.getString('last_active_date_$activeUid') ?? storedDate)
+        : storedDate;
+
     final effectiveCachedStreak = StreakHelper.calculateEffectiveStreak(
       storedStreak: rawCachedStreak,
-      lastActiveDate: storedDate,
+      lastActiveDate: cachedLastStreakDate,
     );
     final streak = effectiveCachedStreak > 0
         ? effectiveCachedStreak
@@ -295,11 +299,13 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         await prefs.setInt('my_total_$uid', _snapshot.personalTotal);
         await prefs.setInt('durood_points_$uid', _snapshot.duroodPoints);
         await prefs.setInt('user_streak_$uid', _snapshot.currentStreak);
+        await prefs.setString('last_streak_date_$uid', todayStr);
 
         await prefs.setInt('my_durood_${uid}_$todayStr', _snapshot.personalToday);
         await prefs.setInt('${_keyPersonalTotal}_$uid', _snapshot.personalTotal);
         await prefs.setInt('${_keyStreak}_$uid', _snapshot.currentStreak);
         await prefs.setInt('${_keyPoints}_$uid', _snapshot.duroodPoints);
+        await prefs.setString('last_active_date_$uid', todayStr);
       }
       await prefs.setInt('$_prefixMyDurood$todayStr', _snapshot.personalToday);
       await prefs.setInt('$_prefixMyTodayLegacy$todayStr', _snapshot.personalToday);
@@ -520,7 +526,13 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
 
   void _processUserSnap(Map<String, dynamic> data) {
     final todayStr = _todayDateString;
-    final lastActive = data['lastActiveDate'] ??
+    final dynamic rawStreakDateVal = data['lastStreakDate'];
+    final dynamic rawStreakDate = (rawStreakDateVal is String && rawStreakDateVal.trim().isEmpty)
+        ? null
+        : rawStreakDateVal;
+
+    final lastActive = rawStreakDate ??
+        data['lastActiveDate'] ??
         data['lastDuroodDate'] ??
         data['last_active_durood_date'] ??
         data['last_active_timestamp'] ??
@@ -532,31 +544,20 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         data['current_streak'] ??
         data['daily_streak']) as num?)?.toInt() ?? 0;
 
+    // Snapchat-style streak calculation: 0 if last streak date is older than yesterday
     int effectiveStreak = StreakHelper.calculateEffectiveStreak(
       storedStreak: rawStreak,
       lastActiveDate: lastActive,
     );
 
-    // If local snapshot has an active streak, NEVER downgrade to 0!
-    if (effectiveStreak == 0 && _snapshot.currentStreak > 0) {
-      if (_snapshot.personalToday > 0 || _pendingBuffer > 0) {
-        effectiveStreak = _snapshot.currentStreak;
-      } else {
-        final storedDate = _prefs?.getString(_keyMyDuroodDate);
-        if (storedDate != null && StreakHelper.calendarDaysDifference(storedDate, todayStr) <= 1) {
-          effectiveStreak = _snapshot.currentStreak;
-        }
-      }
-    } else if (_snapshot.currentStreak > effectiveStreak && _pendingBuffer > 0) {
-      effectiveStreak = _snapshot.currentStreak;
-    }
-
-    if (_snapshot.personalToday > 0 && effectiveStreak == 0) {
+    // If an optimistic pending buffer is actively being tapped, ensure at least 1
+    if (_pendingBuffer > 0 && effectiveStreak == 0) {
       effectiveStreak = 1;
     }
 
     // 2. PERSONAL TOTAL: Parse across all field variations
-    final int firestorePersonalTotal = ((data['personal_total_durood'] ??
+    final int firestorePersonalTotal = ((data['myTotal'] ??
+        data['personal_total_durood'] ??
         data['total_durood_count'] ??
         data['personal_durood'] ??
         data['total_recitations'] ??
@@ -626,7 +627,7 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     final todayStr = _todayDateString;
     final updatedMyToday = _snapshot.personalToday + count;
     final updatedStreak = _snapshot.currentStreak <= 0 ? 1 : _snapshot.currentStreak;
-    final updatedPoints = _snapshot.duroodPoints + (count * 2);
+    final updatedPoints = _snapshot.duroodPoints + count;
 
     // 1. Optimistically update in-memory state
     _updateSnapshot(CounterSnapshot(
@@ -720,22 +721,16 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
 
         final userSnap = await userRef.get();
         final data = userSnap.data() ?? {};
-        final lastActive = data['lastDuroodDate'] ??
-            data['last_active_durood_date'] ??
-            data['last_active_timestamp'] ??
-            data['last_active_date'] ??
-            data['last_durood_at'];
+        final lastActive = data['lastStreakDate'] ??
+            data['lastActiveDate'] ??
+            data['lastDuroodDate'] ??
+            data['last_active_durood_date'];
 
-        final currentStoredStreak = ((data['current_streak'] ?? data['streak'] ?? data['daily_streak']) as num?)?.toInt() ?? 0;
+        final currentStoredStreak = ((data['streak'] ?? data['current_streak'] ?? data['daily_streak']) as num?)?.toInt() ?? 0;
         final longestStoredStreak = ((data['longest_streak'] ?? data['best_streak']) as num?)?.toInt() ?? currentStoredStreak;
 
-        // Ensure currentStoredStreak is at least the local current streak
-        final effectiveStoredStreak = currentStoredStreak > _snapshot.currentStreak
-            ? currentStoredStreak
-            : _snapshot.currentStreak;
-
         final streakUpdates = StreakHelper.computeStreakOnDuroodRecitation(
-          currentStoredStreak: effectiveStoredStreak,
+          currentStoredStreak: currentStoredStreak,
           longestStoredStreak: longestStoredStreak,
           lastActiveDate: lastActive,
           todayDateStr: todayStr,
@@ -747,6 +742,7 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
           {
             'myTotal': FieldValue.increment(count),
             'duroodPoints': FieldValue.increment(count),
+            'lastStreakDate': todayStr,
             'lastActiveDate': todayStr,
             // Legacy keys maintained for bidirectional compatibility
             'personal_total_durood': FieldValue.increment(count),
@@ -762,10 +758,6 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
             'last_active_timestamp': FieldValue.serverTimestamp(),
             'last_durood_at': FieldValue.serverTimestamp(),
             'updatedAt': FieldValue.serverTimestamp(),
-            if (streakUpdates.isEmpty && effectiveStoredStreak > 0) ...{
-              'streak': effectiveStoredStreak,
-              'current_streak': effectiveStoredStreak,
-            },
             ...streakUpdates,
           },
           SetOptions(merge: true),

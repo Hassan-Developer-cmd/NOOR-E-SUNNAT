@@ -82,6 +82,7 @@ void main() {
     });
 
     test('AppUser Model: Correctly parses mobile schema fields (streak: 11, points: 5,098)', () {
+      final todayStr = StreakHelper.getTodayDateString();
       // Simulating user doc as stored by mobile client for active user (e.g. Hadi / Hassan)
       final userDoc = <String, dynamic>{
         'userId': 'user_hadi_123',
@@ -90,13 +91,14 @@ void main() {
         'streak': 11,
         'duroodPoints': 5098,
         'totalCount': 5098,
-        'lastActiveDate': '2026-09-04', // active yesterday or timezone lag
+        'lastStreakDate': todayStr,
+        'lastActiveDate': todayStr,
       };
 
       final user = AppUser.fromMap(userDoc);
 
-      expect(user.streak, 11, reason: 'Streak getter must read stored streak');
-      expect(user.currentStreak, 11, reason: 'currentStreak must be preserved when rawStreak > 0');
+      expect(user.streak, 11, reason: 'Streak getter must read stored streak when active today');
+      expect(user.currentStreak, 11, reason: 'currentStreak must be preserved when active today');
       expect(user.duroodPoints, 5098, reason: 'duroodPoints getter must read 5098');
       expect(user.points, 5098);
       expect(user.totalPoints, 5098);
@@ -105,7 +107,8 @@ void main() {
       expect(user.personalTotalDurood, 5098);
     });
 
-    test('AppUser Model: Fallback reads legacy field names seamlessly', () {
+    test('AppUser Model: Fallback reads legacy field names seamlessly with active date', () {
+      final todayStr = StreakHelper.getTodayDateString();
       final legacyDoc = <String, dynamic>{
         'userId': 'legacy_user_1',
         'email': 'legacy@example.com',
@@ -113,6 +116,7 @@ void main() {
         'current_streak': 7,
         'total_durood_points': 1400,
         'personal_total_durood': 1400,
+        'last_active_durood_date': todayStr,
       };
 
       final user = AppUser.fromMap(legacyDoc);
@@ -123,6 +127,7 @@ void main() {
     });
 
     test('Leaderboard Sorting: Ranks active users with points/durood at the top', () {
+      final todayStr = StreakHelper.getTodayDateString();
       final users = [
         AppUser.fromMap({
           'userId': 'user_inactive',
@@ -131,6 +136,7 @@ void main() {
           'streak': 0,
           'duroodPoints': 0,
           'totalCount': 0,
+          'lastStreakDate': '',
         }),
         AppUser.fromMap({
           'userId': 'user_hassan',
@@ -139,6 +145,7 @@ void main() {
           'streak': 5,
           'duroodPoints': 2500,
           'totalCount': 2500,
+          'lastStreakDate': todayStr,
         }),
         AppUser.fromMap({
           'userId': 'user_hadi',
@@ -147,15 +154,16 @@ void main() {
           'streak': 11,
           'duroodPoints': 5098,
           'totalCount': 5098,
+          'lastStreakDate': todayStr,
         }),
       ];
 
       // Sort with identical logic to admin_service and admin_dashboard_web
       users.sort((a, b) {
-        final aScore = a.duroodPoints > 0 ? a.duroodPoints : a.totalCount;
-        final bScore = b.duroodPoints > 0 ? b.duroodPoints : b.totalCount;
-        final cmp = bScore.compareTo(aScore);
+        final cmp = b.duroodPoints.compareTo(a.duroodPoints);
         if (cmp != 0) return cmp;
+        final totalCmp = b.myTotal.compareTo(a.myTotal);
+        if (totalCmp != 0) return totalCmp;
         return b.streak.compareTo(a.streak);
       });
 
@@ -173,6 +181,7 @@ void main() {
     });
 
     test('Two-way compatibility: toMap writes both canonical and legacy keys', () {
+      final todayStr = StreakHelper.getTodayDateString();
       final user = AppUser.fromMap({
         'userId': 'u1',
         'email': 'u1@test.com',
@@ -180,6 +189,7 @@ void main() {
         'streak': 11,
         'duroodPoints': 5098,
         'totalCount': 5098,
+        'lastStreakDate': todayStr,
       });
 
       final map = user.toMap();
@@ -190,6 +200,7 @@ void main() {
       expect(map['totalCount'], 5098);
       expect(map['myTotal'], 5098);
       expect(map['personal_total_durood'], 5098);
+      expect(map['lastStreakDate'], todayStr);
     });
 
     test('UNIFIED SCHEMA: AppUser parses and exposes myTotal and myToday directly', () {
@@ -316,6 +327,170 @@ void main() {
 
       expect(userDocPath, 'users/auth_user_abc123');
       expect(dailyStatDocPath, 'users/auth_user_abc123/daily_stats/2026-09-05');
+    });
+
+    group('SNAPCHAT-STYLE STREAK LOGIC (CALENDAR DAY WINDOW)', () {
+      final refDate = DateTime(2026, 9, 6);
+      final todayStr = StreakHelper.getTodayDateString(refDate); // '2026-09-06'
+      final yesterdayStr = StreakHelper.getYesterdayDateString(refDate); // '2026-09-05'
+      final twoDaysAgoStr = StreakHelper.toCalendarDateString(refDate.subtract(const Duration(days: 2))); // '2026-09-04'
+
+      test('Case 1: Already recited today (lastStreakDate == today) -> streak unchanged', () {
+        final result = StreakHelper.computeStreakOnDuroodRecitation(
+          currentStoredStreak: 5,
+          longestStoredStreak: 10,
+          lastActiveDate: todayStr,
+          todayDateStr: todayStr,
+          referenceDate: refDate,
+        );
+
+        expect(result['streak'], 5, reason: 'Streak count must remain unchanged when recited multiple times today');
+        expect(result['current_streak'], 5);
+        expect(result['lastStreakDate'], todayStr);
+      });
+
+      test('Case 2: Recited yesterday, now active today (lastStreakDate == yesterday) -> streak = streak + 1', () {
+        final result = StreakHelper.computeStreakOnDuroodRecitation(
+          currentStoredStreak: 5,
+          longestStoredStreak: 10,
+          lastActiveDate: yesterdayStr,
+          todayDateStr: todayStr,
+          referenceDate: refDate,
+        );
+
+        expect(result['streak'], 6, reason: 'Streak count must increment by 1 when recited consecutive days');
+        expect(result['current_streak'], 6);
+        expect(result['longest_streak'], 10);
+        expect(result['lastStreakDate'], todayStr);
+      });
+
+      test('Case 2 (Record): Increment beats longest streak -> updates longest_streak', () {
+        final result = StreakHelper.computeStreakOnDuroodRecitation(
+          currentStoredStreak: 10,
+          longestStoredStreak: 10,
+          lastActiveDate: yesterdayStr,
+          todayDateStr: todayStr,
+          referenceDate: refDate,
+        );
+
+        expect(result['streak'], 11);
+        expect(result['longest_streak'], 11, reason: 'Longest streak must update when new personal best');
+        expect(result['lastStreakDate'], todayStr);
+      });
+
+      test('Case 3: Streak broken / missed yesterday or inactive > 1 day -> resets streak to 1', () {
+        final result = StreakHelper.computeStreakOnDuroodRecitation(
+          currentStoredStreak: 8,
+          longestStoredStreak: 12,
+          lastActiveDate: twoDaysAgoStr,
+          todayDateStr: todayStr,
+          referenceDate: refDate,
+        );
+
+        expect(result['streak'], 1, reason: 'Streak must reset to 1 when user missed yesterday');
+        expect(result['current_streak'], 1);
+        expect(result['longest_streak'], 12, reason: 'Longest streak record is preserved');
+        expect(result['lastStreakDate'], todayStr);
+      });
+
+      test('Case 3: Brand new user with no previous date -> starts streak at 1', () {
+        final result = StreakHelper.computeStreakOnDuroodRecitation(
+          currentStoredStreak: 0,
+          longestStoredStreak: 0,
+          lastActiveDate: '',
+          todayDateStr: todayStr,
+          referenceDate: refDate,
+        );
+
+        expect(result['streak'], 1);
+        expect(result['longest_streak'], 1);
+        expect(result['lastStreakDate'], todayStr);
+      });
+
+      test('Launch / Midnight Verification: Inactive > 1 day resets displayed streak to 0', () {
+        final effectiveStreak = StreakHelper.calculateEffectiveStreak(
+          storedStreak: 7,
+          lastActiveDate: twoDaysAgoStr,
+          referenceDate: refDate,
+        );
+
+        expect(effectiveStreak, 0, reason: 'Displayed streak must reset to 0 if inactive > 1 day without reciting');
+      });
+
+      test('Launch / Midnight Verification: Active today maintains displayed streak', () {
+        final effectiveStreak = StreakHelper.calculateEffectiveStreak(
+          storedStreak: 7,
+          lastActiveDate: todayStr,
+          referenceDate: refDate,
+        );
+
+        expect(effectiveStreak, 7, reason: 'Displayed streak maintained when active today');
+      });
+
+      test('Launch / Midnight Verification: Active yesterday maintains displayed streak (grace window)', () {
+        final effectiveStreak = StreakHelper.calculateEffectiveStreak(
+          storedStreak: 7,
+          lastActiveDate: yesterdayStr,
+          referenceDate: refDate,
+        );
+
+        expect(effectiveStreak, 7, reason: 'User has until end of today to recite; streak not prematurely killed');
+      });
+
+      test('Global Reset to 0: User doc with streak: 0 and empty date evaluates to 0', () {
+        final user = AppUser.fromMap({
+          'userId': 'reset_user_1',
+          'email': 'reset@example.com',
+          'username': 'ResetUser',
+          'streak': 0,
+          'duroodPoints': 0,
+          'lastStreakDate': '',
+        });
+
+        expect(user.streak, 0);
+        expect(user.currentStreak, 0);
+        expect(user.duroodPoints, 0);
+      });
+    });
+
+    group('PER-USER ISOLATED DUROOD POINTS', () {
+      test('User A and User B points are completely independent and not shared', () {
+        final userA = AppUser.fromMap({
+          'userId': 'user_a',
+          'email': 'usera@example.com',
+          'username': 'User A',
+          'streak': 0,
+          'duroodPoints': 45,
+          'myTotal': 45,
+        });
+
+        final userB = AppUser.fromMap({
+          'userId': 'user_b',
+          'email': 'userb@example.com',
+          'username': 'User B',
+          'streak': 0,
+          'duroodPoints': 350,
+          'myTotal': 350,
+        });
+
+        expect(userA.duroodPoints, 45);
+        expect(userB.duroodPoints, 350);
+        expect(userA.duroodPoints != userB.duroodPoints, isTrue);
+      });
+
+      test('Table row binds strictly to user document duroodPoints field', () {
+        final docA = {'userId': 'u_a', 'username': 'Alice', 'duroodPoints': 100};
+        final docB = {'userId': 'u_b', 'username': 'Bob', 'duroodPoints': 250};
+
+        final uA = AppUser.fromMap(docA);
+        final uB = AppUser.fromMap(docB);
+
+        // Verify web table display values
+        String tablePointsCell(AppUser u) => '${u.duroodPoints} pts ⭐';
+
+        expect(tablePointsCell(uA), '100 pts ⭐');
+        expect(tablePointsCell(uB), '250 pts ⭐');
+      });
     });
   });
 }

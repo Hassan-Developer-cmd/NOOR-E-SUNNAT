@@ -403,7 +403,8 @@ void main() {
         'duroodPoints': 220000,
         'personal_total_durood': 110000,
         'personal_today_durood': 500,
-        'last_active_durood_date': '2026-09-04',
+        'lastStreakDate': StreakHelper.getTodayDateString(),
+        'last_active_durood_date': StreakHelper.getTodayDateString(),
       };
 
       final user = AppUser.fromMap(mobileUserDoc);

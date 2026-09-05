@@ -929,13 +929,13 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
         }
 
         final allUsers = snap.data ?? [];
-        // Ensure strictly sorted in descending order of points / durood count, then streak
+        // Ensure strictly sorted in descending order of individual Durood points, then myTotal, then streak
         final sortedUsers = List<AppUser>.from(allUsers)
           ..sort((a, b) {
-            final aScore = a.myTotal > 0 ? a.myTotal : (a.duroodPoints > 0 ? a.duroodPoints : a.totalCount);
-            final bScore = b.myTotal > 0 ? b.myTotal : (b.duroodPoints > 0 ? b.duroodPoints : b.totalCount);
-            final cmp = bScore.compareTo(aScore);
+            final cmp = b.duroodPoints.compareTo(a.duroodPoints);
             if (cmp != 0) return cmp;
+            final totalCmp = b.myTotal.compareTo(a.myTotal);
+            if (totalCmp != 0) return totalCmp;
             return b.streak.compareTo(a.streak);
           });
 
@@ -1031,7 +1031,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                         const Icon(Icons.auto_awesome, size: 13, color: AppColors.primaryEmerald),
                         const SizedBox(width: 5),
                         Text(
-                          _fmt(u.myTotal > 0 ? u.myTotal : (u.totalCount > 0 ? u.totalCount : u.duroodPoints)),
+                          _fmt(u.myTotal > 0 ? u.myTotal : u.totalCount),
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: AppColors.emeraldDeep,
@@ -1044,7 +1044,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 ),
                 DataCell(
                   Text(
-                    '${_fmt(u.duroodPoints > 0 ? u.duroodPoints : u.points)} pts ⭐',
+                    '${_fmt(u.duroodPoints)} pts ⭐',
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       color: AppColors.primaryEmerald,
@@ -2960,7 +2960,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.orange.shade900),
               ),
               Text(
-                '${_fmt(u.duroodPoints > 0 ? u.duroodPoints : u.totalDuroodPoints)} pts ⭐',
+                '${_fmt(u.duroodPoints)} pts ⭐',
                 style: const TextStyle(fontSize: 11, color: AppColors.primaryEmerald, fontWeight: FontWeight.w600),
               ),
             ],
@@ -3113,7 +3113,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                               children: [
                                 Column(
                                   children: [
-                                    Text(_fmt(u.totalCount > 0 ? u.totalCount : u.personalTotalDurood),
+                                    Text(_fmt(u.myTotal),
                                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryEmerald)),
                                     const Text('Durood', style: TextStyle(fontSize: 10, color: Colors.grey)),
                                   ],
@@ -3129,7 +3129,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                                 Container(width: 1, height: 18, color: AppColors.borderLight),
                                 Column(
                                   children: [
-                                    Text(_fmt(u.duroodPoints > 0 ? u.duroodPoints : u.totalDuroodPoints),
+                                    Text(_fmt(u.duroodPoints),
                                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.teal)),
                                     const Text('Points', style: TextStyle(fontSize: 10, color: Colors.grey)),
                                   ],
@@ -3424,7 +3424,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                           const SizedBox(height: 10),
                           Row(
                             children: [
-                              Expanded(child: _buildUserMetricTile('Total Durood', _fmt(u.totalCount > 0 ? u.totalCount : u.personalTotalDurood), Icons.auto_awesome, AppColors.primaryEmerald)),
+                              Expanded(child: _buildUserMetricTile('Total Durood', _fmt(u.myTotal), Icons.auto_awesome, AppColors.primaryEmerald)),
                               const SizedBox(width: 10),
                               Expanded(child: _buildUserMetricTile('Today\'s Durood', _fmt(u.personalTodayDurood), Icons.today_rounded, AppColors.emeraldLight)),
                             ],
@@ -3702,7 +3702,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
           DataCell(Text(u.email)),
           DataCell(Text(_fmt(u.myTotal > 0 ? u.myTotal : u.totalCount))),
           DataCell(Text('${u.streak} Days 🔥')),
-          DataCell(Text('${_fmt(u.duroodPoints > 0 ? u.duroodPoints : u.totalDuroodPoints)} pts ⭐')),
+          DataCell(Text('${_fmt(u.duroodPoints)} pts ⭐')),
           DataCell(_statusChip(
             u.isAdmin ? 'ADMIN' : 'USER',
             u.isAdmin ? AppColors.goldLight : AppColors.emeraldContainer,

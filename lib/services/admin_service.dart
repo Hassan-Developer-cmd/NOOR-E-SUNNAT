@@ -866,10 +866,10 @@ class AdminService {
               .map((doc) => AppUser.fromMap({'user_id': doc.id, ...doc.data()}))
               .toList();
           users.sort((a, b) {
-            final aScore = a.myTotal > 0 ? a.myTotal : (a.duroodPoints > 0 ? a.duroodPoints : a.totalCount);
-            final bScore = b.myTotal > 0 ? b.myTotal : (b.duroodPoints > 0 ? b.duroodPoints : b.totalCount);
-            final cmp = bScore.compareTo(aScore);
+            final cmp = b.duroodPoints.compareTo(a.duroodPoints);
             if (cmp != 0) return cmp;
+            final totalCmp = b.myTotal.compareTo(a.myTotal);
+            if (totalCmp != 0) return totalCmp;
             return b.streak.compareTo(a.streak);
           });
           return users;

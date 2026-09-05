@@ -259,19 +259,20 @@ class FirestoreSeeder {
       final usersSnap = await _firestore.collection('users').get();
       final batch = _firestore.batch();
       int userUpdates = 0;
-      final todayStr = DateTime.now().toIso8601String().split('T').first;
 
       for (final doc in usersSnap.docs) {
         final data = doc.data();
         final myTotal = ((data['myTotal'] ?? data['personal_total_durood'] ?? data['totalCount']) as num?)?.toInt() ?? 0;
         final streak = ((data['streak'] ?? data['current_streak']) as num?)?.toInt() ?? 0;
         final points = ((data['duroodPoints'] ?? data['total_durood_points'] ?? data['points']) as num?)?.toInt() ?? 0;
-        final lastActive = (data['lastActiveDate'] ?? data['last_active_durood_date'] ?? data['lastDuroodDate'])?.toString() ?? todayStr;
+        final lastStreakDate = (data['lastStreakDate'] ?? data['lastActiveDate'] ?? data['last_active_durood_date'])?.toString() ?? '';
+        final lastActive = (data['lastActiveDate'] ?? data['lastStreakDate'] ?? data['last_active_durood_date'])?.toString() ?? '';
 
         batch.set(doc.reference, {
           'myTotal': myTotal,
           'streak': streak,
           'duroodPoints': points,
+          'lastStreakDate': lastStreakDate,
           'lastActiveDate': lastActive,
           // Legacy fields preserved for backward compatibility
           'personal_total_durood': myTotal,

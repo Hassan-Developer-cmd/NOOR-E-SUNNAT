@@ -44,15 +44,8 @@ class AppUser {
       ? ((rawData!['myToday'] as num?)?.toInt() ?? 0)
       : personalTodayDurood;
 
-  int get streak => (rawData != null && rawData!['streak'] != null)
-      ? ((rawData!['streak'] as num?)?.toInt() ?? 0)
-      : (currentStreak > 0
-          ? currentStreak
-          : (((rawData?['current_streak'] ??
-                  rawData?['currentStreak'] ??
-                  rawData?['daily_streak']) as num?)
-                  ?.toInt() ??
-              0));
+  int get streak => currentStreak;
+  int get effectiveStreak => currentStreak;
 
   int get duroodPoints => (rawData != null && rawData!['duroodPoints'] != null)
       ? ((rawData!['duroodPoints'] as num?)?.toInt() ?? 0)
@@ -69,33 +62,34 @@ class AppUser {
   int get totalPoints => duroodPoints;
 
   int get totalCount => (rawData != null &&
-          (rawData!['totalCount'] != null ||
+          (rawData!['myTotal'] != null ||
+              rawData!['totalCount'] != null ||
               rawData!['duroodCount'] != null ||
               rawData!['total_count'] != null ||
               rawData!['personal_total_durood'] != null ||
               rawData!['totalDurood'] != null))
-      ? (((rawData!['totalCount'] ??
+      ? (((rawData!['myTotal'] ??
+              rawData!['totalCount'] ??
               rawData!['duroodCount'] ??
               rawData!['total_count'] ??
               rawData!['personal_total_durood'] ??
               rawData!['totalDurood']) as num?)
               ?.toInt() ??
           0)
-      : (personalTotalDurood > 0
-          ? personalTotalDurood
-          : (((rawData?['totalCount'] ??
-                  rawData?['duroodCount'] ??
-                  rawData?['duroodPoints'] ??
-                  rawData?['points']) as num?)
-                  ?.toInt() ??
-              0));
+      : personalTotalDurood;
 
   int get duroodCount => totalCount;
   int get totalDurood => totalCount;
 
   factory AppUser.fromMap(Map<String, dynamic> map) {
     DateTime? activeDate;
-    final rawDate = map['lastActiveDate'] ??
+    final dynamic rawStreakDateVal = map['lastStreakDate'];
+    final dynamic rawStreakDate = (rawStreakDateVal is String && rawStreakDateVal.trim().isEmpty)
+        ? null
+        : rawStreakDateVal;
+
+    final rawDate = rawStreakDate ??
+        map['lastActiveDate'] ??
         map['last_active_durood_date'] ??
         map['last_active_timestamp'] ??
         map['last_active_date'] ??
@@ -144,14 +138,11 @@ class AppUser {
         0;
     final int rawLongest = ((map['longest_streak'] ?? map['best_streak']) as num?)?.toInt() ?? rawStreak;
 
-    final int calculatedStreak = StreakHelper.calculateEffectiveStreak(
+    // Snapchat-style effective streak calculation: resets to 0 if inactive for > 1 calendar day
+    final int effectiveStreak = StreakHelper.calculateEffectiveStreak(
       storedStreak: rawStreak,
       lastActiveDate: rawDate ?? activeDate,
     );
-    // If rawStreak is explicitly stored (> 0), trust it so date/timezone parsing quirks don't wipe active streaks.
-    final int effectiveStreak = rawStreak > 0
-        ? rawStreak
-        : (calculatedStreak > 0 ? calculatedStreak : 0);
 
     final resolvedName = (map['name'] as String?)?.trim().isNotEmpty == true
         ? (map['name'] as String).trim()
@@ -176,8 +167,7 @@ class AppUser {
               map['personal_durood'] ??
               map['total_recitations'] ??
               map['total_count'] ??
-              map['totalDurood'] ??
-              map['duroodPoints']) as num?)
+              map['totalDurood']) as num?)
               ?.toInt() ??
           0,
       personalTodayDurood: ((map['myToday'] ??
@@ -224,6 +214,8 @@ class AppUser {
         'duroodPoints': totalDuroodPoints,
         'points': totalDuroodPoints,
         'totalPoints': totalDuroodPoints,
+        'lastStreakDate':
+            lastActiveDuroodDate?.toIso8601String().split('T').first,
         'lastActiveDate':
             lastActiveDuroodDate?.toIso8601String().split('T').first,
         'last_active_durood_date':
