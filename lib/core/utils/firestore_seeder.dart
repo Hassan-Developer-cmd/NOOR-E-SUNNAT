@@ -161,11 +161,11 @@ class FirestoreSeeder {
         }
       }
 
-      // Ensure counters/durood_stats is also synchronized and clean
+      // Permanently delete stale counters/durood_stats if it exists
       try {
         final legacyDoc = await _firestore.collection('counters').doc('durood_stats').get();
-        if (!legacyDoc.exists || legacyDoc.data()?.containsKey('total_count') == true) {
-          await recalculateAndSyncGlobalCounter();
+        if (legacyDoc.exists) {
+          await _firestore.collection('counters').doc('durood_stats').delete();
         }
       } catch (_) {}
 
@@ -230,9 +230,8 @@ class FirestoreSeeder {
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      // Set both documents without merge: wipes mock/corrupted fields like 125000, 4820, 100000510003818
+      // Strictly write only to global_counter/main without merge (wipes mock/corrupted fields)
       await _firestore.collection('global_counter').doc('main').set(payload);
-      await _firestore.collection('counters').doc('durood_stats').set(payload);
       return payload;
     } catch (e) {
       if (kDebugMode) print('[Seeder] recalculateAndSyncGlobalCounter error: $e');
@@ -240,7 +239,7 @@ class FirestoreSeeder {
     }
   }
 
-  /// Sets initial baseline starting numbers for global counter across both documents.
+  /// Sets initial baseline starting numbers strictly for global_counter/main.
   static Future<bool> updateGlobalCounterBaseline({
     int totalCount = 0,
     int todayCount = 0,
@@ -254,7 +253,6 @@ class FirestoreSeeder {
         'updatedAt': FieldValue.serverTimestamp(),
       };
       await _firestore.collection('global_counter').doc('main').set(payload);
-      await _firestore.collection('counters').doc('durood_stats').set(payload);
       return true;
     } catch (e) {
       if (kDebugMode) print('[Seeder] Error updating global counter baseline: $e');

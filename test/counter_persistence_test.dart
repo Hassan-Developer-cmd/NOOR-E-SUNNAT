@@ -104,7 +104,7 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       final todayStr = DateTime.now().toIso8601String().split('T')[0];
 
-      // Initial state in Firestore counters/durood_stats
+      // Initial state in Firestore global_counter/main
       var globalTotal = 1000;
       var todayTotal = 50;
       var firestoreDate = todayStr;
@@ -545,7 +545,7 @@ void main() {
       );
     });
 
-    test('UNIFIED SCHEMA: counters/durood_stats canonical keys (globalTotal, todayTotal, date) parsed accurately', () {
+    test('STANDARDIZED SCHEMA: global_counter/main canonical keys (globalTotal, todayTotal, date) parsed accurately', () {
       final statsMap = <String, dynamic>{
         'globalTotal': 850000,
         'todayTotal': 12500,

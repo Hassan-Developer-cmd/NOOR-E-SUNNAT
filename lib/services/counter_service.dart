@@ -360,7 +360,7 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
 
-    // 1. Global counter stream ('counters/durood_stats')
+    // 1. Global counter stream ('global_counter/main')
     _globalSub = globalCounterStream.listen((snap) {
       if (snap.exists && snap.data() != null) {
         _processGlobalSnap(snap.data()!);
@@ -597,7 +597,6 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         'updatedAt': FieldValue.serverTimestamp(),
       };
       await _firestore.collection('global_counter').doc('main').set(payload, SetOptions(merge: true));
-      await _firestore.collection('counters').doc('durood_stats').set(payload, SetOptions(merge: true));
     } catch (e) {
       if (kDebugMode) print('CounterService._resetGlobalTodayInFirestore error: $e');
     }
@@ -660,9 +659,8 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
       final todayStr = _todayDateString;
       final batch = _firestore.batch();
 
-      // 1. Global counter update with midnight check (atomically syncs both global_counter/main and counters/durood_stats)
+      // 1. Global counter update strictly in global_counter/main with midnight check
       final globalRef = _firestore.collection('global_counter').doc('main');
-      final duroodStatsRef = _firestore.collection('counters').doc('durood_stats');
       final globalSnap = await globalRef.get();
       final globalData = globalSnap.data() ?? {};
       final String? globalDate = (globalData['date'] ?? globalData['last_reset_date'] ?? globalData['lastUpdatedDate'])?.toString();
@@ -682,7 +680,6 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
             };
 
       batch.set(globalRef, globalPayload, SetOptions(merge: true));
-      batch.set(duroodStatsRef, globalPayload, SetOptions(merge: true));
 
       // 2. User Private Subcollection & Profile updates
       final uid = _auth.currentUser?.uid;

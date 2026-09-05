@@ -763,12 +763,12 @@ class AdminService {
   /// Synchronously returns the most recent in-memory global counter data snapshot.
   static Map<String, dynamic> get currentGlobalCounterData => _lastGlobalCounterData;
 
-  /// Resilient real-time stream listening directly to 'counters/durood_stats' (falling back to 'global_counter/main')
-  /// strictly extracting dynamic user recitations without any mock/dummy defaults.
+  /// Resilient real-time stream listening directly and strictly to 'global_counter/main'
+  /// extracting dynamic user recitations without any mock/dummy defaults.
   static Stream<Map<String, dynamic>> get globalCounterStream {
     return _firestore
-        .collection('counters')
-        .doc('durood_stats')
+        .collection('global_counter')
+        .doc('main')
         .snapshots()
         .map((snap) {
           final data = snap.data();
@@ -787,13 +787,10 @@ class AdminService {
         });
   }
 
-  /// One-time fetch of global counter data strictly from counters/durood_stats or global_counter/main.
+  /// One-time fetch of global counter data strictly from global_counter/main.
   static Future<Map<String, dynamic>> fetchGlobalCounterStats() async {
     try {
-      var snap = await _firestore.collection('counters').doc('durood_stats').get();
-      if (!snap.exists || snap.data() == null) {
-        snap = await _firestore.collection('global_counter').doc('main').get();
-      }
+      final snap = await _firestore.collection('global_counter').doc('main').get();
       if (snap.exists && snap.data() != null && snap.data()!.isNotEmpty) {
         final data = snap.data()!;
         _lastGlobalCounterData = {
