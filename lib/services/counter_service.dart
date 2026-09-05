@@ -591,11 +591,13 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> _resetGlobalTodayInFirestore(String todayStr) async {
     try {
-      await _firestore.collection('global_counter').doc('main').set({
+      final payload = {
         'todayTotal': 0,
         'date': todayStr,
         'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      };
+      await _firestore.collection('global_counter').doc('main').set(payload, SetOptions(merge: true));
+      await _firestore.collection('counters').doc('durood_stats').set(payload, SetOptions(merge: true));
     } catch (e) {
       if (kDebugMode) print('CounterService._resetGlobalTodayInFirestore error: $e');
     }
@@ -658,38 +660,29 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
       final todayStr = _todayDateString;
       final batch = _firestore.batch();
 
-      // 1. Global counter update with midnight check
+      // 1. Global counter update with midnight check (atomically syncs both global_counter/main and counters/durood_stats)
       final globalRef = _firestore.collection('global_counter').doc('main');
+      final duroodStatsRef = _firestore.collection('counters').doc('durood_stats');
       final globalSnap = await globalRef.get();
       final globalData = globalSnap.data() ?? {};
       final String? globalDate = (globalData['date'] ?? globalData['last_reset_date'] ?? globalData['lastUpdatedDate'])?.toString();
 
-      if (globalDate != todayStr) {
-        // First user recitation after 12:00 AM midnight:
-        // Reset todayTotal to count, set date, and increment globalTotal
-        batch.set(
-          globalRef,
-          {
-            'globalTotal': FieldValue.increment(count),
-            'todayTotal': count,
-            'date': todayStr,
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
-      } else {
-        // Same day: atomically increment both globalTotal and todayTotal
-        batch.set(
-          globalRef,
-          {
-            'globalTotal': FieldValue.increment(count),
-            'todayTotal': FieldValue.increment(count),
-            'date': todayStr,
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
-      }
+      final Map<String, dynamic> globalPayload = (globalDate != todayStr)
+          ? {
+              'globalTotal': FieldValue.increment(count),
+              'todayTotal': count,
+              'date': todayStr,
+              'updatedAt': FieldValue.serverTimestamp(),
+            }
+          : {
+              'globalTotal': FieldValue.increment(count),
+              'todayTotal': FieldValue.increment(count),
+              'date': todayStr,
+              'updatedAt': FieldValue.serverTimestamp(),
+            };
+
+      batch.set(globalRef, globalPayload, SetOptions(merge: true));
+      batch.set(duroodStatsRef, globalPayload, SetOptions(merge: true));
 
       // 2. User Private Subcollection & Profile updates
       final uid = _auth.currentUser?.uid;

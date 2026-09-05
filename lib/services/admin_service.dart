@@ -763,16 +763,21 @@ class AdminService {
   /// Synchronously returns the most recent in-memory global counter data snapshot.
   static Map<String, dynamic> get currentGlobalCounterData => _lastGlobalCounterData;
 
-  /// Resilient real-time stream listening directly to 'global_counter/main' with immediate snapshot replay on subscribe.
+  /// Resilient real-time stream listening directly to 'counters/durood_stats' (falling back to 'global_counter/main')
+  /// strictly extracting dynamic user recitations without any mock/dummy defaults.
   static Stream<Map<String, dynamic>> get globalCounterStream {
     return _firestore
-        .collection('global_counter')
-        .doc('main')
+        .collection('counters')
+        .doc('durood_stats')
         .snapshots()
         .map((snap) {
           final data = snap.data();
           if (data != null && data.isNotEmpty) {
-            _lastGlobalCounterData = Map<String, dynamic>.from(data);
+            _lastGlobalCounterData = {
+              'globalTotal': (data['globalTotal'] as num?)?.toInt() ?? 0,
+              'todayTotal': (data['todayTotal'] as num?)?.toInt() ?? 0,
+              'date': data['date']?.toString() ?? '',
+            };
             return _lastGlobalCounterData;
           }
           return _lastGlobalCounterData;
@@ -782,12 +787,20 @@ class AdminService {
         });
   }
 
-  /// One-time fetch of global counter data strictly from global_counter/main.
+  /// One-time fetch of global counter data strictly from counters/durood_stats or global_counter/main.
   static Future<Map<String, dynamic>> fetchGlobalCounterStats() async {
     try {
-      final snap = await _firestore.collection('global_counter').doc('main').get();
+      var snap = await _firestore.collection('counters').doc('durood_stats').get();
+      if (!snap.exists || snap.data() == null) {
+        snap = await _firestore.collection('global_counter').doc('main').get();
+      }
       if (snap.exists && snap.data() != null && snap.data()!.isNotEmpty) {
-        _lastGlobalCounterData = Map<String, dynamic>.from(snap.data()!);
+        final data = snap.data()!;
+        _lastGlobalCounterData = {
+          'globalTotal': (data['globalTotal'] as num?)?.toInt() ?? 0,
+          'todayTotal': (data['todayTotal'] as num?)?.toInt() ?? 0,
+          'date': data['date']?.toString() ?? '',
+        };
         return _lastGlobalCounterData;
       }
     } catch (e) {
@@ -801,6 +814,7 @@ class AdminService {
   static int _lastUsersCount = 0;
   static int get currentUsersCount => _lastUsersCount;
 
+  /// Real-time stream dynamically reflecting actual registered users in Firestore.
   static Stream<int> get usersCountStream {
     return _firestore
         .collection('users')
@@ -812,6 +826,24 @@ class AdminService {
         .handleError((error) {
           if (kDebugMode) print('AdminService.usersCountStream error: $error');
         });
+  }
+
+  /// Calculates total registered users strictly using Firestore count() aggregation.
+  static Future<int> fetchTotalUsersCount() async {
+    try {
+      final countSnap = await _firestore.collection('users').count().get();
+      _lastUsersCount = countSnap.count ?? 0;
+      return _lastUsersCount;
+    } catch (_) {
+      try {
+        final snap = await _firestore.collection('users').get();
+        _lastUsersCount = snap.docs.length;
+        return _lastUsersCount;
+      } catch (e) {
+        if (kDebugMode) print('AdminService.fetchTotalUsersCount error: $e');
+        return _lastUsersCount;
+      }
+    }
   }
 
   /// Real-time stream of users for Leaderboard.

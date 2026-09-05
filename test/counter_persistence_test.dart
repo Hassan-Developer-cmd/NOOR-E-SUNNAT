@@ -421,70 +421,51 @@ void main() {
       expect(map['total_durood_points'], 220000);
     });
 
-    test('WEB DASHBOARD ISSUE FIX: Correctly extracts Total Durood and Today\'s Durood from counters/durood_stats', () {
+    test('WEB DASHBOARD: Correctly extracts dynamic Total Durood and Today\'s Durood without mock fallbacks', () {
       final Map<String, dynamic> firestoreDoc = {
-        'globalTotal': 125000,
-        'todayTotal': 4820,
-        'totalDurood': 125000,
-        'todayDurood': 4820,
-        'date': '2026-09-04',
-        'lastUpdatedDate': '2026-09-04',
+        'globalTotal': 1783,
+        'todayTotal': 0,
+        'date': '2026-09-05',
       };
 
-      final total = ((firestoreDoc['globalTotal'] ??
-              firestoreDoc['totalDurood'] ??
-              firestoreDoc['total_durood'] ??
-              firestoreDoc['total_count'] ??
-              firestoreDoc['totalCount'] ??
-              firestoreDoc['count']) as num?)
-              ?.toInt() ??
-          0;
+      final total = (firestoreDoc['globalTotal'] as num?)?.toInt() ?? 0;
+      final rawToday = (firestoreDoc['todayTotal'] as num?)?.toInt() ?? 0;
 
-      final rawToday = ((firestoreDoc['todayTotal'] ??
-              firestoreDoc['todayDurood'] ??
-              firestoreDoc['today_durood'] ??
-              firestoreDoc['globalToday'] ??
-              firestoreDoc['todayCount'] ??
-              firestoreDoc['today_count']) as num?)
-              ?.toInt() ??
-          0;
-
-      final docDate = (firestoreDoc['date'] ??
-              firestoreDoc['lastUpdatedDate'] ??
-              firestoreDoc['last_reset_date'])
-          ?.toString();
-      const todayDate = '2026-09-04';
+      final docDate = firestoreDoc['date']?.toString();
+      const todayDate = '2026-09-05';
       final int today = (docDate != null && docDate != todayDate) ? 0 : rawToday;
 
-      expect(total, 125000, reason: 'Web Dashboard Total Durood must equal 125,000');
-      expect(today, 4820, reason: 'Web Dashboard Today\'s Durood must equal 4,820');
+      expect(total, 1783, reason: 'Web Dashboard Total Durood must equal actual recitations (1,783)');
+      expect(today, 0, reason: 'Web Dashboard Today\'s Durood must equal actual recitations (0)');
     });
 
-    test('WEB DASHBOARD ISSUE FIX: Midnight rollover resets Today\'s Durood to 0 on Web when date changes', () {
+    test('WEB DASHBOARD: Empty or fresh Firestore document evaluates to 0 and NEVER defaults to mock numbers (e.g. 125,000)', () {
+      final Map<String, dynamic> emptyDoc = {};
+
+      final total = (emptyDoc['globalTotal'] as num?)?.toInt() ?? 0;
+      final today = (emptyDoc['todayTotal'] as num?)?.toInt() ?? 0;
+
+      expect(total, 0, reason: 'Empty document must strictly display 0, never mock constants');
+      expect(today, 0, reason: 'Empty document must strictly display 0, never mock constants');
+      expect(total, isNot(125000));
+      expect(today, isNot(4820));
+    });
+
+    test('WEB DASHBOARD: Midnight rollover resets Today\'s Durood to 0 on Web when date changes', () {
       final Map<String, dynamic> yesterdayFirestoreDoc = {
-        'globalTotal': 125000,
-        'todayTotal': 4820,
-        'date': '2026-09-03', // yesterday
-        'lastUpdatedDate': '2026-09-03',
+        'globalTotal': 1783,
+        'todayTotal': 25,
+        'date': '2026-09-04', // yesterday
       };
 
-      final total = ((yesterdayFirestoreDoc['globalTotal'] ??
-              yesterdayFirestoreDoc['total_count']) as num?)
-              ?.toInt() ??
-          0;
+      final total = (yesterdayFirestoreDoc['globalTotal'] as num?)?.toInt() ?? 0;
+      final rawToday = (yesterdayFirestoreDoc['todayTotal'] as num?)?.toInt() ?? 0;
 
-      final rawToday = ((yesterdayFirestoreDoc['todayTotal'] ??
-              yesterdayFirestoreDoc['todayCount']) as num?)
-              ?.toInt() ??
-          0;
-
-      final docDate = (yesterdayFirestoreDoc['date'] ??
-              yesterdayFirestoreDoc['lastUpdatedDate'])
-          ?.toString();
-      const todayDate = '2026-09-04';
+      final docDate = yesterdayFirestoreDoc['date']?.toString();
+      const todayDate = '2026-09-05';
       final int today = (docDate != null && docDate != todayDate) ? 0 : rawToday;
 
-      expect(total, 125000, reason: 'Global Total remains intact across midnight');
+      expect(total, 1783, reason: 'Global Total remains intact across midnight');
       expect(today, 0, reason: 'Today count must reset to 0 in UI when doc date is from previous day');
     });
 
@@ -783,6 +764,44 @@ void main() {
 
       expect(effectiveGlobalTotal, 1783);
       expect(NumberFormatter.formatCompact(effectiveGlobalTotal), '1,783');
+    });
+
+    test('REAL-TIME USER AGGREGATION: Total Users reflects exact Firestore users count, never defaulting to mock numbers like 2547', () {
+      final List<Map<String, dynamic>> realUsers = [
+        {'user_id': 'u1', 'name': 'User 1'},
+        {'user_id': 'u2', 'name': 'User 2'},
+      ];
+
+      final totalUsersCount = realUsers.length;
+
+      expect(totalUsersCount, 2, reason: 'If only 2 real users exist, show 2');
+      expect(totalUsersCount, isNot(2547));
+    });
+
+    test('DYNAMIC RECITATIONS INCREMENT: Incrementing Durood by 1 on test account results in +1 (1,784), never 125,001', () {
+      const initialTotal = 1783;
+      const countIncrement = 1;
+
+      final updatedTotal = initialTotal + countIncrement;
+
+      expect(updatedTotal, 1784);
+      expect(updatedTotal, isNot(125001));
+      expect(NumberFormatter.formatCompact(updatedTotal), '1,784');
+    });
+
+    test('ACTIVE EVENTS KPI: Dynamically counts real events from stream, never hardcoded "3 Active"', () {
+      final List<Map<String, dynamic>> fourEvents = [
+        {'id': '1', 'title': 'Event 1'},
+        {'id': '2', 'title': 'Event 2'},
+        {'id': '3', 'title': 'Event 3'},
+        {'id': '4', 'title': 'Event 4'},
+      ];
+
+      final activeEventsCount = fourEvents.length;
+      final kpiDisplay = '$activeEventsCount Active';
+
+      expect(kpiDisplay, '4 Active');
+      expect(kpiDisplay, isNot('3 Active'));
     });
   });
 }

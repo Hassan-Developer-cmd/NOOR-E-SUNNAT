@@ -595,37 +595,29 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
           builder: (context, snap) {
             final data = snap.data ?? AdminService.currentGlobalCounterData;
 
-            // Total Durood: prioritize globalTotal
-            final total = ((data['globalTotal'] ??
-                    data['total_count'] ??
-                    data['totalDurood'] ??
-                    data['count']) as num?)
-                    ?.toInt() ??
-                0;
+            // Total Durood: strictly real user recitations from Firestore (0 if document empty)
+            final total = (data['globalTotal'] as num?)?.toInt() ?? 0;
 
-            // Today's Durood: prioritize todayTotal
-            final rawToday = ((data['todayTotal'] ??
-                    data['today_count'] ??
-                    data['todayDurood'] ??
-                    data['globalToday']) as num?)
-                    ?.toInt() ??
-                0;
+            // Today's Durood: strictly real user recitations from Firestore
+            final rawToday = (data['todayTotal'] as num?)?.toInt() ?? 0;
 
             // Midnight rollover verification: prioritize date
-            final docDate = (data['date'] ??
-                    data['last_reset_date'] ??
-                    data['lastUpdatedDate'])
-                ?.toString();
+            final docDate = data['date']?.toString();
             final todayDate = DateTime.now().toIso8601String().split('T')[0];
             final int today =
                 (docDate != null && docDate != todayDate) ? 0 : rawToday;
 
-            final cards = [
-              _kpiCardContent('Total Users', _fmt(totalUsers), Icons.people_alt_rounded, AppColors.primaryEmerald),
-              _kpiCardContent('Total Durood', _fmt(total), Icons.auto_awesome, AppColors.emeraldLight),
-              _kpiCardContent('Today\'s Durood', _fmt(today), Icons.today, AppColors.accentGold),
-              _kpiCardContent('Active Events', '3 Active', Icons.event_available, Colors.teal),
-            ];
+            return StreamBuilder<List<EventModel>>(
+              stream: AdminService.eventsStream,
+              builder: (context, eventSnap) {
+                final activeEventsCount = eventSnap.data?.length ?? 0;
+
+                final cards = [
+                  _kpiCardContent('Total Users', _fmt(totalUsers), Icons.people_alt_rounded, AppColors.primaryEmerald),
+                  _kpiCardContent('Total Durood', _fmt(total), Icons.auto_awesome, AppColors.emeraldLight),
+                  _kpiCardContent('Today\'s Durood', _fmt(today), Icons.today, AppColors.accentGold),
+                  _kpiCardContent('Active Events', '$activeEventsCount Active', Icons.event_available, Colors.teal),
+                ];
 
             int crossAxisCount = 4;
             double aspectRatio = 1.8;
@@ -651,6 +643,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
               ),
               itemCount: cards.length,
               itemBuilder: (context, idx) => cards[idx],
+            );
+              },
             );
           },
         );
