@@ -1588,11 +1588,25 @@ class ProfileSettingsSheets {
   /// Executes full account deletion, Firestore purge, SharedPreferences wipe, dialog dismiss, and navigation reset.
   static Future<void> executeAccountDeletion(BuildContext context, {String? reauthPassword}) async {
     final lp = globalLanguageProvider;
+    final rootNav = Navigator.of(context, rootNavigator: true);
+    bool dialogPopped = false;
 
-    // Show loading indicator dialog
+    void dismissLoadingDialog() {
+      if (!dialogPopped) {
+        dialogPopped = true;
+        if (rootNav.canPop()) {
+          rootNav.pop();
+        } else if (context.mounted && Navigator.of(context, rootNavigator: true).canPop()) {
+          Navigator.of(context, rootNavigator: true).pop();
+        }
+      }
+    }
+
+    // Show loading indicator dialog explicitly on rootNavigator
     showDialog(
       context: context,
       barrierDismissible: false,
+      useRootNavigator: true,
       builder: (ctx) => PopScope(
         canPop: false,
         child: AlertDialog(
@@ -1623,14 +1637,10 @@ class ProfileSettingsSheets {
     try {
       await AuthService.deleteAccount(reauthPassword: reauthPassword);
 
-      if (!context.mounted) return;
+      // 1. Pop the active loading dialog explicitly using rootNavigator BEFORE navigation
+      dismissLoadingDialog();
 
-      // 1. Dismiss the "Deleting Account..." dialog using rootNavigator
-      if (Navigator.of(context, rootNavigator: true).canPop()) {
-        Navigator.of(context, rootNavigator: true).pop();
-      }
-
-      // 2. Clear entire navigation stack and reset to Login/AuthWrapper
+      // 2. Navigate and reset stack only after the dialog has popped
       if (context.mounted) {
         Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1643,12 +1653,8 @@ class ProfileSettingsSheets {
         );
       }
     } on FirebaseAuthException catch (e) {
-      if (!context.mounted) return;
-
-      // 1. Dismiss the "Deleting Account..." dialog using rootNavigator
-      if (Navigator.of(context, rootNavigator: true).canPop()) {
-        Navigator.of(context, rootNavigator: true).pop();
-      }
+      // 1. Dismiss the "Deleting Account..." dialog before handling error or showing security reauth dialog
+      dismissLoadingDialog();
 
       if (e.code == 'requires-recent-login') {
         if (context.mounted) {
@@ -1706,10 +1712,7 @@ class ProfileSettingsSheets {
         }
       }
     } catch (e) {
-      if (!context.mounted) return;
-      if (Navigator.of(context, rootNavigator: true).canPop()) {
-        Navigator.of(context, rootNavigator: true).pop();
-      }
+      dismissLoadingDialog();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1718,6 +1721,9 @@ class ProfileSettingsSheets {
           ),
         );
       }
+    } finally {
+      // 3. Ensure the dismiss statement runs inside a finally block so it always closes whether deletion succeeds or fails
+      dismissLoadingDialog();
     }
   }
 }
