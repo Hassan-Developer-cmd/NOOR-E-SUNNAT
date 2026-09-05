@@ -103,9 +103,9 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
   Stream<CounterSnapshot> get snapshotStream => _snapshotController.stream;
 
   // Exposed live streams for UI StreamBuilders
-  /// Stream of global counter document snapshots ('counters/durood_stats').
+  /// Stream of global counter document snapshots ('global_counter/main').
   Stream<DocumentSnapshot<Map<String, dynamic>>> get globalCounterStream =>
-      _firestore.collection('counters').doc('durood_stats').snapshots();
+      _firestore.collection('global_counter').doc('main').snapshots();
 
   /// Stream of current user's profile document snapshots ('users/{uid}').
   Stream<DocumentSnapshot<Map<String, dynamic>>?> get userCounterStream {
@@ -433,13 +433,13 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
 
   void _processGlobalSnap(Map<String, dynamic> data) {
     final todayStr = _todayDateString;
-    final docDate = (data['date'] ?? data['lastUpdatedDate'] ?? data['last_reset_date'])?.toString();
+    final docDate = (data['last_reset_date'] ?? data['date'] ?? data['lastUpdatedDate'])?.toString();
     final isSameDay = docDate == todayStr;
 
     final int firestoreToday = isSameDay
-        ? (((data['todayTotal'] ?? data['globalToday'] ?? data['todayCount'] ?? data['today_count']) as num?)?.toInt() ?? 0)
+        ? (((data['today_count'] ?? data['todayTotal'] ?? data['globalToday'] ?? data['todayCount']) as num?)?.toInt() ?? 0)
         : 0;
-    final int firestoreTotal = ((data['globalTotal'] ?? data['total_count']) as num?)?.toInt() ?? 0;
+    final int firestoreTotal = ((data['total_count'] ?? data['globalTotal'] ?? data['totalDurood']) as num?)?.toInt() ?? 0;
 
     // Preserve higher local values if local increments are currently in flight
     final effectiveGlobalTotal = firestoreTotal >= _snapshot.globalTotal
@@ -467,15 +467,16 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
 
   void _processUserSnap(Map<String, dynamic> data) {
     final todayStr = _todayDateString;
-    final lastActive = data['lastDuroodDate'] ??
+    final lastActive = data['lastActiveDate'] ??
+        data['lastDuroodDate'] ??
         data['last_active_durood_date'] ??
         data['last_active_timestamp'] ??
         data['last_active_date'] ??
         data['last_durood_at'];
 
-    // 1. STREAK: Parse from current_streak, streak, or daily_streak
-    final int rawStreak = ((data['current_streak'] ??
-        data['streak'] ??
+    // 1. STREAK: Parse from streak, current_streak, or daily_streak
+    final int rawStreak = ((data['streak'] ??
+        data['current_streak'] ??
         data['daily_streak']) as num?)?.toInt() ?? 0;
 
     int effectiveStreak = StreakHelper.calculateEffectiveStreak(
@@ -524,10 +525,10 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         ? firestorePersonalToday
         : _snapshot.personalToday;
 
-    // 4. DUROOD POINTS: Parse across all field variations (total_durood_points, durood_points, duroodPoints, points)
-    final int firestorePoints = ((data['total_durood_points'] ??
+    // 4. DUROOD POINTS: Parse across all field variations (duroodPoints, total_durood_points, durood_points, points)
+    final int firestorePoints = ((data['duroodPoints'] ??
+        data['total_durood_points'] ??
         data['durood_points'] ??
-        data['duroodPoints'] ??
         data['points']) as num?)?.toInt() ?? 0;
 
     // Never downgrade Durood points to 0 if local points exist!
@@ -549,10 +550,11 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> _resetGlobalTodayInFirestore(String todayStr) async {
     try {
-      await _firestore.collection('counters').doc('durood_stats').set({
+      await _firestore.collection('global_counter').doc('main').set({
+        'today_count': 0,
+        'last_reset_date': todayStr,
         'todayTotal': 0,
         'todayDurood': 0,
-        'today_count': 0,
         'date': todayStr,
         'lastUpdatedDate': todayStr,
         'updatedAt': FieldValue.serverTimestamp(),
@@ -620,23 +622,24 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
       final batch = _firestore.batch();
 
       // 1. Global counter update with midnight check
-      final globalRef = _firestore.collection('counters').doc('durood_stats');
+      final globalRef = _firestore.collection('global_counter').doc('main');
       final globalSnap = await globalRef.get();
       final globalData = globalSnap.data() ?? {};
-      final String? globalDate = (globalData['date'] ?? globalData['lastUpdatedDate'] ?? globalData['last_reset_date'])?.toString();
+      final String? globalDate = (globalData['last_reset_date'] ?? globalData['date'] ?? globalData['lastUpdatedDate'])?.toString();
 
       if (globalDate != todayStr) {
         // First user recitation after 12:00 AM midnight:
-        // Reset todayTotal to count, update date, and increment globalTotal
+        // Reset today_count to count, set last_reset_date, and increment total_count
         batch.set(
           globalRef,
           {
+            'total_count': FieldValue.increment(count),
+            'today_count': count,
+            'last_reset_date': todayStr,
             'globalTotal': FieldValue.increment(count),
             'todayTotal': count,
             'totalDurood': FieldValue.increment(count),
             'todayDurood': count,
-            'total_count': FieldValue.increment(count),
-            'today_count': count,
             'date': todayStr,
             'lastUpdatedDate': todayStr,
             'updatedAt': FieldValue.serverTimestamp(),
@@ -644,16 +647,17 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
           SetOptions(merge: true),
         );
       } else {
-        // Same day: atomically increment both globalTotal and todayTotal
+        // Same day: atomically increment both total_count and today_count
         batch.set(
           globalRef,
           {
+            'total_count': FieldValue.increment(count),
+            'today_count': FieldValue.increment(count),
+            'last_reset_date': todayStr,
             'globalTotal': FieldValue.increment(count),
             'todayTotal': FieldValue.increment(count),
             'totalDurood': FieldValue.increment(count),
             'todayDurood': FieldValue.increment(count),
-            'total_count': FieldValue.increment(count),
-            'today_count': FieldValue.increment(count),
             'date': todayStr,
             'lastUpdatedDate': todayStr,
             'updatedAt': FieldValue.serverTimestamp(),
@@ -711,8 +715,10 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
           {
             'personal_total_durood': FieldValue.increment(count),
             'personal_today_durood': isUserNewDay ? count : FieldValue.increment(count),
+            'myToday': isUserNewDay ? count : FieldValue.increment(count),
             'todayCount': isUserNewDay ? count : FieldValue.increment(count),
             'todayDuroodCount': isUserNewDay ? count : FieldValue.increment(count),
+            'lastActiveDate': todayStr,
             'lastDuroodDate': todayStr,
             'total_durood_points': FieldValue.increment(count * 2),
             'durood_points': FieldValue.increment(count * 2),
@@ -721,6 +727,10 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
             'last_active_durood_date': todayStr,
             'last_active_timestamp': FieldValue.serverTimestamp(),
             'last_durood_at': FieldValue.serverTimestamp(),
+            if (streakUpdates.isEmpty && effectiveStoredStreak > 0) ...{
+              'streak': effectiveStoredStreak,
+              'current_streak': effectiveStoredStreak,
+            },
             ...streakUpdates,
           },
           SetOptions(merge: true),
@@ -787,6 +797,7 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     if (uid == null) return;
     try {
       await _firestore.collection('users').doc(uid).set({
+        'myToday': 0,
         'todayDuroodCount': 0,
         'personal_today_durood': 0,
         'todayCount': 0,

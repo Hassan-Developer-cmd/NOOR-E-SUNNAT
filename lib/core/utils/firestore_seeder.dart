@@ -135,24 +135,34 @@ class FirestoreSeeder {
         results['events']['status'] = 'Seeded ${_initialEventsSeed.length} events';
       }
 
-      // 5. Check & Seed Global Counter
-      final counterRef = _firestore.collection('counters').doc('durood_stats');
+      // 5. Check & Seed Global Counter in 'global_counter/main'
+      final counterRef = _firestore.collection('global_counter').doc('main');
       final counterSnap = await counterRef.get();
       results['counters'] = {'count': counterSnap.exists ? 1 : 0};
 
-      if (counterSnap.exists && !force) {
-        results['counters']['status'] = 'Skipped (Already exists)';
-      } else {
-        final todayStr = DateTime.now().toIso8601String().split('T').first;
-        await counterRef.set({
-          'globalTotal': 0,
-          'todayTotal': 0,
-          'lastUpdatedDate': todayStr,
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+      if (!counterSnap.exists || force) {
+        await recalculateAndSyncGlobalCounter();
         results['counters']['seeded'] = true;
-        results['counters']['status'] = 'Seeded counters/durood_stats doc';
+        results['counters']['status'] = 'Seeded global_counter/main';
+      } else {
+        final d = counterSnap.data();
+        final currentTotal = d?['total_count'] ?? d?['globalTotal'];
+        // Reset stale hardcoded 125,000 / 4,820 mock to true aggregated user count or clean 0
+        if (currentTotal == 125000) {
+          await recalculateAndSyncGlobalCounter();
+          results['counters']['status'] = 'Reset stale mock 125,000 to real aggregated user count';
+        } else {
+          results['counters']['status'] = 'Skipped (Already exists)';
+        }
       }
+
+      // Automatically purge/delete redundant counters/durood_stats if it exists
+      try {
+        final legacyDoc = await _firestore.collection('counters').doc('durood_stats').get();
+        if (legacyDoc.exists) {
+          await _firestore.collection('counters').doc('durood_stats').delete();
+        }
+      } catch (_) {}
 
       // 6. Check & Seed Launch Campaign Popup
       final popupRef = _firestore.collection('settings').doc('launch_popup');
@@ -186,6 +196,46 @@ class FirestoreSeeder {
     }
   }
 
+  /// Aggregates all users' personal_total_durood and today's Durood from Firestore
+  /// and writes true dynamic baseline numbers into global_counter/main.
+  static Future<Map<String, dynamic>> recalculateAndSyncGlobalCounter() async {
+    try {
+      final todayStr = DateTime.now().toIso8601String().split('T').first;
+      final usersSnap = await _firestore.collection('users').get();
+      int aggregatedTotal = 0;
+      int aggregatedToday = 0;
+
+      for (final doc in usersSnap.docs) {
+        final data = doc.data();
+        final userTotal = ((data['personal_total_durood'] ?? data['total_durood_count'] ?? data['total_count']) as num?)?.toInt() ?? 0;
+        aggregatedTotal += userTotal;
+
+        final lastActive = (data['lastActiveDate'] ?? data['last_active_durood_date'] ?? data['lastDuroodDate'])?.toString();
+        if (lastActive != null && lastActive.startsWith(todayStr)) {
+          final userToday = ((data['myToday'] ?? data['personal_today_durood'] ?? data['today_count']) as num?)?.toInt() ?? 0;
+          aggregatedToday += userToday;
+        }
+      }
+
+      final payload = <String, dynamic>{
+        'total_count': aggregatedTotal,
+        'today_count': aggregatedToday,
+        'last_reset_date': todayStr,
+        'globalTotal': aggregatedTotal,
+        'todayTotal': aggregatedToday,
+        'date': todayStr,
+        'lastUpdatedDate': todayStr,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      await _firestore.collection('global_counter').doc('main').set(payload, SetOptions(merge: true));
+      return payload;
+    } catch (e) {
+      if (kDebugMode) print('[Seeder] recalculateAndSyncGlobalCounter error: $e');
+      return {};
+    }
+  }
+
   /// Sets initial baseline starting numbers for global counter.
   static Future<bool> updateGlobalCounterBaseline({
     int totalCount = 0,
@@ -193,9 +243,13 @@ class FirestoreSeeder {
   }) async {
     try {
       final todayStr = DateTime.now().toIso8601String().split('T').first;
-      await _firestore.collection('counters').doc('durood_stats').set({
+      await _firestore.collection('global_counter').doc('main').set({
+        'total_count': totalCount,
+        'today_count': todayCount,
+        'last_reset_date': todayStr,
         'globalTotal': totalCount,
         'todayTotal': todayCount,
+        'date': todayStr,
         'lastUpdatedDate': todayStr,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));

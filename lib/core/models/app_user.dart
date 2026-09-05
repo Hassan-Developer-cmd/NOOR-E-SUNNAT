@@ -38,7 +38,8 @@ class AppUser {
 
   factory AppUser.fromMap(Map<String, dynamic> map) {
     DateTime? activeDate;
-    final rawDate = map['last_active_durood_date'] ??
+    final rawDate = map['lastActiveDate'] ??
+        map['last_active_durood_date'] ??
         map['last_active_timestamp'] ??
         map['last_active_date'] ??
         map['last_durood_at'];
@@ -116,7 +117,8 @@ class AppUser {
               map['totalDurood']) as num?)
               ?.toInt() ??
           0,
-      personalTodayDurood: ((map['personal_today_durood'] ??
+      personalTodayDurood: ((map['myToday'] ??
+              map['personal_today_durood'] ??
               map['today_durood_count'] ??
               map['today_count']) as num?)
               ?.toInt() ??
@@ -146,6 +148,7 @@ class AppUser {
         'is_admin': isAdmin,
         'personal_total_durood': personalTotalDurood,
         'personal_today_durood': personalTodayDurood,
+        'myToday': personalTodayDurood,
         'current_streak': currentStreak,
         'streak': currentStreak,
         'longest_streak': longestStreak,
@@ -153,6 +156,8 @@ class AppUser {
         'durood_points': totalDuroodPoints,
         'duroodPoints': totalDuroodPoints,
         'points': totalDuroodPoints,
+        'lastActiveDate':
+            lastActiveDuroodDate?.toIso8601String().split('T').first,
         'last_active_durood_date':
             lastActiveDuroodDate?.toIso8601String().split('T').first,
         if (createdAt != null) 'created_at': createdAt?.toIso8601String(),

@@ -754,24 +754,25 @@ class AdminService {
 
   // ── Global Counter Stats ─────────────────────────────────────
 
-  static Stream<Map<String, dynamic>>? _globalCounterStreamCache;
   static Map<String, dynamic> _lastGlobalCounterData = {
+    'total_count': 0,
+    'today_count': 0,
+    'last_reset_date': '',
     'globalTotal': 0,
     'todayTotal': 0,
     'totalDurood': 0,
     'todayDurood': 0,
-    'total_count': 0,
-    'today_count': 0,
+    'date': '',
   };
 
   /// Synchronously returns the most recent in-memory global counter data snapshot.
   static Map<String, dynamic> get currentGlobalCounterData => _lastGlobalCounterData;
 
-  /// Resilient real-time broadcast stream listening directly to 'counters/durood_stats'.
+  /// Resilient real-time stream listening directly to 'global_counter/main' with immediate snapshot replay on subscribe.
   static Stream<Map<String, dynamic>> get globalCounterStream {
-    _globalCounterStreamCache ??= _firestore
-        .collection('counters')
-        .doc('durood_stats')
+    return _firestore
+        .collection('global_counter')
+        .doc('main')
         .snapshots()
         .map((snap) {
           final data = snap.data();
@@ -783,35 +784,16 @@ class AdminService {
         })
         .handleError((error) {
           if (kDebugMode) print('AdminService.globalCounterStream error: $error');
-        })
-        .asBroadcastStream();
-    return _globalCounterStreamCache!;
+        });
   }
 
-  /// One-time fetch of global counter data with automatic fallback if counters/durood_stats is empty.
+  /// One-time fetch of global counter data strictly from global_counter/main.
   static Future<Map<String, dynamic>> fetchGlobalCounterStats() async {
     try {
-      final snap = await _firestore.collection('counters').doc('durood_stats').get();
+      final snap = await _firestore.collection('global_counter').doc('main').get();
       if (snap.exists && snap.data() != null && snap.data()!.isNotEmpty) {
         _lastGlobalCounterData = Map<String, dynamic>.from(snap.data()!);
         return _lastGlobalCounterData;
-      }
-      // Fallback check on global_counter/main
-      final legacySnap = await _firestore.collection('global_counter').doc('main').get();
-      if (legacySnap.exists && legacySnap.data() != null) {
-        final d = legacySnap.data()!;
-        final fallbackData = <String, dynamic>{
-          'globalTotal': d['total_count'] ?? d['globalTotal'] ?? 0,
-          'todayTotal': d['today_count'] ?? d['todayTotal'] ?? 0,
-          'totalDurood': d['total_count'] ?? d['totalDurood'] ?? 0,
-          'todayDurood': d['today_count'] ?? d['todayDurood'] ?? 0,
-          'total_count': d['total_count'] ?? 0,
-          'today_count': d['today_count'] ?? 0,
-          'date': d['date'],
-          'lastUpdatedDate': d['lastUpdatedDate'] ?? d['date'],
-        };
-        _lastGlobalCounterData = fallbackData;
-        return fallbackData;
       }
     } catch (e) {
       if (kDebugMode) print('AdminService.fetchGlobalCounterStats error: $e');
@@ -821,12 +803,11 @@ class AdminService {
 
   // ── User Count & Leaderboard ─────────────────────────────────
 
-  static Stream<int>? _usersCountStreamCache;
   static int _lastUsersCount = 0;
   static int get currentUsersCount => _lastUsersCount;
 
   static Stream<int> get usersCountStream {
-    _usersCountStreamCache ??= _firestore
+    return _firestore
         .collection('users')
         .snapshots()
         .map((snap) {
@@ -835,9 +816,7 @@ class AdminService {
         })
         .handleError((error) {
           if (kDebugMode) print('AdminService.usersCountStream error: $error');
-        })
-        .asBroadcastStream();
-    return _usersCountStreamCache!;
+        });
   }
 
   /// Real-time stream of users for Leaderboard.

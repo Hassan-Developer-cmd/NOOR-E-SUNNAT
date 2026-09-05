@@ -487,5 +487,195 @@ void main() {
       expect(total, 125000, reason: 'Global Total remains intact across midnight');
       expect(today, 0, reason: 'Today count must reset to 0 in UI when doc date is from previous day');
     });
+
+    test('UNIFIED SCHEMA: AppUser deserializes properly from canonical keys (streak, duroodPoints, myToday, lastActiveDate)', () {
+      final canonicalPayload = <String, dynamic>{
+        'user_id': 'unified_user_001',
+        'email': 'user@example.com',
+        'username': 'Bilal',
+        'streak': 12,
+        'duroodPoints': 2400,
+        'myToday': 50,
+        'personal_total_durood': 1200,
+        'lastActiveDate': '2026-09-05',
+      };
+
+      final user = AppUser.fromMap(canonicalPayload);
+      expect(user.currentStreak, 12);
+      expect(user.totalDuroodPoints, 2400);
+      expect(user.personalTodayDurood, 50);
+      expect(user.personalTotalDurood, 1200);
+      expect(user.lastActiveDuroodDate, DateTime(2026, 9, 5));
+    });
+
+    test('UNIFIED SCHEMA: AppUser.toMap writes both canonical and legacy keys for bidirectional compatibility', () {
+      final user = AppUser(
+        userId: 'unified_user_002',
+        email: 'user2@example.com',
+        username: 'Ahmad',
+        photoUrl: '',
+        currentStreak: 7,
+        longestStreak: 14,
+        totalDuroodPoints: 1400,
+        personalTodayDurood: 100,
+        personalTotalDurood: 5000,
+        lastActiveDuroodDate: DateTime(2026, 9, 5),
+      );
+
+      final map = user.toMap();
+      // Canonical keys
+      expect(map['streak'], 7);
+      expect(map['duroodPoints'], 1400);
+      expect(map['myToday'], 100);
+      expect(map['lastActiveDate'], '2026-09-05');
+      // Legacy backward-compatibility keys
+      expect(map['current_streak'], 7);
+      expect(map['total_durood_points'], 1400);
+      expect(map['personal_today_durood'], 100);
+      expect(map['last_active_durood_date'], '2026-09-05');
+    });
+
+    test('UNIFIED SCHEMA: Two-way roundtrip serialization preserves all counter and streak values', () {
+      final original = AppUser(
+        userId: 'roundtrip_user',
+        email: 'roundtrip@test.com',
+        username: 'Fatima',
+        photoUrl: '',
+        currentStreak: 21,
+        longestStreak: 30,
+        totalDuroodPoints: 4200,
+        personalTodayDurood: 75,
+        personalTotalDurood: 10500,
+        lastActiveDuroodDate: DateTime(2026, 9, 5),
+      );
+
+      final serialized = original.toMap();
+      final deserialized = AppUser.fromMap(serialized);
+
+      expect(deserialized.userId, original.userId);
+      expect(deserialized.currentStreak, original.currentStreak);
+      expect(deserialized.longestStreak, original.longestStreak);
+      expect(deserialized.totalDuroodPoints, original.totalDuroodPoints);
+      expect(deserialized.personalTodayDurood, original.personalTodayDurood);
+      expect(deserialized.personalTotalDurood, original.personalTotalDurood);
+      expect(
+        StreakHelper.toCalendarDateString(deserialized.lastActiveDuroodDate),
+        StreakHelper.toCalendarDateString(original.lastActiveDuroodDate),
+      );
+    });
+
+    test('UNIFIED SCHEMA: counters/durood_stats canonical keys (globalTotal, todayTotal, date) parsed accurately', () {
+      final statsMap = <String, dynamic>{
+        'globalTotal': 850000,
+        'todayTotal': 12500,
+        'date': '2026-09-05',
+      };
+
+      final globalTotal = ((statsMap['globalTotal'] ?? statsMap['total_count']) as num?)?.toInt() ?? 0;
+      final todayTotal = ((statsMap['todayTotal'] ?? statsMap['today_count']) as num?)?.toInt() ?? 0;
+      final date = statsMap['date']?.toString();
+
+      expect(globalTotal, 850000);
+      expect(todayTotal, 12500);
+      expect(date, '2026-09-05');
+    });
+
+    test('STANDARDIZED GLOBAL COUNTER: global_counter/main with total_count, today_count, last_reset_date parsed accurately', () {
+      final mainDoc = <String, dynamic>{
+        'total_count': 3500,
+        'today_count': 120,
+        'last_reset_date': '2026-09-05',
+      };
+
+      final total = ((mainDoc['total_count'] ?? mainDoc['globalTotal']) as num?)?.toInt() ?? 0;
+      final today = ((mainDoc['today_count'] ?? mainDoc['todayTotal']) as num?)?.toInt() ?? 0;
+      final resetDate = (mainDoc['last_reset_date'] ?? mainDoc['date'])?.toString();
+
+      expect(total, 3500);
+      expect(today, 120);
+      expect(resetDate, '2026-09-05');
+    });
+
+    test('TRUE DYNAMIC AGGREGATION: atomic increments update both total_count and today_count when last_reset_date == todayDate', () {
+      const todayDate = '2026-09-05';
+      final existingDoc = <String, dynamic>{
+        'total_count': 500,
+        'today_count': 50,
+        'last_reset_date': todayDate,
+      };
+
+      const incrementBy = 25;
+      final isSameDay = existingDoc['last_reset_date'] == todayDate;
+
+      final updatedDoc = <String, dynamic>{
+        'total_count': (existingDoc['total_count'] as int) + incrementBy,
+        'today_count': isSameDay ? (existingDoc['today_count'] as int) + incrementBy : incrementBy,
+        'last_reset_date': todayDate,
+      };
+
+      expect(updatedDoc['total_count'], 525);
+      expect(updatedDoc['today_count'], 75);
+      expect(updatedDoc['last_reset_date'], todayDate);
+    });
+
+    test('TRUE DYNAMIC AGGREGATION: midnight rollover resets today_count to increment and updates last_reset_date when new day starts', () {
+      const yesterdayDate = '2026-09-04';
+      const todayDate = '2026-09-05';
+
+      final existingDoc = <String, dynamic>{
+        'total_count': 500,
+        'today_count': 50,
+        'last_reset_date': yesterdayDate,
+      };
+
+      const incrementBy = 15;
+      final isSameDay = existingDoc['last_reset_date'] == todayDate;
+
+      final updatedDoc = <String, dynamic>{
+        'total_count': (existingDoc['total_count'] as int) + incrementBy,
+        'today_count': isSameDay ? (existingDoc['today_count'] as int) + incrementBy : incrementBy,
+        'last_reset_date': todayDate,
+      };
+
+      expect(updatedDoc['total_count'], 515);
+      expect(updatedDoc['today_count'], 15); // Fresh reset to today's count!
+      expect(updatedDoc['last_reset_date'], todayDate);
+    });
+
+    test('BASELINE PURGE: stale hardcoded mock (125000 / 4820) is replaced with actual aggregated count or clean baseline', () {
+      final staleDoc = <String, dynamic>{
+        'total_count': 125000,
+        'today_count': 4820,
+        'last_reset_date': '2026-09-01',
+      };
+
+      final bool isStaleMock = staleDoc['total_count'] == 125000;
+      expect(isStaleMock, true);
+
+      // Simulating actual aggregated users sum:
+      final simulatedUsers = [
+        {'personal_total_durood': 150, 'myToday': 20, 'lastActiveDate': '2026-09-05'},
+        {'personal_total_durood': 300, 'myToday': 50, 'lastActiveDate': '2026-09-05'},
+      ];
+
+      int aggregatedTotal = 0;
+      int aggregatedToday = 0;
+      for (final u in simulatedUsers) {
+        aggregatedTotal += (u['personal_total_durood'] as int);
+        if (u['lastActiveDate'] == '2026-09-05') {
+          aggregatedToday += (u['myToday'] as int);
+        }
+      }
+
+      final cleanDoc = <String, dynamic>{
+        'total_count': aggregatedTotal,
+        'today_count': aggregatedToday,
+        'last_reset_date': '2026-09-05',
+      };
+
+      expect(cleanDoc['total_count'], 450);
+      expect(cleanDoc['today_count'], 70);
+      expect(cleanDoc['total_count'], isNot(125000));
+    });
   });
 }

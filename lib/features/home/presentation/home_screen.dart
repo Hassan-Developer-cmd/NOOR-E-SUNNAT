@@ -351,12 +351,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    // Real-time StreamBuilder listening strictly to Firestore global counter document ('counters/durood_stats')
+                    // Real-time StreamBuilder listening strictly to Firestore global counter document ('global_counter/main')
                     StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                       stream: widget.counterService.globalCounterStream,
                       builder: (context, globalSnap) {
                         final data = globalSnap.data?.data();
-                        final docDate = (data?['date'] ?? data?['lastUpdatedDate'] ?? data?['last_reset_date'])?.toString();
+                        final docDate = (data?['last_reset_date'] ?? data?['date'] ?? data?['lastUpdatedDate'])?.toString();
                         final todayDate = DateTime.now().toIso8601String().split('T')[0];
 
                         return StreamBuilder<CounterSnapshot>(
@@ -365,20 +365,20 @@ class _HomeScreenState extends State<HomeScreen> {
                           builder: (context, snapshot) {
                             final snap = snapshot.data ?? widget.counterService.snapshot;
 
-                            // Global Total with fallback to service snapshot
+                            // Global Total: prioritize total_count, synchronized with snap.globalTotal
                             int effectiveGlobalTotal = snap.globalTotal;
                             if (data != null) {
-                              final firestoreTotal = ((data['globalTotal'] ?? data['total_count']) as num?)?.toInt() ?? 0;
+                              final firestoreTotal = ((data['total_count'] ?? data['globalTotal']) as num?)?.toInt() ?? 0;
                               if (firestoreTotal > effectiveGlobalTotal) {
                                 effectiveGlobalTotal = firestoreTotal;
                               }
                             }
 
-                            // Global Today: fallback across possible field names, synchronized with snap.globalToday
+                            // Global Today: prioritize today_count, synchronized with snap.globalToday
                             int effectiveTodayTotal = snap.globalToday;
                             if (data != null) {
                               if (docDate == todayDate) {
-                                final firestoreToday = ((data['todayTotal'] ?? data['globalToday'] ?? data['todayCount'] ?? data['today_count'] ?? 0) as num).toInt();
+                                final firestoreToday = ((data['today_count'] ?? data['todayTotal'] ?? data['globalToday'] ?? data['todayCount'] ?? 0) as num).toInt();
                                 effectiveTodayTotal = firestoreToday > snap.globalToday ? firestoreToday : snap.globalToday;
                               } else if (docDate != null && docDate != todayDate) {
                                 // Midnight rollover: if doc date is from previous day, today's count resets to 0

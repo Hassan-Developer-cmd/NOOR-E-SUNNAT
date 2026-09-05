@@ -58,7 +58,6 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
   void initState() {
     super.initState();
     _loadHijriConfig();
-    AdminService.fetchGlobalCounterStats();
   }
 
   Future<void> _loadHijriConfig() async {
@@ -596,30 +595,30 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
           builder: (context, snap) {
             final data = snap.data ?? AdminService.currentGlobalCounterData;
 
-            // Total Durood: check globalTotal, totalDurood, total_durood, total_count, totalCount, count
-            final total = ((data['globalTotal'] ??
+            // Total Durood: prioritize total_count
+            final total = ((data['total_count'] ??
+                    data['globalTotal'] ??
                     data['totalDurood'] ??
                     data['total_durood'] ??
-                    data['total_count'] ??
                     data['totalCount'] ??
                     data['count']) as num?)
                     ?.toInt() ??
                 0;
 
-            // Today's Durood: check todayTotal, todayDurood, today_durood, globalToday, todayCount, today_count
-            final rawToday = ((data['todayTotal'] ??
+            // Today's Durood: prioritize today_count
+            final rawToday = ((data['today_count'] ??
+                    data['todayTotal'] ??
                     data['todayDurood'] ??
                     data['today_durood'] ??
                     data['globalToday'] ??
-                    data['todayCount'] ??
-                    data['today_count']) as num?)
+                    data['todayCount']) as num?)
                     ?.toInt() ??
                 0;
 
-            // Midnight rollover verification
-            final docDate = (data['date'] ??
-                    data['lastUpdatedDate'] ??
-                    data['last_reset_date'])
+            // Midnight rollover verification: prioritize last_reset_date
+            final docDate = (data['last_reset_date'] ??
+                    data['date'] ??
+                    data['lastUpdatedDate'])
                 ?.toString();
             final todayDate = DateTime.now().toIso8601String().split('T')[0];
             final int today =
