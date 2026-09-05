@@ -774,9 +774,14 @@ class AdminService {
           final data = snap.data();
           if (data != null && data.isNotEmpty) {
             _lastGlobalCounterData = {
-              'globalTotal': (data['globalTotal'] as num?)?.toInt() ?? 0,
-              'todayTotal': (data['todayTotal'] as num?)?.toInt() ?? 0,
-              'date': data['date']?.toString() ?? '',
+              'globalTotal': (data['globalTotal'] as num?)?.toInt() ??
+                  ((data['total_count'] as num?)?.toInt() ?? 0),
+              'todayTotal': (data['todayTotal'] as num?)?.toInt() ??
+                  ((data['today_count'] as num?)?.toInt() ??
+                  ((data['globalToday'] as num?)?.toInt() ?? 0)),
+              'date': data['date']?.toString() ??
+                  data['last_reset_date']?.toString() ??
+                  '',
             };
             return _lastGlobalCounterData;
           }
@@ -794,9 +799,14 @@ class AdminService {
       if (snap.exists && snap.data() != null && snap.data()!.isNotEmpty) {
         final data = snap.data()!;
         _lastGlobalCounterData = {
-          'globalTotal': (data['globalTotal'] as num?)?.toInt() ?? 0,
-          'todayTotal': (data['todayTotal'] as num?)?.toInt() ?? 0,
-          'date': data['date']?.toString() ?? '',
+          'globalTotal': (data['globalTotal'] as num?)?.toInt() ??
+              ((data['total_count'] as num?)?.toInt() ?? 0),
+          'todayTotal': (data['todayTotal'] as num?)?.toInt() ??
+              ((data['today_count'] as num?)?.toInt() ??
+              ((data['globalToday'] as num?)?.toInt() ?? 0)),
+          'date': data['date']?.toString() ??
+              data['last_reset_date']?.toString() ??
+              '',
         };
         return _lastGlobalCounterData;
       }
@@ -846,7 +856,7 @@ class AdminService {
   /// Real-time stream of users for Leaderboard.
   /// Fetches all user docs without restricting to current_streak index, ensuring
   /// documents with alternative field names ('streak', 'currentStreak') are fully included,
-  /// and sorts them by effective streak descending.
+  /// and sorts them by points / durood count descending, then streak descending.
   static Stream<List<AppUser>> get leaderboardUsersStream {
     return _firestore
         .collection('users')
@@ -855,7 +865,13 @@ class AdminService {
           final users = snap.docs
               .map((doc) => AppUser.fromMap({'user_id': doc.id, ...doc.data()}))
               .toList();
-          users.sort((a, b) => b.currentStreak.compareTo(a.currentStreak));
+          users.sort((a, b) {
+            final aScore = a.myTotal > 0 ? a.myTotal : (a.duroodPoints > 0 ? a.duroodPoints : a.totalCount);
+            final bScore = b.myTotal > 0 ? b.myTotal : (b.duroodPoints > 0 ? b.duroodPoints : b.totalCount);
+            final cmp = bScore.compareTo(aScore);
+            if (cmp != 0) return cmp;
+            return b.streak.compareTo(a.streak);
+          });
           return users;
         })
         .handleError((error) {

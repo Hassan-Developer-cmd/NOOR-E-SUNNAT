@@ -78,18 +78,18 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
   static String get _todayDateString => DateTime.now().toIso8601String().split('T')[0];
 
   /// Isolated SharedPreferences key for the current user's count today:
-  /// my_durood_${userId}_${todayDateString}
+  /// my_today_${userId}_${todayDateString}
   String get _todayKey {
     final uid = _auth.currentUser?.uid ?? _activeUid ?? 'guest';
     final today = _todayDateString;
-    return 'my_durood_${uid}_$today';
+    return 'my_today_${uid}_$today';
   }
 
   /// Computes isolated SharedPreferences key for user's personal count today:
-  /// my_durood_${userId}_${todayDateString}
+  /// my_today_${userId}_${todayDateString}
   static String _getUserTodayKey(String? uid, String dateStr) {
     final effectiveUid = (uid != null && uid.isNotEmpty) ? uid : 'guest';
-    return 'my_durood_${effectiveUid}_$dateStr';
+    return 'my_today_${effectiveUid}_$dateStr';
   }
 
   // --- State ---
@@ -176,7 +176,7 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
       prefs.remove(_keyGlobalToday);
     }
 
-    // 2. User-specific "My Today" from isolated key 'my_durood_${userId}_${todayDateString}'
+    // 2. User-specific "My Today" from isolated key 'my_today_${userId}_${todayDateString}'
     final storedDate = prefs.getString(_keyMyDuroodDate);
     final activeUid = _auth.currentUser?.uid ?? prefs.getString(_keyActiveUid) ?? _activeUid;
     _activeUid = activeUid;
@@ -187,6 +187,7 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
       myToday = 0;
       prefs.setInt(_todayKey, 0);
       if (activeUid != null) {
+        prefs.setInt('my_today_${activeUid}_$todayStr', 0);
         prefs.setInt('my_durood_${activeUid}_$todayStr', 0);
       }
       prefs.setInt('$_prefixMyDurood$todayStr', 0);
@@ -200,13 +201,13 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
 
     // 3. Personal Total from user key or global fallback
     final rawPersonalTotal = (activeUid != null && activeUid != 'guest')
-        ? (prefs.getInt('${_keyPersonalTotal}_$activeUid') ?? prefs.getInt(_keyPersonalTotal) ?? _snapshot.personalTotal)
+        ? (prefs.getInt('my_total_$activeUid') ?? prefs.getInt('${_keyPersonalTotal}_$activeUid') ?? prefs.getInt(_keyPersonalTotal) ?? _snapshot.personalTotal)
         : (prefs.getInt(_keyPersonalTotal) ?? _snapshot.personalTotal);
     final int personalTotal = (rawPersonalTotal > 1000000000 || rawPersonalTotal < 0) ? 0 : rawPersonalTotal;
 
     // 4. Streak from user key or global fallback
     final rawCachedStreak = (activeUid != null && activeUid != 'guest')
-        ? (prefs.getInt('${_keyStreak}_$activeUid') ?? prefs.getInt(_keyStreak) ?? _snapshot.currentStreak)
+        ? (prefs.getInt('user_streak_$activeUid') ?? prefs.getInt('${_keyStreak}_$activeUid') ?? prefs.getInt(_keyStreak) ?? _snapshot.currentStreak)
         : (prefs.getInt(_keyStreak) ?? _snapshot.currentStreak);
 
     final effectiveCachedStreak = StreakHelper.calculateEffectiveStreak(
@@ -219,7 +220,7 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
 
     // 5. Durood Points from user key or global fallback
     final rawPoints = (activeUid != null && activeUid != 'guest')
-        ? (prefs.getInt('${_keyPoints}_$activeUid') ?? prefs.getInt(_keyPoints) ?? _snapshot.duroodPoints)
+        ? (prefs.getInt('durood_points_$activeUid') ?? prefs.getInt('${_keyPoints}_$activeUid') ?? prefs.getInt(_keyPoints) ?? _snapshot.duroodPoints)
         : (prefs.getInt(_keyPoints) ?? _snapshot.duroodPoints);
     final int points = (rawPoints > 1000000000 || rawPoints < 0) ? 0 : rawPoints;
 
@@ -234,6 +235,12 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   int _readMyTodayFromPrefs(SharedPreferences prefs, String todayStr) {
+    final uid = _activeUid ?? _auth.currentUser?.uid ?? 'guest';
+
+    // 0. Primary unified key: my_today_${userId}_${todayDateString}
+    final unifiedVal = prefs.getInt('my_today_${uid}_$todayStr');
+    if (unifiedVal != null && unifiedVal > 0) return unifiedVal;
+
     // 1. Primary: _todayKey
     final primaryVal = prefs.getInt(_todayKey);
     if (primaryVal != null && primaryVal > 0) return primaryVal;
@@ -259,7 +266,7 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     final legacyVal = prefs.getInt('$_prefixMyTodayLegacy$todayStr');
     if (legacyVal != null && legacyVal > 0) return legacyVal;
 
-    return primaryVal ?? 0;
+    return unifiedVal ?? primaryVal ?? 0;
   }
 
   Future<void> _saveToStorage() async {
@@ -284,6 +291,11 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
       await prefs.setInt(_keyPersonalTotal, _snapshot.personalTotal);
       await prefs.setInt(userKey, _snapshot.personalToday);
       if (uid != null && uid != 'guest') {
+        await prefs.setInt('my_today_${uid}_$todayStr', _snapshot.personalToday);
+        await prefs.setInt('my_total_$uid', _snapshot.personalTotal);
+        await prefs.setInt('durood_points_$uid', _snapshot.duroodPoints);
+        await prefs.setInt('user_streak_$uid', _snapshot.currentStreak);
+
         await prefs.setInt('my_durood_${uid}_$todayStr', _snapshot.personalToday);
         await prefs.setInt('${_keyPersonalTotal}_$uid', _snapshot.personalTotal);
         await prefs.setInt('${_keyStreak}_$uid', _snapshot.currentStreak);
@@ -629,10 +641,15 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     // 2. Immediately persist to SharedPreferences under user-specific daily key
     final userKey = _todayKey;
     _prefs?.setInt(userKey, updatedMyToday);
-    final uid = _activeUid ?? _auth.currentUser?.uid;
-    if (uid != null && uid != 'guest') {
+    final uid = _activeUid ?? _auth.currentUser?.uid ?? 'guest';
+    _prefs?.setInt('my_today_${uid}_$todayStr', updatedMyToday);
+    _prefs?.setInt('my_total_$uid', _snapshot.personalTotal + count);
+    _prefs?.setInt('durood_points_$uid', updatedPoints);
+    _prefs?.setInt('user_streak_$uid', updatedStreak);
+
+    if (uid != 'guest') {
       _prefs?.setInt('my_durood_${uid}_$todayStr', updatedMyToday);
-      _prefs?.setInt('${_keyPersonalTotal}_$uid', _snapshot.personalTotal);
+      _prefs?.setInt('${_keyPersonalTotal}_$uid', _snapshot.personalTotal + count);
       _prefs?.setInt('${_keyStreak}_$uid', updatedStreak);
       _prefs?.setInt('${_keyPoints}_$uid', updatedPoints);
     }
@@ -681,7 +698,7 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
 
       batch.set(globalRef, globalPayload, SetOptions(merge: true));
 
-      // 2. User Private Subcollection & Profile updates
+      // 2. User Lifetime Update & User Daily Subcollection updates
       final uid = _auth.currentUser?.uid;
       if (uid != null) {
         final userRef = _firestore.collection('users').doc(uid);
@@ -728,20 +745,23 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         batch.set(
           userRef,
           {
+            'myTotal': FieldValue.increment(count),
+            'duroodPoints': FieldValue.increment(count),
+            'lastActiveDate': todayStr,
+            // Legacy keys maintained for bidirectional compatibility
             'personal_total_durood': FieldValue.increment(count),
             'personal_today_durood': isUserNewDay ? count : FieldValue.increment(count),
             'myToday': isUserNewDay ? count : FieldValue.increment(count),
             'todayCount': isUserNewDay ? count : FieldValue.increment(count),
             'todayDuroodCount': isUserNewDay ? count : FieldValue.increment(count),
-            'lastActiveDate': todayStr,
             'lastDuroodDate': todayStr,
-            'total_durood_points': FieldValue.increment(count * 2),
-            'durood_points': FieldValue.increment(count * 2),
-            'duroodPoints': FieldValue.increment(count * 2),
-            'points': FieldValue.increment(count * 2),
+            'total_durood_points': FieldValue.increment(count),
+            'durood_points': FieldValue.increment(count),
+            'points': FieldValue.increment(count),
             'last_active_durood_date': todayStr,
             'last_active_timestamp': FieldValue.serverTimestamp(),
             'last_durood_at': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
             if (streakUpdates.isEmpty && effectiveStoredStreak > 0) ...{
               'streak': effectiveStoredStreak,
               'current_streak': effectiveStoredStreak,

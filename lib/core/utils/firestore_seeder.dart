@@ -201,7 +201,7 @@ class FirestoreSeeder {
     }
   }
 
-  /// Aggregates all users' personal_total_durood and today's Durood from Firestore
+  /// Aggregates all users' myTotal (or personal_total_durood) and today's Durood from Firestore
   /// and writes clean, standardized baseline numbers into global_counter/main.
   /// Overwrites the document completely to purge any corrupted/duplicate fields.
   static Future<Map<String, dynamic>> recalculateAndSyncGlobalCounter() async {
@@ -213,7 +213,7 @@ class FirestoreSeeder {
 
       for (final doc in usersSnap.docs) {
         final data = doc.data();
-        final userTotal = ((data['personal_total_durood'] ?? data['total_durood_count'] ?? data['total_count']) as num?)?.toInt() ?? 0;
+        final userTotal = ((data['myTotal'] ?? data['personal_total_durood'] ?? data['total_durood_count'] ?? data['total_count']) as num?)?.toInt() ?? 0;
         aggregatedTotal += userTotal;
 
         final lastActive = (data['lastActiveDate'] ?? data['last_active_durood_date'] ?? data['lastDuroodDate'])?.toString();
@@ -236,6 +236,63 @@ class FirestoreSeeder {
     } catch (e) {
       if (kDebugMode) print('[Seeder] recalculateAndSyncGlobalCounter error: $e');
       return {};
+    }
+  }
+
+  /// Deletes deprecated/duplicate collections like counters/durood_stats and standardizes
+  /// user documents and global_counter/main to the unified architecture schema.
+  static Future<Map<String, dynamic>> cleanupLegacyAndTestCollections() async {
+    final results = <String, dynamic>{};
+    try {
+      // 1. Delete duplicate/deprecated collections
+      try {
+        final legacyDoc = await _firestore.collection('counters').doc('durood_stats').get();
+        if (legacyDoc.exists) {
+          await _firestore.collection('counters').doc('durood_stats').delete();
+          results['legacy_counters_deleted'] = true;
+        }
+      } catch (e) {
+        results['legacy_counters_deleted'] = false;
+      }
+
+      // 2. Standardize all user documents in users/{userId}
+      final usersSnap = await _firestore.collection('users').get();
+      final batch = _firestore.batch();
+      int userUpdates = 0;
+      final todayStr = DateTime.now().toIso8601String().split('T').first;
+
+      for (final doc in usersSnap.docs) {
+        final data = doc.data();
+        final myTotal = ((data['myTotal'] ?? data['personal_total_durood'] ?? data['totalCount']) as num?)?.toInt() ?? 0;
+        final streak = ((data['streak'] ?? data['current_streak']) as num?)?.toInt() ?? 0;
+        final points = ((data['duroodPoints'] ?? data['total_durood_points'] ?? data['points']) as num?)?.toInt() ?? 0;
+        final lastActive = (data['lastActiveDate'] ?? data['last_active_durood_date'] ?? data['lastDuroodDate'])?.toString() ?? todayStr;
+
+        batch.set(doc.reference, {
+          'myTotal': myTotal,
+          'streak': streak,
+          'duroodPoints': points,
+          'lastActiveDate': lastActive,
+          // Legacy fields preserved for backward compatibility
+          'personal_total_durood': myTotal,
+          'current_streak': streak,
+          'total_durood_points': points,
+        }, SetOptions(merge: true));
+        userUpdates++;
+      }
+      if (userUpdates > 0) {
+        await batch.commit();
+      }
+      results['standardized_users'] = userUpdates;
+
+      // 3. Re-sync global_counter/main
+      final globalResult = await recalculateAndSyncGlobalCounter();
+      results['global_counter'] = globalResult;
+
+      return results;
+    } catch (e) {
+      if (kDebugMode) print('[Seeder] cleanupLegacyAndTestCollections error: $e');
+      return {'error': e.toString()};
     }
   }
 

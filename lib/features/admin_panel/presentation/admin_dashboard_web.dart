@@ -19,6 +19,7 @@ import '../../home/presentation/widgets/event_card.dart';
 import 'widgets/campaign_popup_admin_tab.dart';
 import '../../../core/utils/image_compression_helper.dart';
 import '../../../core/utils/islamic_date_helper.dart';
+import '../../../core/utils/streak_helper.dart';
 
 
 
@@ -589,23 +590,32 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
       initialData: AdminService.currentUsersCount,
       builder: (context, userSnap) {
         final totalUsers = userSnap.data ?? AdminService.currentUsersCount;
-        return StreamBuilder<Map<String, dynamic>>(
-          stream: AdminService.globalCounterStream,
-          initialData: AdminService.currentGlobalCounterData,
+        return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+          stream: FirebaseFirestore.instance.collection('global_counter').doc('main').snapshots(),
           builder: (context, snap) {
-            final data = snap.data ?? AdminService.currentGlobalCounterData;
+            final rawDoc = snap.data?.data() ?? AdminService.currentGlobalCounterData;
 
             // Total Durood: strictly real user recitations from Firestore (0 if document empty)
-            final total = (data['globalTotal'] as num?)?.toInt() ?? 0;
+            final total = (rawDoc['globalTotal'] as num?)?.toInt() ??
+                ((rawDoc['total_count'] as num?)?.toInt() ?? 0);
 
             // Today's Durood: strictly real user recitations from Firestore
-            final rawToday = (data['todayTotal'] as num?)?.toInt() ?? 0;
+            final rawToday = (rawDoc['todayTotal'] as num?)?.toInt() ??
+                ((rawDoc['today_count'] as num?)?.toInt() ??
+                ((rawDoc['globalToday'] as num?)?.toInt() ?? 0));
 
-            // Midnight rollover verification: prioritize date
-            final docDate = data['date']?.toString();
-            final todayDate = DateTime.now().toIso8601String().split('T')[0];
-            final int today =
-                (docDate != null && docDate != todayDate) ? 0 : rawToday;
+            // Midnight rollover verification: prioritize date across local and UTC calendar boundaries
+            final rawDocDate = rawDoc['date'] ?? rawDoc['last_reset_date'];
+            final docDateString = StreakHelper.toCalendarDateString(rawDocDate);
+            final localTodayString = StreakHelper.toCalendarDateString(DateTime.now());
+            final utcTodayString = StreakHelper.toCalendarDateString(DateTime.now().toUtc());
+
+            int today = rawToday;
+            if (docDateString.isNotEmpty &&
+                docDateString != localTodayString &&
+                docDateString != utcTodayString) {
+              today = 0;
+            }
 
             return StreamBuilder<List<EventModel>>(
               stream: AdminService.eventsStream,
@@ -919,9 +929,15 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
         }
 
         final allUsers = snap.data ?? [];
-        // Ensure strictly sorted in descending order of streak
+        // Ensure strictly sorted in descending order of points / durood count, then streak
         final sortedUsers = List<AppUser>.from(allUsers)
-          ..sort((a, b) => b.currentStreak.compareTo(a.currentStreak));
+          ..sort((a, b) {
+            final aScore = a.myTotal > 0 ? a.myTotal : (a.duroodPoints > 0 ? a.duroodPoints : a.totalCount);
+            final bScore = b.myTotal > 0 ? b.myTotal : (b.duroodPoints > 0 ? b.duroodPoints : b.totalCount);
+            final cmp = bScore.compareTo(aScore);
+            if (cmp != 0) return cmp;
+            return b.streak.compareTo(a.streak);
+          });
 
         final filteredUsers = sortedUsers.where((u) {
           final query = _searchQuery.trim().toLowerCase();
@@ -992,7 +1008,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                       border: Border.all(color: Colors.orange.shade200),
                     ),
                     child: Text(
-                      '${u.currentStreak} Days 🔥',
+                      '${u.streak} Days 🔥',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.orange.shade900,
@@ -1015,7 +1031,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                         const Icon(Icons.auto_awesome, size: 13, color: AppColors.primaryEmerald),
                         const SizedBox(width: 5),
                         Text(
-                          _fmt(u.personalTotalDurood),
+                          _fmt(u.myTotal > 0 ? u.myTotal : (u.totalCount > 0 ? u.totalCount : u.duroodPoints)),
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: AppColors.emeraldDeep,
@@ -1028,7 +1044,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 ),
                 DataCell(
                   Text(
-                    '${_fmt(u.totalDuroodPoints)} pts ⭐',
+                    '${_fmt(u.duroodPoints > 0 ? u.duroodPoints : u.points)} pts ⭐',
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       color: AppColors.primaryEmerald,
@@ -2922,7 +2938,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 const Icon(Icons.auto_awesome, size: 12, color: AppColors.primaryEmerald),
                 const SizedBox(width: 5),
                 Text(
-                  _fmt(u.personalTotalDurood),
+                  _fmt(u.myTotal > 0 ? u.myTotal : u.totalCount),
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     color: AppColors.emeraldDeep,
@@ -2940,11 +2956,11 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${u.currentStreak} Days 🔥',
+                '${u.streak} Days 🔥',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.orange.shade900),
               ),
               Text(
-                '${_fmt(u.totalDuroodPoints)} pts ⭐',
+                '${_fmt(u.duroodPoints > 0 ? u.duroodPoints : u.totalDuroodPoints)} pts ⭐',
                 style: const TextStyle(fontSize: 11, color: AppColors.primaryEmerald, fontWeight: FontWeight.w600),
               ),
             ],
@@ -3097,7 +3113,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                               children: [
                                 Column(
                                   children: [
-                                    Text(_fmt(u.personalTotalDurood),
+                                    Text(_fmt(u.totalCount > 0 ? u.totalCount : u.personalTotalDurood),
                                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryEmerald)),
                                     const Text('Durood', style: TextStyle(fontSize: 10, color: Colors.grey)),
                                   ],
@@ -3105,7 +3121,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                                 Container(width: 1, height: 18, color: AppColors.borderLight),
                                 Column(
                                   children: [
-                                    Text('${u.currentStreak}d 🔥',
+                                    Text('${u.streak}d 🔥',
                                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.orange.shade900)),
                                     const Text('Streak', style: TextStyle(fontSize: 10, color: Colors.grey)),
                                   ],
@@ -3113,7 +3129,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                                 Container(width: 1, height: 18, color: AppColors.borderLight),
                                 Column(
                                   children: [
-                                    Text(_fmt(u.totalDuroodPoints),
+                                    Text(_fmt(u.duroodPoints > 0 ? u.duroodPoints : u.totalDuroodPoints),
                                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.teal)),
                                     const Text('Points', style: TextStyle(fontSize: 10, color: Colors.grey)),
                                   ],
@@ -3408,7 +3424,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                           const SizedBox(height: 10),
                           Row(
                             children: [
-                              Expanded(child: _buildUserMetricTile('Total Durood', _fmt(u.personalTotalDurood), Icons.auto_awesome, AppColors.primaryEmerald)),
+                              Expanded(child: _buildUserMetricTile('Total Durood', _fmt(u.totalCount > 0 ? u.totalCount : u.personalTotalDurood), Icons.auto_awesome, AppColors.primaryEmerald)),
                               const SizedBox(width: 10),
                               Expanded(child: _buildUserMetricTile('Today\'s Durood', _fmt(u.personalTodayDurood), Icons.today_rounded, AppColors.emeraldLight)),
                             ],
@@ -3416,11 +3432,11 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                           const SizedBox(height: 10),
                           Row(
                             children: [
-                              Expanded(child: _buildUserMetricTile('Current Streak', '${u.currentStreak} Days', Icons.local_fire_department_rounded, Colors.orange.shade700)),
+                              Expanded(child: _buildUserMetricTile('Current Streak', '${u.streak} Days', Icons.local_fire_department_rounded, Colors.orange.shade700)),
                               const SizedBox(width: 10),
                               Expanded(child: _buildUserMetricTile('Longest Streak', '${u.longestStreak} Days', Icons.emoji_events_rounded, AppColors.accentGold)),
                               const SizedBox(width: 10),
-                              Expanded(child: _buildUserMetricTile('Total Points', '${_fmt(u.totalDuroodPoints)} pts', Icons.stars_rounded, Colors.teal)),
+                              Expanded(child: _buildUserMetricTile('Total Points', '${_fmt(u.duroodPoints > 0 ? u.duroodPoints : u.totalDuroodPoints)} pts', Icons.stars_rounded, Colors.teal)),
                             ],
                           ),
                           const Divider(height: 28),
@@ -3684,9 +3700,9 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
             ),
           ),
           DataCell(Text(u.email)),
-          DataCell(Text(_fmt(u.personalTotalDurood))),
-          DataCell(Text('${u.currentStreak} Days 🔥')),
-          DataCell(Text('${_fmt(u.totalDuroodPoints)} pts ⭐')),
+          DataCell(Text(_fmt(u.myTotal > 0 ? u.myTotal : u.totalCount))),
+          DataCell(Text('${u.streak} Days 🔥')),
+          DataCell(Text('${_fmt(u.duroodPoints > 0 ? u.duroodPoints : u.totalDuroodPoints)} pts ⭐')),
           DataCell(_statusChip(
             u.isAdmin ? 'ADMIN' : 'USER',
             u.isAdmin ? AppColors.goldLight : AppColors.emeraldContainer,

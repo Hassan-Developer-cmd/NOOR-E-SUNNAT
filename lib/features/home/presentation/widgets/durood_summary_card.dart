@@ -10,6 +10,8 @@ class DuroodSummaryCard extends StatelessWidget {
   final int? globalTotal;
   final int? todayTotal;
   final int? myToday;
+  final int? myTotal;
+  final bool isLoggedIn;
 
   const DuroodSummaryCard({
     super.key,
@@ -19,6 +21,8 @@ class DuroodSummaryCard extends StatelessWidget {
     this.globalTotal,
     this.todayTotal,
     this.myToday,
+    this.myTotal,
+    this.isLoggedIn = true,
   });
 
   @override
@@ -28,6 +32,7 @@ class DuroodSummaryCard extends StatelessWidget {
     final effectiveGlobalTotal = globalTotal ?? currentSnap.globalTotal;
     final effectiveTodayTotal = todayTotal ?? currentSnap.globalToday;
     final effectiveMyToday = myToday ?? currentSnap.personalToday;
+    final effectiveMyTotal = myTotal ?? currentSnap.personalTotal;
 
     return Container(
       width: double.infinity,
@@ -182,6 +187,22 @@ class DuroodSummaryCard extends StatelessWidget {
                           Colors.white,
                         ),
                       ),
+                      if (isLoggedIn) ...[
+                        Container(
+                          width: 1,
+                          height: 38,
+                          color: Colors.white.withValues(alpha: 0.28),
+                        ),
+                        Expanded(
+                          child: _buildStat(
+                            lp.tr('my_total'),
+                            NumberFormatter.formatCompact(effectiveMyTotal),
+                            Icons.all_inclusive_rounded,
+                            const Color(0xFFFFFBEB),
+                            Colors.white,
+                          ),
+                        ),
+                      ],
                       Container(
                         width: 1,
                         height: 38,

@@ -20,6 +20,7 @@ import 'widgets/gamification_bar.dart';
 import 'widgets/hadith_wisdom_card.dart';
 import 'widgets/notifications_sheet.dart';
 import '../../../services/notification_service.dart';
+import '../../../core/utils/streak_helper.dart';
 
 class HomeScreen extends StatefulWidget {
   final CounterService counterService;
@@ -356,8 +357,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       stream: widget.counterService.globalCounterStream,
                       builder: (context, globalSnap) {
                         final data = globalSnap.data?.data();
-                        final docDate = (data?['date'] ?? data?['last_reset_date'] ?? data?['lastUpdatedDate'])?.toString();
-                        final todayDate = DateTime.now().toIso8601String().split('T')[0];
+                        final docDate = StreakHelper.toCalendarDateString(data?['date'] ?? data?['last_reset_date'] ?? data?['lastUpdatedDate']);
+                        final todayDate = StreakHelper.toCalendarDateString(DateTime.now());
+                        final utcTodayDate = StreakHelper.toCalendarDateString(DateTime.now().toUtc());
 
                         return StreamBuilder<CounterSnapshot>(
                           stream: widget.counterService.snapshotStream,
@@ -381,10 +383,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               effectiveGlobalTotal = (snap.globalTotal > 1000000000 || snap.globalTotal < 0) ? 0 : snap.globalTotal;
                             }
 
-                            // Global Today: prioritize Firestore todayTotal, with local optimistic buffer & corruption guard
+                            // Global Today: prioritize Firestore todayTotal, with local optimistic buffer & midnight rollover check
                             int effectiveTodayTotal;
                             if (data != null) {
-                              if (docDate == todayDate) {
+                              if (docDate.isNotEmpty && docDate != todayDate && docDate != utcTodayDate) {
+                                // Midnight rollover: if doc date is from a previous day, today's count resets to 0 in UI
+                                effectiveTodayTotal = 0;
+                              } else {
                                 final int rawFirestoreToday = ((data['todayTotal'] ?? data['today_count'] ?? data['globalToday'] ?? 0) as num).toInt();
                                 final int firestoreToday = (rawFirestoreToday > 1000000000 || rawFirestoreToday < 0) ? 0 : rawFirestoreToday;
                                 final int sanitizedSnapToday = (snap.globalToday > 1000000000 || snap.globalToday < 0) ? 0 : snap.globalToday;
@@ -394,32 +399,51 @@ class _HomeScreenState extends State<HomeScreen> {
                                 } else {
                                   effectiveTodayTotal = sanitizedSnapToday >= firestoreToday ? sanitizedSnapToday : firestoreToday;
                                 }
-                              } else if (docDate != null && docDate != todayDate) {
-                                // Midnight rollover: if doc date is from previous day, today's count resets to 0
-                                effectiveTodayTotal = 0;
-                              } else {
-                                effectiveTodayTotal = 0;
                               }
                             } else {
                               effectiveTodayTotal = (snap.globalToday > 1000000000 || snap.globalToday < 0) ? 0 : snap.globalToday;
                             }
 
-                            return Column(
-                              children: [
-                                GamificationBar(
-                                  streakDays: snap.currentStreak,
-                                  duroodPoints: snap.duroodPoints,
-                                ),
-                                const SizedBox(height: 10),
-                                DuroodSummaryCard(
-                                  counterService: widget.counterService,
-                                  snapshot: snap,
-                                  globalTotal: effectiveGlobalTotal,
-                                  todayTotal: effectiveTodayTotal,
-                                  myToday: snap.personalToday,
-                                  onSendSalawat: widget.onNavigateToCounter,
-                                ),
-                              ],
+                            // Stream current authenticated user document for myTotal
+                            return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>?>(
+                              stream: widget.counterService.userCounterStream,
+                              builder: (context, userSnap) {
+                                final userData = userSnap.data?.data();
+                                final int? cloudMyTotal = (userData?['myTotal'] as num?)?.toInt();
+                                final int effectiveMyTotal = cloudMyTotal ?? snap.personalTotal;
+
+                                // Stream user daily stats subcollection for myToday
+                                return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>?>(
+                                  stream: widget.counterService.userDailyStatsStream,
+                                  builder: (context, dailySnap) {
+                                    final dailyData = dailySnap.data?.data();
+                                    final int? cloudMyToday = (dailyData?['myToday'] as num?)?.toInt();
+                                    final int effectiveMyToday = cloudMyToday ?? snap.personalToday;
+
+                                    final isUserLoggedIn = FirebaseAuth.instance.currentUser != null;
+
+                                    return Column(
+                                      children: [
+                                        GamificationBar(
+                                          streakDays: snap.currentStreak,
+                                          duroodPoints: snap.duroodPoints,
+                                        ),
+                                        const SizedBox(height: 10),
+                                        DuroodSummaryCard(
+                                          counterService: widget.counterService,
+                                          snapshot: snap,
+                                          globalTotal: effectiveGlobalTotal,
+                                          todayTotal: effectiveTodayTotal,
+                                          myToday: effectiveMyToday,
+                                          myTotal: effectiveMyTotal,
+                                          isLoggedIn: isUserLoggedIn,
+                                          onSendSalawat: widget.onNavigateToCounter,
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              },
                             );
                           },
                         );
