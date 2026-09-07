@@ -62,7 +62,7 @@ class _StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -71,8 +71,8 @@ class _StatTile extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 30,
+            height: 30,
             decoration: BoxDecoration(
               color: accentColor,
               borderRadius: BorderRadius.circular(9),

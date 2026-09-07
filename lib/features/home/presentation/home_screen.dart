@@ -68,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
             slivers: [
               // ── Premium App Bar / Header ─────────────────────────────────────
               SliverAppBar(
-                expandedHeight: 142,
+                expandedHeight: 132,
                 pinned: true,
                 backgroundColor: AppColors.primaryEmerald,
                 surfaceTintColor: Colors.transparent,
@@ -123,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Positioned(
                         left: 16,
                         right: 16,
-                        bottom: 10,
+                        bottom: 8,
                         child: StreamBuilder<AppUser?>(
                           stream: AuthService.currentUserStream,
                           builder: (context, userSnap) {
@@ -344,7 +344,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // ── Content ─────────────────────────────────────────────────────
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     // Real-time StreamBuilder listening strictly to Firestore global counter document ('global_counter/main')
@@ -467,7 +467,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           streakDays: effectiveStreak,
                                           duroodPoints: effectivePoints,
                                         ),
-                                        const SizedBox(height: 10),
+                                        const SizedBox(height: 8),
                                         DuroodSummaryCard(
                                           counterService: widget.counterService,
                                           snapshot: snap,
@@ -488,17 +488,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       },
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
 
                     // Send Salawat CTA
                     Container(
                       width: double.infinity,
-                      constraints: const BoxConstraints(minHeight: 44),
+                      constraints: const BoxConstraints(minHeight: 40),
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryEmerald,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8.5),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
@@ -540,15 +540,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 10),
 
                     // Upgraded Responsive PageView Events Section with Dynamic Dots & Arrow Nav
                     const _UpcomingEventsSection(),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
 
                     // Hadith Card
                     const HadithWisdomCard(),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 80),
                   ]),
                 ),
               ),
@@ -567,6 +567,8 @@ class _UpcomingEventsSection extends StatelessWidget {
     return EventCard(
       key: ValueKey('event_card_${event.id}_$languageCode'),
       event: event,
+      height: 155,
+      width: 280,
       onTap: () {
         Navigator.push(
           context,
@@ -608,7 +610,7 @@ class _UpcomingEventsSection extends StatelessWidget {
             if (snapshot.connectionState == ConnectionState.waiting &&
                 !snapshot.hasData) {
               return const SizedBox(
-                height: 180,
+                height: 155,
                 child: Center(
                   child: CircularProgressIndicator(
                     color: AppColors.primaryEmerald,
@@ -676,11 +678,11 @@ class _UpcomingEventsSection extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
 
                 // Bulletproof Horizontal Scrollable List
                 SizedBox(
-                  height: 185,
+                  height: 155,
                   child: ListView.separated(
                     key: ValueKey('events_listview_$languageCode'),
                     scrollDirection: Axis.horizontal,
