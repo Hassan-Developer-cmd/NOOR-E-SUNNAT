@@ -190,7 +190,7 @@ class EventCard extends StatelessWidget {
         final cardWidth = width ??
             (MediaQuery.of(context).size.width * 0.82).clamp(280.0, 340.0);
 
-        final cardHeight = height ?? 146.0;
+        final cardHeight = height ?? 140.0;
 
         return Directionality(
           textDirection: lp.textDirection,
@@ -225,7 +225,7 @@ class EventCard extends StatelessWidget {
 
                   // 3. Card Content (Badges, Title, Date, Location)
                   Padding(
-                    padding: const EdgeInsetsDirectional.symmetric(horizontal: 13.0, vertical: 9.5),
+                    padding: const EdgeInsetsDirectional.symmetric(horizontal: 12.0, vertical: 8.5),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
