@@ -72,12 +72,14 @@ void main() {
     test('Session tracking marks and resets correctly', () {
       CampaignPopupService.resetSession();
       expect(CampaignPopupService.hasShownInSession, isFalse);
+      expect(CampaignPopupService.isDialogShowing, isFalse);
 
       CampaignPopupService.markShownInSession();
       expect(CampaignPopupService.hasShownInSession, isTrue);
 
       CampaignPopupService.resetSession();
       expect(CampaignPopupService.hasShownInSession, isFalse);
+      expect(CampaignPopupService.isDialogShowing, isFalse);
     });
   });
 

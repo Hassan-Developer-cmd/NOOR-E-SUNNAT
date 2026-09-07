@@ -37,13 +37,19 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  bool _isDialogShowing = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        CampaignPopupService.checkAndShowStartupPopup(context);
-      }
+      if (!mounted || _isDialogShowing) return;
+      _isDialogShowing = true;
+      CampaignPopupService.checkAndShowStartupPopup(context).then((_) {
+        if (mounted) {
+          _isDialogShowing = false;
+        }
+      });
     });
   }
 

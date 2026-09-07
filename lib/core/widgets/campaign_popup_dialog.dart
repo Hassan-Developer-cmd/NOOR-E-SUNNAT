@@ -28,12 +28,16 @@ class CampaignPopupDialog extends StatelessWidget {
   static Future<void> show(BuildContext context, CampaignPopupModel config) {
     return showGeneralDialog(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
+      useRootNavigator: true,
       barrierLabel: 'Dismiss Campaign Popup',
       barrierColor: Colors.black.withValues(alpha: 0.75),
       transitionDuration: const Duration(milliseconds: 320),
       pageBuilder: (context, anim1, anim2) {
-        return CampaignPopupDialog(config: config);
+        return PopScope(
+          canPop: true,
+          child: CampaignPopupDialog(config: config),
+        );
       },
       transitionBuilder: (context, anim1, anim2, child) {
         final curvedValue = Curves.easeOutBack.transform(anim1.value);

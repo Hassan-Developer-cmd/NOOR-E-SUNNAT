@@ -393,7 +393,10 @@ class _MainShellState extends State<MainShell> {
           ProfileScreen(counterService: _counterService),
         ];
 
-        final activeBody = pages[_currentTabIndex];
+        final bodyContent = IndexedStack(
+          index: _currentTabIndex,
+          children: pages,
+        );
 
         return PopScope(
           canPop: false,
@@ -410,10 +413,10 @@ class _MainShellState extends State<MainShell> {
                           right: BorderSide(color: Color(0xFFE5E7EB)),
                         ),
                       ),
-                      child: activeBody,
+                      child: bodyContent,
                     ),
                   )
-                : activeBody,
+                : bodyContent,
             bottomNavigationBar: Directionality(
               textDirection: lp.textDirection,
               child: Container(

@@ -78,7 +78,7 @@ class _CounterScreenState extends State<CounterScreen> {
               side: const BorderSide(color: AppColors.borderLight),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
             child: Text(
               isUrdu ? 'منسوخ' : 'Cancel',
               style: const TextStyle(color: AppColors.textMuted),
@@ -92,7 +92,7 @@ class _CounterScreenState extends State<CounterScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.of(context, rootNavigator: true).pop();
               if (_hapticsEnabled) HapticFeedback.mediumImpact();
               widget.counterService.addBulkDurood(amount);
             },
@@ -126,14 +126,14 @@ class _CounterScreenState extends State<CounterScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
             child: Text(lp.tr('cancel'),
                 style: const TextStyle(color: AppColors.textMuted)),
           ),
           ElevatedButton(
             onPressed: () {
               final count = int.tryParse(controller.text);
-              Navigator.pop(context);
+              Navigator.of(context, rootNavigator: true).pop();
               if (count != null && count > 0) {
                 _confirmBulkAddDialog(context, count);
               }
@@ -184,7 +184,7 @@ class _CounterScreenState extends State<CounterScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
             child: Text(lp.tr('cancel')),
           ),
           ElevatedButton(
@@ -193,7 +193,7 @@ class _CounterScreenState extends State<CounterScreen> {
               if (goal != null && goal > 0) {
                 setState(() => _dailyTargetGoal = goal);
               }
-              Navigator.pop(context);
+              Navigator.of(context, rootNavigator: true).pop();
             },
             child: Text(lp.isUrdu ? 'محفوظ کریں' : 'Save Goal'),
           ),

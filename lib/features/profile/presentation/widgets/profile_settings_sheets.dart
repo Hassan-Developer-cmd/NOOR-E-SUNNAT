@@ -910,7 +910,7 @@ class ProfileSettingsSheets {
                         top: 12,
                         end: 12,
                         child: GestureDetector(
-                          onTap: () => Navigator.pop(ctx),
+                          onTap: () => Navigator.of(ctx, rootNavigator: true).pop(),
                           child: Container(
                             width: 32,
                             height: 32,
@@ -1138,6 +1138,7 @@ class ProfileSettingsSheets {
 
     showDialog(
       context: context,
+      useRootNavigator: true,
       builder: (dialogCtx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -1250,7 +1251,7 @@ class ProfileSettingsSheets {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: () async {
-                        Navigator.pop(dialogCtx);
+                        Navigator.of(dialogCtx, rootNavigator: true).pop();
                         await openPlayStore();
                       },
                       icon: const Icon(Icons.shop_rounded, size: 20),
@@ -1268,7 +1269,7 @@ class ProfileSettingsSheets {
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
-                          onPressed: () => Navigator.pop(dialogCtx),
+                          onPressed: () => Navigator.of(dialogCtx, rootNavigator: true).pop(),
                           child: Text(lp.tr('cancel')),
                         ),
                       ),
@@ -1282,7 +1283,7 @@ class ProfileSettingsSheets {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           onPressed: () {
-                            Navigator.pop(dialogCtx);
+                            Navigator.of(dialogCtx, rootNavigator: true).pop();
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Row(
@@ -1519,6 +1520,7 @@ class ProfileSettingsSheets {
     final lp = globalLanguageProvider;
     showDialog(
       context: context,
+      useRootNavigator: true,
       builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
@@ -1559,7 +1561,7 @@ class ProfileSettingsSheets {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
+            onPressed: () => Navigator.of(dialogCtx, rootNavigator: true).pop(),
             child: Text(
               lp.tr('cancel'),
               style: const TextStyle(color: Color(0xFF6B7280)),
@@ -1575,7 +1577,7 @@ class ProfileSettingsSheets {
               ),
             ),
             onPressed: () async {
-              Navigator.pop(dialogCtx);
+              Navigator.of(dialogCtx, rootNavigator: true).pop();
               await executeAccountDeletion(context);
             },
             child: Text(lp.tr('delete_account_action')),

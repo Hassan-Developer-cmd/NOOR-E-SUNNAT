@@ -983,6 +983,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final lp = globalLanguageProvider;
     showDialog(
       context: context,
+      useRootNavigator: true,
       builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
@@ -1023,7 +1024,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
+            onPressed: () => Navigator.of(dialogCtx, rootNavigator: true).pop(),
             child: Text(
               lp.tr('cancel'),
               style: const TextStyle(color: Color(0xFF6B7280)),
@@ -1039,7 +1040,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             onPressed: () async {
-              Navigator.pop(dialogCtx);
+              Navigator.of(dialogCtx, rootNavigator: true).pop();
               await AuthService.signOut();
               if (context.mounted) {
                 _navigateToLogin(context);

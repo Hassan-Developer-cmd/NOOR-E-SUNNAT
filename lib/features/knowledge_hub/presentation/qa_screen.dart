@@ -350,6 +350,7 @@ class _QuestionCardState extends State<_QuestionCard> {
     final lp = globalLanguageProvider;
     showDialog(
       context: context,
+      useRootNavigator: true,
       builder: (ctx) => Directionality(
         textDirection: lp.textDirection,
         child: AlertDialog(
@@ -370,7 +371,7 @@ class _QuestionCardState extends State<_QuestionCard> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(ctx),
+              onPressed: () => Navigator.of(ctx, rootNavigator: true).pop(),
               child: Text(lp.tr('cancel')),
             ),
             ElevatedButton(
@@ -380,7 +381,7 @@ class _QuestionCardState extends State<_QuestionCard> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               onPressed: () async {
-                Navigator.pop(ctx);
+                Navigator.of(ctx, rootNavigator: true).pop();
                 try {
                   await QuestionsService.deleteUserQuestion(questionId);
                   if (context.mounted) {

@@ -10,6 +10,7 @@ class AppExitConfirmationDialog extends StatelessWidget {
   static Future<bool> show(BuildContext context) async {
     final result = await showDialog<bool>(
       context: context,
+      useRootNavigator: true,
       barrierDismissible: true,
       builder: (ctx) => const AppExitConfirmationDialog(),
     );
@@ -104,7 +105,7 @@ class AppExitConfirmationDialog extends StatelessWidget {
                     // Cancel Button
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () => Navigator.of(context).pop(false),
+                        onPressed: () => Navigator.of(context, rootNavigator: true).pop(false),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.textSecondary,
                           backgroundColor: const Color(0xFFF3F4F6),
@@ -133,7 +134,7 @@ class AppExitConfirmationDialog extends StatelessWidget {
                     // Exit App Button
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () => Navigator.of(context).pop(true),
+                        onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryEmerald,
                           foregroundColor: Colors.white,

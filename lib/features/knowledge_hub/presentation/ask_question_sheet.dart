@@ -79,6 +79,7 @@ class _AskQuestionSheetState extends State<AskQuestionSheet> {
     showDialog(
       context: context,
       barrierDismissible: false,
+      useRootNavigator: true,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         contentPadding: const EdgeInsets.all(24),
@@ -137,7 +138,7 @@ class _AskQuestionSheetState extends State<AskQuestionSheet> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    onPressed: () => Navigator.pop(ctx),
+                    onPressed: () => Navigator.of(ctx, rootNavigator: true).pop(),
                     child: const Text('OK'),
                   ),
                 ),
@@ -151,7 +152,7 @@ class _AskQuestionSheetState extends State<AskQuestionSheet> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     onPressed: () {
-                      Navigator.pop(ctx);
+                      Navigator.of(ctx, rootNavigator: true).pop();
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => const MyQuestionsScreen()),

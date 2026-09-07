@@ -14,8 +14,10 @@ class CampaignPopupService {
 
   /// Session guard: tracks if the launch popup was already displayed during the current app session.
   static bool _hasShownInSession = false;
+  static bool _isDialogShowing = false;
 
   static bool get hasShownInSession => _hasShownInSession;
+  static bool get isDialogShowing => _isDialogShowing;
 
   static void markShownInSession() {
     _hasShownInSession = true;
@@ -23,6 +25,7 @@ class CampaignPopupService {
 
   static void resetSession() {
     _hasShownInSession = false;
+    _isDialogShowing = false;
   }
 
   /// Real-time stream of the active campaign popup configuration.
@@ -119,8 +122,12 @@ class CampaignPopupService {
     BuildContext context, {
     bool force = false,
   }) async {
-    if (!force && _hasShownInSession) {
-      return;
+    if (_isDialogShowing) return;
+    if (!force && _hasShownInSession) return;
+
+    _isDialogShowing = true;
+    if (!force) {
+      _hasShownInSession = true;
     }
 
     try {
@@ -135,15 +142,13 @@ class CampaignPopupService {
         final lastShown = prefs.getString(_prefKeyLastShownPopup);
         if (lastShown == campaignFingerprint) {
           // Already shown to user — do not show again
-          markShownInSession();
           return;
         }
       }
 
       if (!context.mounted) return;
 
-      // Mark session state & persist locally
-      markShownInSession();
+      // Persist locally
       try {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(_prefKeyLastShownPopup, campaignFingerprint);
@@ -155,6 +160,8 @@ class CampaignPopupService {
       if (kDebugMode) {
         print('Error in checkAndShowStartupPopup: $e');
       }
+    } finally {
+      _isDialogShowing = false;
     }
   }
 }
