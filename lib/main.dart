@@ -109,6 +109,9 @@ const AndroidNotificationChannel highImportanceChannel =
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // 1. Enable Firestore Offline Persistence explicitly for instant cached reads
