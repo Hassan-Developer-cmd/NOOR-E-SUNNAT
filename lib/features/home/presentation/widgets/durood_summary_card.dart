@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../../core/utils/number_formatter.dart';
 import '../../../../main.dart';
@@ -29,10 +30,14 @@ class DuroodSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final lp = globalLanguageProvider;
     final currentSnap = snapshot ?? counterService.snapshot;
-    final effectiveGlobalTotal = globalTotal ?? currentSnap.globalTotal;
-    final effectiveTodayTotal = todayTotal ?? currentSnap.globalToday;
-    final effectiveMyToday = isLoggedIn ? (myToday ?? currentSnap.personalToday) : null;
-    final effectiveMyTotal = isLoggedIn ? (myTotal ?? currentSnap.personalTotal) : null;
+    final effectiveGlobalTotal = globalTotal != null ? math.max(currentSnap.globalTotal, globalTotal!) : currentSnap.globalTotal;
+    final effectiveTodayTotal = todayTotal != null ? math.max(currentSnap.globalToday, todayTotal!) : currentSnap.globalToday;
+    final effectiveMyToday = isLoggedIn
+        ? (myToday != null ? math.max(currentSnap.personalToday, myToday!) : currentSnap.personalToday)
+        : null;
+    final effectiveMyTotal = isLoggedIn
+        ? (myTotal != null ? math.max(currentSnap.personalTotal, myTotal!) : currentSnap.personalTotal)
+        : null;
 
     return Container(
       width: double.infinity,

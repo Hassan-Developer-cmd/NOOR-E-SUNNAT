@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -437,7 +438,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 final userData = userSnap.data?.data();
                                 final int? cloudMyTotal = (userData?['myTotal'] as num?)?.toInt();
                                 final int effectiveMyTotal = (cloudMyTotal != null)
-                                    ? (cloudMyTotal + widget.counterService.pendingBuffer)
+                                    ? math.max(snap.personalTotal, cloudMyTotal + widget.counterService.pendingBuffer)
                                     : snap.personalTotal;
 
                                 // Durood Points: strictly bind to authenticated user's Firestore document
@@ -445,7 +446,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     userData?['points'] ??
                                     userData?['total_durood_points']) as num?)?.toInt();
                                 final int effectivePoints = (cloudPoints != null)
-                                    ? (cloudPoints + widget.counterService.pendingBuffer)
+                                    ? math.max(snap.duroodPoints, cloudPoints + widget.counterService.pendingBuffer)
                                     : snap.duroodPoints;
 
                                 // Streak: calculate Snapchat-style consecutive calendar streak
@@ -465,7 +466,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     final dailyData = dailySnap.data?.data();
                                     final int? cloudMyToday = ((dailyData?['myToday'] ?? dailyData?['todayCount']) as num?)?.toInt();
                                     final int effectiveMyToday = (cloudMyToday != null)
-                                        ? (cloudMyToday + widget.counterService.pendingBuffer)
+                                        ? math.max(snap.personalToday, cloudMyToday + widget.counterService.pendingBuffer)
                                         : snap.personalToday;
 
                                     final int effectiveStreak = calculatedStreak > 0

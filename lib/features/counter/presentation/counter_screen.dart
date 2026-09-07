@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -222,7 +223,7 @@ class _CounterScreenState extends State<CounterScreen> {
               final userData = userSnap.data?.data();
               final int? cloudMyTotal = (userData?['myTotal'] as num?)?.toInt();
               final int effectiveMyTotal = (cloudMyTotal != null)
-                  ? (cloudMyTotal + widget.counterService.pendingBuffer)
+                  ? math.max(snap.personalTotal, cloudMyTotal + widget.counterService.pendingBuffer)
                   : snap.personalTotal;
 
               return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>?>(
@@ -231,7 +232,7 @@ class _CounterScreenState extends State<CounterScreen> {
                   final dailyData = dailySnap.data?.data();
                   final int? cloudMyToday = ((dailyData?['myToday'] ?? dailyData?['todayCount']) as num?)?.toInt();
                   final int effectiveMyToday = (cloudMyToday != null)
-                      ? (cloudMyToday + widget.counterService.pendingBuffer)
+                      ? math.max(snap.personalToday, cloudMyToday + widget.counterService.pendingBuffer)
                       : snap.personalToday;
 
                   final double goalProgress = (_dailyTargetGoal > 0)

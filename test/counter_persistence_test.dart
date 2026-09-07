@@ -471,6 +471,7 @@ void main() {
     });
 
     test('UNIFIED SCHEMA: AppUser deserializes properly from canonical keys (streak, duroodPoints, myToday, lastActiveDate)', () {
+      final todayStr = StreakHelper.getTodayDateString();
       final canonicalPayload = <String, dynamic>{
         'user_id': 'unified_user_001',
         'email': 'user@example.com',
@@ -479,7 +480,7 @@ void main() {
         'duroodPoints': 2400,
         'myToday': 50,
         'personal_total_durood': 1200,
-        'lastActiveDate': '2026-09-05',
+        'lastActiveDate': todayStr,
       };
 
       final user = AppUser.fromMap(canonicalPayload);
@@ -487,10 +488,11 @@ void main() {
       expect(user.totalDuroodPoints, 2400);
       expect(user.personalTodayDurood, 50);
       expect(user.personalTotalDurood, 1200);
-      expect(user.lastActiveDuroodDate, DateTime(2026, 9, 5));
+      expect(StreakHelper.toCalendarDateString(user.lastActiveDuroodDate), todayStr);
     });
 
     test('UNIFIED SCHEMA: AppUser.toMap writes both canonical and legacy keys for bidirectional compatibility', () {
+      final todayStr = StreakHelper.getTodayDateString();
       final user = AppUser(
         userId: 'unified_user_002',
         email: 'user2@example.com',
@@ -501,7 +503,7 @@ void main() {
         totalDuroodPoints: 1400,
         personalTodayDurood: 100,
         personalTotalDurood: 5000,
-        lastActiveDuroodDate: DateTime(2026, 9, 5),
+        lastActiveDuroodDate: DateTime.now(),
       );
 
       final map = user.toMap();
@@ -509,16 +511,16 @@ void main() {
       expect(map['streak'], 7);
       expect(map['duroodPoints'], 1400);
       expect(map['myToday'], 100);
-      expect(map['lastActiveDate'], '2026-09-05');
+      expect(map['lastActiveDate'], todayStr);
       // Legacy backward-compatibility keys
       expect(map['current_streak'], 7);
       expect(map['total_durood_points'], 1400);
       expect(map['personal_today_durood'], 100);
-      expect(map['last_active_durood_date'], '2026-09-05');
+      expect(map['last_active_durood_date'], todayStr);
     });
 
     test('UNIFIED SCHEMA: Two-way roundtrip serialization preserves all counter and streak values', () {
-      final original = AppUser(
+      final user = AppUser(
         userId: 'roundtrip_user',
         email: 'roundtrip@test.com',
         username: 'Fatima',
@@ -528,21 +530,21 @@ void main() {
         totalDuroodPoints: 4200,
         personalTodayDurood: 75,
         personalTotalDurood: 10500,
-        lastActiveDuroodDate: DateTime(2026, 9, 5),
+        lastActiveDuroodDate: DateTime.now(),
       );
 
-      final serialized = original.toMap();
+      final serialized = user.toMap();
       final deserialized = AppUser.fromMap(serialized);
 
-      expect(deserialized.userId, original.userId);
-      expect(deserialized.currentStreak, original.currentStreak);
-      expect(deserialized.longestStreak, original.longestStreak);
-      expect(deserialized.totalDuroodPoints, original.totalDuroodPoints);
-      expect(deserialized.personalTodayDurood, original.personalTodayDurood);
-      expect(deserialized.personalTotalDurood, original.personalTotalDurood);
+      expect(deserialized.userId, user.userId);
+      expect(deserialized.currentStreak, user.currentStreak);
+      expect(deserialized.longestStreak, user.longestStreak);
+      expect(deserialized.totalDuroodPoints, user.totalDuroodPoints);
+      expect(deserialized.personalTodayDurood, user.personalTodayDurood);
+      expect(deserialized.personalTotalDurood, user.personalTotalDurood);
       expect(
         StreakHelper.toCalendarDateString(deserialized.lastActiveDuroodDate),
-        StreakHelper.toCalendarDateString(original.lastActiveDuroodDate),
+        StreakHelper.toCalendarDateString(user.lastActiveDuroodDate),
       );
     });
 

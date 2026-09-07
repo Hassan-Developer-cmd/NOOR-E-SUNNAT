@@ -129,9 +129,19 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     });
   }
 
-  // Internal buffer for debounced writes
+  // Internal buffers for debounced writes & in-flight network synchronization
   int _pendingBuffer = 0;
-  int get pendingBuffer => _pendingBuffer;
+  int _inFlightBuffer = 0;
+  DateTime? _lastTapTime;
+
+  /// Returns total active uncommitted increment (pending in timer queue + actively in-flight to Firestore)
+  int get pendingBuffer => _pendingBuffer + _inFlightBuffer;
+
+  /// True when user has tapped within the last 1200ms
+  bool get isBurstActive =>
+      _lastTapTime != null &&
+      DateTime.now().difference(_lastTapTime!).inMilliseconds < 1200;
+
   Timer? _debounceTimer;
   StreamSubscription? _authSub;
   StreamSubscription? _globalSub;
@@ -329,6 +339,8 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     final oldUid = _activeUid;
     _activeUid = null;
     _pendingBuffer = 0;
+    _inFlightBuffer = 0;
+    _lastTapTime = null;
     _debounceTimer?.cancel();
     _debounceTimer = null;
     _userDailySub?.cancel();
@@ -443,7 +455,12 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
             0;
 
         // Authoritative cloud count + any active uncommitted pending buffer
-        final int effectiveMyToday = cloudMyToday + _pendingBuffer;
+        final int incomingToday = cloudMyToday + pendingBuffer;
+        final int currentLocal = _snapshot.personalToday;
+
+        // STRICT MONOTONIC INCREMENT:
+        // Never allow an incoming stream snapshot to decrement the local displayed count on the same day.
+        final int effectiveMyToday = incomingToday >= currentLocal ? incomingToday : currentLocal;
 
         if (effectiveMyToday != _snapshot.personalToday) {
           _updateSnapshot(_snapshot.copyWith(personalToday: effectiveMyToday));
@@ -456,7 +473,9 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         _prefs?.setString(_keyMyDuroodDate, todayStr);
       } else {
         // Document does not exist yet in Firestore today:
-        final int effectiveMyToday = _pendingBuffer;
+        final int currentLocal = _snapshot.personalToday;
+        final int incomingToday = pendingBuffer;
+        final int effectiveMyToday = incomingToday >= currentLocal ? incomingToday : currentLocal;
         if (effectiveMyToday != _snapshot.personalToday) {
           _updateSnapshot(_snapshot.copyWith(personalToday: effectiveMyToday));
         }
@@ -493,20 +512,23 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     // Detect if database was cleaned/reset or has a massive discrepancy (> 10,000)
     final bool largeDiscrepancy = (_snapshot.globalTotal - firestoreTotal).abs() > 10000;
 
+    final int incomingGlobalTotal = firestoreTotal + pendingBuffer;
+    final int incomingGlobalToday = isSameDay ? (firestoreToday + pendingBuffer) : 0;
+
     final int effectiveGlobalTotal;
     final int effectiveGlobalToday;
 
-    if (isCorrupted || largeDiscrepancy || _pendingBuffer <= 0) {
+    if (isCorrupted || largeDiscrepancy) {
       // Authoritative cloud value (+ any pending local buffer)
-      effectiveGlobalTotal = firestoreTotal + _pendingBuffer;
-      effectiveGlobalToday = isSameDay ? (firestoreToday + _pendingBuffer) : 0;
+      effectiveGlobalTotal = incomingGlobalTotal;
+      effectiveGlobalToday = incomingGlobalToday;
     } else {
-      // Retain optimistic increments if local is close to firestore and not corrupted
-      effectiveGlobalTotal = _snapshot.globalTotal >= firestoreTotal
-          ? _snapshot.globalTotal
-          : firestoreTotal;
+      // Retain optimistic increments with strict monotonic guarantee
+      effectiveGlobalTotal = incomingGlobalTotal >= _snapshot.globalTotal
+          ? incomingGlobalTotal
+          : _snapshot.globalTotal;
       effectiveGlobalToday = isSameDay
-          ? (_snapshot.globalToday >= firestoreToday ? _snapshot.globalToday : firestoreToday)
+          ? (incomingGlobalToday >= _snapshot.globalToday ? incomingGlobalToday : _snapshot.globalToday)
           : 0;
     }
 
@@ -553,7 +575,7 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     );
 
     // If an optimistic pending buffer is actively being tapped, ensure at least 1
-    if (_pendingBuffer > 0 && effectiveStreak == 0) {
+    if (pendingBuffer > 0 && effectiveStreak == 0) {
       effectiveStreak = 1;
     }
 
@@ -566,8 +588,11 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         data['total_count'] ??
         data['totalDurood']) as num?)?.toInt() ?? 0;
 
-    // Single source of truth: Cloud count + any uncommitted pending taps
-    final int effectivePersonalTotal = firestorePersonalTotal + _pendingBuffer;
+    // Single source of truth with strict monotonic non-decreasing guarantee:
+    final int incomingPersonalTotal = firestorePersonalTotal + pendingBuffer;
+    final int effectivePersonalTotal = incomingPersonalTotal >= _snapshot.personalTotal
+        ? incomingPersonalTotal
+        : _snapshot.personalTotal;
 
     // 3. PERSONAL TODAY: If doc contains today count for same day and subcollection hasn't fired yet
     final bool isSameDay = StreakHelper.isSameDay(lastActive, todayStr);
@@ -575,17 +600,26 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         ? (((data['myToday'] ?? data['todayDuroodCount'] ?? data['personal_today_durood'] ?? data['todayCount']) as num?)?.toInt())
         : null;
 
-    final int effectivePersonalToday = firestorePersonalToday != null
-        ? (firestorePersonalToday + _pendingBuffer)
-        : _snapshot.personalToday;
+    final int effectivePersonalToday;
+    if (firestorePersonalToday != null) {
+      final int incomingPersonalToday = firestorePersonalToday + pendingBuffer;
+      effectivePersonalToday = incomingPersonalToday >= _snapshot.personalToday
+          ? incomingPersonalToday
+          : _snapshot.personalToday;
+    } else {
+      effectivePersonalToday = _snapshot.personalToday;
+    }
 
-    // 4. DUROOD POINTS: Parse across all field variations
+    // 4. DUROOD POINTS: Parse across all field variations with strict monotonic guarantee
     final int firestorePoints = ((data['duroodPoints'] ??
         data['total_durood_points'] ??
         data['durood_points'] ??
         data['points']) as num?)?.toInt() ?? 0;
 
-    final int effectivePoints = firestorePoints + _pendingBuffer;
+    final int incomingPoints = firestorePoints + pendingBuffer;
+    final int effectivePoints = incomingPoints >= _snapshot.duroodPoints
+        ? incomingPoints
+        : _snapshot.duroodPoints;
 
     _updateSnapshot(CounterSnapshot(
       globalTotal: _snapshot.globalTotal,
@@ -632,6 +666,7 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     if (count <= 0) return;
 
     _pendingBuffer += count;
+    _lastTapTime = DateTime.now();
     final todayStr = _todayDateString;
     final updatedMyToday = _snapshot.personalToday + count;
     final updatedStreak = _snapshot.currentStreak <= 0 ? 1 : _snapshot.currentStreak;
@@ -680,6 +715,7 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     if (_pendingBuffer <= 0) return;
     final count = _pendingBuffer;
     _pendingBuffer = 0;
+    _inFlightBuffer += count;
 
     try {
       final todayStr = _todayDateString;
@@ -776,6 +812,9 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     } catch (e) {
       if (kDebugMode) print('CounterService.flushImmediately error: $e');
       _pendingBuffer += count;
+    } finally {
+      _inFlightBuffer -= count;
+      if (_inFlightBuffer < 0) _inFlightBuffer = 0;
     }
   }
 

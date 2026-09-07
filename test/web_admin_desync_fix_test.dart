@@ -212,7 +212,7 @@ void main() {
         'myToday': 450,
         'streak': 15,
         'duroodPoints': 8500,
-        'lastActiveDate': '2026-09-05',
+        'lastActiveDate': StreakHelper.getTodayDateString(),
       });
 
       expect(user.myTotal, 8500);

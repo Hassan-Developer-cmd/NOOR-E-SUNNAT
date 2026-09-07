@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -473,10 +474,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         builder: (context, snapshot) {
                           final snap = snapshot.data ?? widget.counterService.snapshot;
                           final int effectivePoints = (cloudPoints != null)
-                              ? (cloudPoints + widget.counterService.pendingBuffer)
+                              ? math.max(snap.duroodPoints, cloudPoints + widget.counterService.pendingBuffer)
                               : snap.duroodPoints;
                           final int effectiveTotal = (cloudMyTotal != null)
-                              ? (cloudMyTotal + widget.counterService.pendingBuffer)
+                              ? math.max(snap.personalTotal, cloudMyTotal + widget.counterService.pendingBuffer)
                               : snap.personalTotal;
                           final int calculatedStreak = cloudStreak != null
                               ? StreakHelper.calculateEffectiveStreak(
