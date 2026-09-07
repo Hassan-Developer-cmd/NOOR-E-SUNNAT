@@ -332,6 +332,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
 }
 
 /// Main shell for mobile app users — contains bottom nav and page body.
+/// Main shell for mobile app users — contains bottom nav and page body with smooth horizontal swipe.
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
@@ -341,25 +342,40 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _currentTabIndex = 0;
+  late final PageController _pageController;
   late final CounterService _counterService;
 
   @override
   void initState() {
     super.initState();
     _counterService = CounterService();
+    _pageController = PageController(initialPage: _currentTabIndex);
   }
 
   @override
   void dispose() {
     // Flush pending increments before unmounting shell, preserving the app-wide singleton
     _counterService.flushImmediately();
+    _pageController.dispose();
     super.dispose();
+  }
+
+  void _onTabTapped(int index) {
+    if (_currentTabIndex == index) return;
+    setState(() => _currentTabIndex = index);
+    if (_pageController.hasClients) {
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   Future<void> _handlePopScope(bool didPop, dynamic result) async {
     if (didPop) return;
     if (_currentTabIndex != 0) {
-      setState(() => _currentTabIndex = 0);
+      _onTabTapped(0);
       return;
     }
     final shouldExit = await AppExitConfirmationDialog.show(context);
@@ -378,26 +394,34 @@ class _MainShellState extends State<MainShell> {
         final isDesktopWeb = kIsWeb && screenWidth > 900;
 
         final pages = [
-          HomeScreen(
-            counterService: _counterService,
-            onNavigateToCounter: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      CounterScreen(counterService: _counterService),
-                ),
-              );
-            },
+          _KeepAlivePage(
+            child: HomeScreen(
+              counterService: _counterService,
+              onNavigateToCounter: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        CounterScreen(counterService: _counterService),
+                  ),
+                );
+              },
+            ),
           ),
-          const AqaidGridScreen(),
-          const MasailGridScreen(),
-          const QAScreen(),
-          ProfileScreen(counterService: _counterService),
+          const _KeepAlivePage(child: AqaidGridScreen()),
+          const _KeepAlivePage(child: MasailGridScreen()),
+          const _KeepAlivePage(child: QAScreen()),
+          _KeepAlivePage(child: ProfileScreen(counterService: _counterService)),
         ];
 
-        final bodyContent = IndexedStack(
-          index: _currentTabIndex,
+        final bodyContent = PageView(
+          controller: _pageController,
+          physics: const PageScrollPhysics(),
+          onPageChanged: (index) {
+            if (_currentTabIndex != index) {
+              setState(() => _currentTabIndex = index);
+            }
+          },
           children: pages,
         );
 
@@ -437,8 +461,7 @@ class _MainShellState extends State<MainShell> {
                     ),
                     child: BottomNavigationBar(
                       currentIndex: _currentTabIndex,
-                      onTap: (index) =>
-                          setState(() => _currentTabIndex = index),
+                      onTap: _onTabTapped,
                       backgroundColor: Colors.white,
                       type: BottomNavigationBarType.fixed,
                       selectedItemColor: AppColors.primaryEmerald,
@@ -484,3 +507,25 @@ class _MainShellState extends State<MainShell> {
     );
   }
 }
+
+/// Preserves child page state, scroll offset, and lifecycle across PageView swipes.
+class _KeepAlivePage extends StatefulWidget {
+  final Widget child;
+  const _KeepAlivePage({required this.child});
+
+  @override
+  State<_KeepAlivePage> createState() => _KeepAlivePageState();
+}
+
+class _KeepAlivePageState extends State<_KeepAlivePage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
+  }
+}
+
