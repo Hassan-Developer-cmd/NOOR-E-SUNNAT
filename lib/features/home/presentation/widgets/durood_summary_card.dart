@@ -96,7 +96,7 @@ class DuroodSummaryCard extends StatelessWidget {
 
             // 3. Card Content
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7.5),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -107,7 +107,7 @@ class DuroodSummaryCard extends StatelessWidget {
                         child: Text(
                           lp.tr('durood_count_summary'),
                           style: const TextStyle(
-                            fontSize: 14,
+                            fontSize: 14.5,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                             letterSpacing: 0.2,
@@ -122,7 +122,7 @@ class DuroodSummaryCard extends StatelessWidget {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
                         decoration: BoxDecoration(
                           color: Colors.black.withValues(alpha: 0.22),
                           borderRadius: BorderRadius.circular(20),
@@ -135,8 +135,8 @@ class DuroodSummaryCard extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Container(
-                              width: 6,
-                              height: 6,
+                              width: 6.5,
+                              height: 6.5,
                               decoration: const BoxDecoration(
                                 color: Color(0xFF4ADE80), // Neon green pulse dot
                                 shape: BoxShape.circle,
@@ -153,7 +153,7 @@ class DuroodSummaryCard extends StatelessWidget {
                             Text(
                               lp.tr('live_updates'),
                               style: const TextStyle(
-                                fontSize: 9.5,
+                                fontSize: 10,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
                                 letterSpacing: 0.4,
@@ -164,7 +164,7 @@ class DuroodSummaryCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 8),
 
                   // Stats row
                   Row(
@@ -180,7 +180,7 @@ class DuroodSummaryCard extends StatelessWidget {
                       ),
                       Container(
                         width: 1,
-                        height: 26,
+                        height: 34,
                         color: Colors.white.withValues(alpha: 0.28),
                       ),
                       Expanded(
@@ -195,7 +195,7 @@ class DuroodSummaryCard extends StatelessWidget {
                       if (isLoggedIn && effectiveMyTotal != null) ...[
                         Container(
                           width: 1,
-                          height: 26,
+                          height: 34,
                           color: Colors.white.withValues(alpha: 0.28),
                         ),
                         Expanded(
@@ -211,7 +211,7 @@ class DuroodSummaryCard extends StatelessWidget {
                       if (isLoggedIn && effectiveMyToday != null) ...[
                         Container(
                           width: 1,
-                          height: 26,
+                          height: 34,
                           color: Colors.white.withValues(alpha: 0.28),
                         ),
                         Expanded(
@@ -248,7 +248,7 @@ class DuroodSummaryCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 13, color: iconColor),
+            Icon(icon, size: 13.5, color: iconColor),
             const SizedBox(width: 5),
             Flexible(
               child: FittedBox(
@@ -256,7 +256,7 @@ class DuroodSummaryCard extends StatelessWidget {
                 child: Text(
                   label,
                   style: const TextStyle(
-                    fontSize: 11,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFFFFFBEB), // Soft warm cream white
                     letterSpacing: 0.3,
@@ -273,7 +273,7 @@ class DuroodSummaryCard extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 3),
         FittedBox(
           fit: BoxFit.scaleDown,
           child: AnimatedSwitcher(

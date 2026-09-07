@@ -67,10 +67,37 @@ class _HomeScreenState extends State<HomeScreen> {
         final bottomBarTotalHeight = kBottomNavigationBarHeight + mediaQuery.padding.bottom;
         final visibleViewportHeight = screenHeight - bottomBarTotalHeight;
 
-        // Standard above-the-fold content height with un-squeezed 170px EventCards and standard padding
-        const double aboveFoldContentHeight = 548.0;
-        final double remainingToFold = visibleViewportHeight - aboveFoldContentHeight;
-        final double foldGap = math.max(36.0, remainingToFold + 24.0);
+        // Base content budget with un-squeezed components:
+        // AppBar: ~144, Gamification: ~50, Durood: ~124, CTA: ~48, Events Header: ~38, Carousel: ~185 = ~589px
+        const double baseContentBudget = 589.0;
+        final double excessHeight = math.max(0.0, visibleViewportHeight - baseContentBudget);
+
+        // Dynamically scale vertical spacing and heights to eliminate awkward dead space above the bottom navigation bar
+        final double headerToStreakSpacing = (14.0 + (excessHeight * 0.12)).clamp(14.0, 22.0);
+        final double streakToDuroodSpacing = (12.0 + (excessHeight * 0.10)).clamp(12.0, 18.0);
+        final double duroodToCtaSpacing = (12.0 + (excessHeight * 0.10)).clamp(12.0, 18.0);
+        final double ctaToEventsSpacing = (14.0 + (excessHeight * 0.12)).clamp(14.0, 22.0);
+        final double eventCarouselHeight = (185.0 + (excessHeight * 0.16)).clamp(185.0, 205.0);
+        final double appBarExpandedHeight = (142.0 + (excessHeight * 0.10)).clamp(142.0, 154.0);
+
+        // Calculate total content height above the fold (down to bottom edge of Upcoming Events)
+        final double aboveFoldTotalHeight = appBarExpandedHeight +
+            headerToStreakSpacing +
+            50.0 + // GamificationBar approx height
+            streakToDuroodSpacing +
+            124.0 + // DuroodSummaryCard approx height
+            duroodToCtaSpacing +
+            48.0 + // CTA Button height
+            ctaToEventsSpacing +
+            38.0 + // Events Header & spacing
+            eventCarouselHeight;
+
+        // Dynamic Fold Gap: Ensures Daily Hadith sits cleanly right below Upcoming Events,
+        // starting strictly below the bottom navigation bar so 0% peeks on initial launch
+        final double remainingToBottomBar = visibleViewportHeight - aboveFoldTotalHeight;
+        final double foldGap = remainingToBottomBar > 0
+            ? math.max(20.0, remainingToBottomBar + 12.0)
+            : 24.0;
 
         return Scaffold(
           backgroundColor: AppColors.bgPrimary,
@@ -79,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
             slivers: [
               // ── Premium App Bar / Header ─────────────────────────────────────
               SliverAppBar(
-                expandedHeight: 128,
+                expandedHeight: appBarExpandedHeight,
                 pinned: true,
                 backgroundColor: AppColors.primaryEmerald,
                 surfaceTintColor: Colors.transparent,
@@ -134,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Positioned(
                         left: 16,
                         right: 16,
-                        bottom: 7,
+                        bottom: 10,
                         child: StreamBuilder<AppUser?>(
                           stream: AuthService.currentUserStream,
                           builder: (context, userSnap) {
@@ -355,7 +382,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // ── Content ─────────────────────────────────────────────────────
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+                padding: EdgeInsets.fromLTRB(16, headerToStreakSpacing, 16, 0),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     // Real-time StreamBuilder listening strictly to Firestore global counter document ('global_counter/main')
@@ -478,7 +505,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           streakDays: effectiveStreak,
                                           duroodPoints: effectivePoints,
                                         ),
-                                        const SizedBox(height: 6),
+                                        SizedBox(height: streakToDuroodSpacing),
                                         DuroodSummaryCard(
                                           counterService: widget.counterService,
                                           snapshot: snap,
@@ -499,21 +526,21 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       },
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: duroodToCtaSpacing),
 
                     // 4. Send Salawat CTA Button
                     Container(
                       width: double.infinity,
-                      constraints: const BoxConstraints(minHeight: 40),
+                      constraints: const BoxConstraints(minHeight: 48),
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryEmerald,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8.5),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          elevation: 2,
+                          elevation: 2.5,
                         ),
                         onPressed: widget.onNavigateToCounter,
                         child: Row(
@@ -522,58 +549,58 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             const Icon(
                               Icons.touch_app_rounded,
-                              size: 19,
+                              size: 21,
                               color: Colors.white,
                             ),
                             const SizedBox(width: 8),
                             Flexible(
                               child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                lp.tr('send_salawat_now'),
-                                style: TextStyle(
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.w700,
-                                  height: 1.3,
-                                  color: Colors.white,
-                                  fontFamily: lp.isUrdu ? AppTypography.urduFontFamily : AppTypography.englishFontFamily,
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  lp.tr('send_salawat_now'),
+                                  style: TextStyle(
+                                    fontSize: 15.5,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.3,
+                                    color: Colors.white,
+                                    fontFamily: lp.isUrdu ? AppTypography.urduFontFamily : AppTypography.englishFontFamily,
+                                  ),
+                                  strutStyle: const StrutStyle(
+                                    forceStrutHeight: true,
+                                    height: 1.3,
+                                  ),
+                                  maxLines: 1,
                                 ),
-                                strutStyle: const StrutStyle(
-                                  forceStrutHeight: true,
-                                  height: 1.3,
-                                ),
-                                maxLines: 1,
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 8),
+                    SizedBox(height: ctaToEventsSpacing),
 
-                  // ── 5. UPCOMING EVENTS Section / Carousel (LAST VISIBLE ABOVE THE FOLD) ──
-                  const _UpcomingEventsSection(),
+                    // ── 5. UPCOMING EVENTS Section / Carousel (LAST VISIBLE ABOVE THE FOLD) ──
+                    _UpcomingEventsSection(cardHeight: eventCarouselHeight),
 
-                  // Dynamic Viewport Fold Inset: ensures Daily Hadith starts completely below the fold on load
-                  SizedBox(height: foldGap),
+                    // Dynamic Viewport Fold Inset: ensures Daily Hadith starts completely below the fold on load
+                    SizedBox(height: foldGap),
 
-                  // ── BELOW THE FOLD (Hidden on launch, ONLY visible when user scrolls down) ──
-                  // 6. Daily Hadith
-                  DailyHadithCard(isUrdu: lp.isUrdu),
-                  const SizedBox(height: 12),
+                    // ── BELOW THE FOLD (Hidden on launch, ONLY visible when user scrolls down) ──
+                    // 6. Daily Hadith
+                    DailyHadithCard(isUrdu: lp.isUrdu),
+                    const SizedBox(height: 12),
 
-                  // 7. Daily Ayat
-                  DailyAyatCard(isUrdu: lp.isUrdu),
-                  const SizedBox(height: 12),
+                    // 7. Daily Ayat
+                    DailyAyatCard(isUrdu: lp.isUrdu),
+                    const SizedBox(height: 12),
 
-                  // 8. Topic of the Day
-                  TopicOfTheDayCard(isUrdu: lp.isUrdu),
-                  const SizedBox(height: 90),
-                ]),
+                    // 8. Topic of the Day
+                    TopicOfTheDayCard(isUrdu: lp.isUrdu),
+                    const SizedBox(height: 90),
+                  ]),
+                ),
               ),
-            ),
             ],
           ),
         );
@@ -583,14 +610,18 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _UpcomingEventsSection extends StatelessWidget {
-  const _UpcomingEventsSection();
+  final double cardHeight;
+
+  const _UpcomingEventsSection({
+    this.cardHeight = 185.0,
+  });
 
   Widget _buildDirectEventCard(BuildContext context, EventModel event, String languageCode) {
     return EventCard(
       key: ValueKey('event_card_${event.id}_$languageCode'),
       event: event,
-      height: 170,
-      width: 290,
+      height: cardHeight,
+      width: (cardHeight * 1.62).clamp(290.0, 330.0),
       onTap: () {
         Navigator.push(
           context,
@@ -631,9 +662,9 @@ class _UpcomingEventsSection extends StatelessWidget {
 
             if (snapshot.connectionState == ConnectionState.waiting &&
                 !snapshot.hasData) {
-              return const SizedBox(
-                height: 170,
-                child: Center(
+              return SizedBox(
+                height: cardHeight,
+                child: const Center(
                   child: CircularProgressIndicator(
                     color: AppColors.primaryEmerald,
                     strokeWidth: 2,
@@ -700,11 +731,11 @@ class _UpcomingEventsSection extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 10),
 
                 // Bulletproof Horizontal Scrollable List
                 SizedBox(
-                  height: 170,
+                  height: cardHeight,
                   child: ListView.separated(
                     key: ValueKey('events_listview_$languageCode'),
                     scrollDirection: Axis.horizontal,
