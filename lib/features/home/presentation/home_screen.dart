@@ -61,6 +61,17 @@ class _HomeScreenState extends State<HomeScreen> {
         final lp = globalLanguageProvider;
         final firebaseUser = FirebaseAuth.instance.currentUser;
 
+        // Dynamic Viewport Fold Calculation: ensures Daily Hadith starts completely below the fold
+        final mediaQuery = MediaQuery.of(context);
+        final screenHeight = mediaQuery.size.height;
+        final bottomBarTotalHeight = kBottomNavigationBarHeight + mediaQuery.padding.bottom;
+        final visibleViewportHeight = screenHeight - bottomBarTotalHeight;
+
+        // Standard above-the-fold content height with un-squeezed 170px EventCards and standard padding
+        const double aboveFoldContentHeight = 548.0;
+        final double remainingToFold = visibleViewportHeight - aboveFoldContentHeight;
+        final double foldGap = math.max(36.0, remainingToFold + 24.0);
+
         return Scaffold(
           backgroundColor: AppColors.bgPrimary,
           body: CustomScrollView(
@@ -68,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
             slivers: [
               // ── Premium App Bar / Header ─────────────────────────────────────
               SliverAppBar(
-                expandedHeight: 118,
+                expandedHeight: 128,
                 pinned: true,
                 backgroundColor: AppColors.primaryEmerald,
                 surfaceTintColor: Colors.transparent,
@@ -123,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Positioned(
                         left: 16,
                         right: 16,
-                        bottom: 6,
+                        bottom: 7,
                         child: StreamBuilder<AppUser?>(
                           stream: AuthService.currentUserStream,
                           builder: (context, userSnap) {
@@ -344,7 +355,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // ── Content ─────────────────────────────────────────────────────
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     // Real-time StreamBuilder listening strictly to Firestore global counter document ('global_counter/main')
@@ -467,7 +478,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           streakDays: effectiveStreak,
                                           duroodPoints: effectivePoints,
                                         ),
-                                        const SizedBox(height: 5),
+                                        const SizedBox(height: 6),
                                         DuroodSummaryCard(
                                           counterService: widget.counterService,
                                           snapshot: snap,
@@ -488,17 +499,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       },
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 6),
 
                     // 4. Send Salawat CTA Button
                     Container(
                       width: double.infinity,
-                      constraints: const BoxConstraints(minHeight: 36),
+                      constraints: const BoxConstraints(minHeight: 40),
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryEmerald,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6.5),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8.5),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
@@ -511,7 +522,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             const Icon(
                               Icons.touch_app_rounded,
-                              size: 18,
+                              size: 19,
                               color: Colors.white,
                             ),
                             const SizedBox(width: 8),
@@ -521,7 +532,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: Text(
                                 lp.tr('send_salawat_now'),
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: 14.5,
                                   fontWeight: FontWeight.w700,
                                   height: 1.3,
                                   color: Colors.white,
@@ -540,11 +551,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
 
                   // ── 5. UPCOMING EVENTS Section / Carousel (LAST VISIBLE ABOVE THE FOLD) ──
                   const _UpcomingEventsSection(),
-                  const SizedBox(height: 32),
+
+                  // Dynamic Viewport Fold Inset: ensures Daily Hadith starts completely below the fold on load
+                  SizedBox(height: foldGap),
 
                   // ── BELOW THE FOLD (Hidden on launch, ONLY visible when user scrolls down) ──
                   // 6. Daily Hadith
@@ -576,8 +589,8 @@ class _UpcomingEventsSection extends StatelessWidget {
     return EventCard(
       key: ValueKey('event_card_${event.id}_$languageCode'),
       event: event,
-      height: 140,
-      width: 270,
+      height: 170,
+      width: 290,
       onTap: () {
         Navigator.push(
           context,
@@ -619,7 +632,7 @@ class _UpcomingEventsSection extends StatelessWidget {
             if (snapshot.connectionState == ConnectionState.waiting &&
                 !snapshot.hasData) {
               return const SizedBox(
-                height: 140,
+                height: 170,
                 child: Center(
                   child: CircularProgressIndicator(
                     color: AppColors.primaryEmerald,
@@ -687,11 +700,11 @@ class _UpcomingEventsSection extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 6),
 
                 // Bulletproof Horizontal Scrollable List
                 SizedBox(
-                  height: 140,
+                  height: 170,
                   child: ListView.separated(
                     key: ValueKey('events_listview_$languageCode'),
                     scrollDirection: Axis.horizontal,

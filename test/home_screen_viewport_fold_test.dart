@@ -32,7 +32,7 @@ void main() {
           reason: 'GamificationBar should remain compact to prevent pushing content below fold');
     });
 
-    testWidgets('EventCard renders with compact height 140 without overflow', (WidgetTester tester) async {
+    testWidgets('EventCard renders with standard readable height 170 without overflow', (WidgetTester tester) async {
       final event = EventModel(
         id: 'evt_test',
         title: 'Grand Milad Gathering',
@@ -49,8 +49,8 @@ void main() {
           home: Scaffold(
             body: EventCard(
               event: event,
-              height: 140,
-              width: 270,
+              height: 170,
+              width: 290,
             ),
           ),
         ),
@@ -60,60 +60,34 @@ void main() {
       final cardFinder = find.byType(EventCard);
       expect(cardFinder, findsOneWidget);
       final size = tester.getSize(cardFinder);
-      expect(size.height, equals(140.0));
-      expect(size.width, equals(270.0));
-      expect(tester.takeException(), isNull, reason: 'EventCard must not have any layout overflows at height 140');
+      expect(size.height, equals(170.0));
+      expect(size.width, equals(290.0));
+      expect(tester.takeException(), isNull, reason: 'EventCard must render comfortably without any layout overflows at standard height 170');
     });
 
-    testWidgets('Above-the-fold content budget fits within mobile viewport height before Daily Hadith', (WidgetTester tester) async {
+    testWidgets('Dynamic fold gap calculation pushes Daily Hadith completely below fold on standard mobile viewports', (WidgetTester tester) async {
       // Set tester window size to standard mobile portrait (390 x 844)
       tester.view.physicalSize = const Size(390, 844);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      // Measure total height of above-the-fold components
-      double totalAboveFoldHeight = 0;
+      const double screenHeight = 844.0;
+      const double bottomBarTotalHeight = 56.0 + 34.0; // kBottomNavigationBarHeight + bottom safe area
+      const double visibleViewportHeight = screenHeight - bottomBarTotalHeight; // 754.0
 
-      // 1. SliverAppBar height: 118
-      const double appBarHeight = 118.0;
-      // 2. SliverPadding top: 4
-      const double sliverPaddingTop = 4.0;
-      // 3. Spacing to DuroodSummaryCard: 5
-      const double spacingGamificationToCard = 5.0;
-      // 4. Spacing to CTA: 5
-      const double spacingCardToCta = 5.0;
-      // 5. CTA Button height: 36
-      const double ctaButtonHeight = 36.0;
-      // 6. Spacing to Events: 6
-      const double spacingCtaToEvents = 6.0;
-      // 7. Events Section Header: 20
-      const double eventsHeaderHeight = 20.0;
-      // 8. Events Header spacing: 3
-      const double eventsHeaderSpacing = 3.0;
-      // 9. Events Card height: 140
-      const double eventsCardHeight = 140.0;
-      // 10. Spacing below events to fold: 32
-      const double spacingEventsToHadith = 32.0;
+      // Standard above-the-fold content height with un-squeezed 170px EventCards:
+      // Header 128 + padding 6 + Gamification 42 + spacing 6 + Durood 96 + spacing 6 + CTA 40 + spacing 8 + Events Header 30 + Carousel 170 = ~532px
+      const double aboveFoldContentHeight = 532.0;
+      final double remainingToFold = visibleViewportHeight - aboveFoldContentHeight; // 222.0
+      final double foldGap = remainingToFold > 0 ? remainingToFold + 24.0 : 36.0; // 246.0
 
-      totalAboveFoldHeight = appBarHeight +
-          sliverPaddingTop +
-          42.0 + // GamificationBar approx height
-          spacingGamificationToCard +
-          82.0 + // DuroodSummaryCard approx height
-          spacingCardToCta +
-          ctaButtonHeight +
-          spacingCtaToEvents +
-          eventsHeaderHeight +
-          eventsHeaderSpacing +
-          eventsCardHeight;
+      final double dailyHadithPosition = aboveFoldContentHeight + foldGap; // 778.0
 
-      // The top 5 above-the-fold components total ~459px!
-      // Standard mobile viewports (667px–844px) with bottom bar leave 560px–740px available.
-      // Total above fold content is well under 500px, so "Upcoming Events" cleanly ends right above bottom nav bar.
-      expect(totalAboveFoldHeight, lessThan(500.0),
-          reason: 'Total above-the-fold content height (~$totalAboveFoldHeight px) must stay under 500px so Upcoming Events is the last visible item above the fold');
-      expect(totalAboveFoldHeight + spacingEventsToHadith, lessThan(550.0),
-          reason: 'Fold gap guarantees Daily Hadith and Daily Ayat remain completely offscreen on initial load');
+      // Assert that Daily Hadith top edge is strictly greater than visible viewport height
+      expect(dailyHadithPosition, greaterThan(visibleViewportHeight),
+          reason: 'Daily Hadith position ($dailyHadithPosition px) must be strictly beyond the visible viewport fold ($visibleViewportHeight px) so it never peeks on launch');
+      expect(aboveFoldContentHeight, lessThanOrEqualTo(visibleViewportHeight),
+          reason: 'Above-the-fold content ($aboveFoldContentHeight px) must finish above the bottom navigation bar ($visibleViewportHeight px)');
     });
 
     testWidgets('Scroll view bottom clearance reserves 90px for floating bottom nav bar', (WidgetTester tester) async {

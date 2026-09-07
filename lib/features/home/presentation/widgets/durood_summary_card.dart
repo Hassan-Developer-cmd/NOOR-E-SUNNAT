@@ -96,7 +96,7 @@ class DuroodSummaryCard extends StatelessWidget {
 
             // 3. Card Content
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6.5),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7.5),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -107,7 +107,7 @@ class DuroodSummaryCard extends StatelessWidget {
                         child: Text(
                           lp.tr('durood_count_summary'),
                           style: const TextStyle(
-                            fontSize: 13.5,
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                             letterSpacing: 0.2,
