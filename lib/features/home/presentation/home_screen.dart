@@ -68,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
             slivers: [
               // ── Premium App Bar / Header ─────────────────────────────────────
               SliverAppBar(
-                expandedHeight: 132,
+                expandedHeight: 122,
                 pinned: true,
                 backgroundColor: AppColors.primaryEmerald,
                 surfaceTintColor: Colors.transparent,
@@ -123,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Positioned(
                         left: 16,
                         right: 16,
-                        bottom: 8,
+                        bottom: 7,
                         child: StreamBuilder<AppUser?>(
                           stream: AuthService.currentUserStream,
                           builder: (context, userSnap) {
@@ -208,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         lp.tr('welcome_greeting'),
                                         style: TextStyle(
                                           color: AppColors.goldBright,
-                                          fontSize: 11.5,
+                                          fontSize: 11,
                                           fontWeight: FontWeight.w600,
                                           letterSpacing: 0.5,
                                           shadows: const [
@@ -225,7 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         liveDisplayName,
                                         style: const TextStyle(
                                           color: Colors.white,
-                                          fontSize: 17,
+                                          fontSize: 16,
                                           fontWeight: FontWeight.bold,
                                           shadows: [
                                             Shadow(
@@ -344,7 +344,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // ── Content ─────────────────────────────────────────────────────
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     // Real-time StreamBuilder listening strictly to Firestore global counter document ('global_counter/main')
@@ -467,7 +467,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           streakDays: effectiveStreak,
                                           duroodPoints: effectivePoints,
                                         ),
-                                        const SizedBox(height: 8),
+                                        const SizedBox(height: 6),
                                         DuroodSummaryCard(
                                           counterService: widget.counterService,
                                           snapshot: snap,
@@ -488,17 +488,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       },
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
 
                     // Send Salawat CTA
                     Container(
                       width: double.infinity,
-                      constraints: const BoxConstraints(minHeight: 40),
+                      constraints: const BoxConstraints(minHeight: 38),
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryEmerald,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8.5),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7.5),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
@@ -517,41 +517,41 @@ class _HomeScreenState extends State<HomeScreen> {
                             const SizedBox(width: 8),
                             Flexible(
                               child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  lp.tr('send_salawat_now'),
-                                  style: TextStyle(
-                                    fontSize: 14.5,
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.3,
-                                    color: Colors.white,
-                                    fontFamily: lp.isUrdu ? AppTypography.urduFontFamily : AppTypography.englishFontFamily,
-                                  ),
-                                  strutStyle: const StrutStyle(
-                                    forceStrutHeight: true,
-                                    height: 1.3,
-                                  ),
-                                  maxLines: 1,
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                lp.tr('send_salawat_now'),
+                                style: TextStyle(
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.3,
+                                  color: Colors.white,
+                                  fontFamily: lp.isUrdu ? AppTypography.urduFontFamily : AppTypography.englishFontFamily,
                                 ),
+                                strutStyle: const StrutStyle(
+                                  forceStrutHeight: true,
+                                  height: 1.3,
+                                ),
+                                maxLines: 1,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
+                  ),
 
-                    const SizedBox(height: 10),
+                  const SizedBox(height: 8),
 
-                    // Upgraded Responsive PageView Events Section with Dynamic Dots & Arrow Nav
-                    const _UpcomingEventsSection(),
-                    const SizedBox(height: 12),
+                  // Upgraded Responsive PageView Events Section with Dynamic Dots & Arrow Nav
+                  const _UpcomingEventsSection(),
+                  const SizedBox(height: 16),
 
-                    // Hadith Card
-                    const HadithWisdomCard(),
-                    const SizedBox(height: 80),
-                  ]),
-                ),
+                  // Hadith Card
+                  const HadithWisdomCard(),
+                  const SizedBox(height: 90),
+                ]),
               ),
+            ),
             ],
           ),
         );
@@ -567,8 +567,8 @@ class _UpcomingEventsSection extends StatelessWidget {
     return EventCard(
       key: ValueKey('event_card_${event.id}_$languageCode'),
       event: event,
-      height: 155,
-      width: 280,
+      height: 146,
+      width: 275,
       onTap: () {
         Navigator.push(
           context,
@@ -610,7 +610,7 @@ class _UpcomingEventsSection extends StatelessWidget {
             if (snapshot.connectionState == ConnectionState.waiting &&
                 !snapshot.hasData) {
               return const SizedBox(
-                height: 155,
+                height: 146,
                 child: Center(
                   child: CircularProgressIndicator(
                     color: AppColors.primaryEmerald,
@@ -678,11 +678,11 @@ class _UpcomingEventsSection extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
 
                 // Bulletproof Horizontal Scrollable List
                 SizedBox(
-                  height: 155,
+                  height: 146,
                   child: ListView.separated(
                     key: ValueKey('events_listview_$languageCode'),
                     scrollDirection: Axis.horizontal,

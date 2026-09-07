@@ -96,7 +96,7 @@ class DuroodSummaryCard extends StatelessWidget {
 
             // 3. Card Content
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -107,7 +107,7 @@ class DuroodSummaryCard extends StatelessWidget {
                         child: Text(
                           lp.tr('durood_count_summary'),
                           style: const TextStyle(
-                            fontSize: 14.5,
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                             letterSpacing: 0.2,
@@ -122,7 +122,7 @@ class DuroodSummaryCard extends StatelessWidget {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
                           color: Colors.black.withValues(alpha: 0.22),
                           borderRadius: BorderRadius.circular(20),
@@ -153,7 +153,7 @@ class DuroodSummaryCard extends StatelessWidget {
                             Text(
                               lp.tr('live_updates'),
                               style: const TextStyle(
-                                fontSize: 10,
+                                fontSize: 9.5,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
                                 letterSpacing: 0.4,
@@ -164,7 +164,7 @@ class DuroodSummaryCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
 
                   // Stats row
                   Row(
@@ -180,7 +180,7 @@ class DuroodSummaryCard extends StatelessWidget {
                       ),
                       Container(
                         width: 1,
-                        height: 34,
+                        height: 30,
                         color: Colors.white.withValues(alpha: 0.28),
                       ),
                       Expanded(
@@ -195,7 +195,7 @@ class DuroodSummaryCard extends StatelessWidget {
                       if (isLoggedIn && effectiveMyTotal != null) ...[
                         Container(
                           width: 1,
-                          height: 34,
+                          height: 30,
                           color: Colors.white.withValues(alpha: 0.28),
                         ),
                         Expanded(

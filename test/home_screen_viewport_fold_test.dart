@@ -32,7 +32,7 @@ void main() {
           reason: 'GamificationBar should remain compact to prevent pushing content below fold');
     });
 
-    testWidgets('EventCard renders with compact height 155 without overflow', (WidgetTester tester) async {
+    testWidgets('EventCard renders with compact height 146 without overflow', (WidgetTester tester) async {
       final event = EventModel(
         id: 'evt_test',
         title: 'Grand Milad Gathering',
@@ -49,8 +49,8 @@ void main() {
           home: Scaffold(
             body: EventCard(
               event: event,
-              height: 155,
-              width: 280,
+              height: 146,
+              width: 275,
             ),
           ),
         ),
@@ -60,9 +60,9 @@ void main() {
       final cardFinder = find.byType(EventCard);
       expect(cardFinder, findsOneWidget);
       final size = tester.getSize(cardFinder);
-      expect(size.height, equals(155.0));
-      expect(size.width, equals(280.0));
-      expect(tester.takeException(), isNull, reason: 'EventCard must not have any layout overflows at height 155');
+      expect(size.height, equals(146.0));
+      expect(size.width, equals(275.0));
+      expect(tester.takeException(), isNull, reason: 'EventCard must not have any layout overflows at height 146');
     });
 
     testWidgets('Above-the-fold content budget fits within mobile viewport height before Daily Hadith', (WidgetTester tester) async {
@@ -74,32 +74,32 @@ void main() {
       // Measure total height of above-the-fold components
       double totalAboveFoldHeight = 0;
 
-      // 1. SliverAppBar height: 132
-      const double appBarHeight = 132.0;
-      // 2. SliverPadding top: 8
-      const double sliverPaddingTop = 8.0;
-      // 3. Spacing to DuroodSummaryCard: 8
-      const double spacingGamificationToCard = 8.0;
-      // 4. Spacing to CTA: 8
-      const double spacingCardToCta = 8.0;
-      // 5. CTA Button height: 40
-      const double ctaButtonHeight = 40.0;
-      // 6. Spacing to Events: 10
-      const double spacingCtaToEvents = 10.0;
+      // 1. SliverAppBar height: 122
+      const double appBarHeight = 122.0;
+      // 2. SliverPadding top: 6
+      const double sliverPaddingTop = 6.0;
+      // 3. Spacing to DuroodSummaryCard: 6
+      const double spacingGamificationToCard = 6.0;
+      // 4. Spacing to CTA: 6
+      const double spacingCardToCta = 6.0;
+      // 5. CTA Button height: 38
+      const double ctaButtonHeight = 38.0;
+      // 6. Spacing to Events: 8
+      const double spacingCtaToEvents = 8.0;
       // 7. Events Section Header: 24
       const double eventsHeaderHeight = 24.0;
-      // 8. Events Header spacing: 6
-      const double eventsHeaderSpacing = 6.0;
-      // 9. Events Card height: 155
-      const double eventsCardHeight = 155.0;
-      // 10. Spacing below events: 12
-      const double spacingEventsToHadith = 12.0;
+      // 8. Events Header spacing: 4
+      const double eventsHeaderSpacing = 4.0;
+      // 9. Events Card height: 146
+      const double eventsCardHeight = 146.0;
+      // 10. Spacing below events: 16
+      const double spacingEventsToHadith = 16.0;
 
       totalAboveFoldHeight = appBarHeight +
           sliverPaddingTop +
-          50.0 + // GamificationBar approx height
+          44.0 + // GamificationBar approx height
           spacingGamificationToCard +
-          115.0 + // DuroodSummaryCard approx height
+          104.0 + // DuroodSummaryCard approx height
           spacingCardToCta +
           ctaButtonHeight +
           spacingCtaToEvents +
@@ -110,14 +110,15 @@ void main() {
 
       // The available fold on standard 844 screen with 56px bottom nav bar and 44px status bar is ~700px.
       // On an 800px screen, available fold is ~660px.
-      expect(totalAboveFoldHeight, lessThan(600.0),
-          reason: 'Total above-the-fold content height (~$totalAboveFoldHeight px) must stay well under 600px so Daily Hadith stays below the fold on first render');
+      // On a 667px screen, available fold is ~590px.
+      expect(totalAboveFoldHeight, lessThan(550.0),
+          reason: 'Total above-the-fold content height (~$totalAboveFoldHeight px) must stay under 550px so Daily Hadith remains cleanly below the fold on first render');
     });
 
-    testWidgets('Scroll view bottom clearance reserves 80px for floating bottom nav bar', (WidgetTester tester) async {
-      const double bottomClearance = 80.0;
-      expect(bottomClearance, greaterThanOrEqualTo(60.0),
-          reason: 'Bottom clearance must provide at least 60-80px padding to clear the bottom navigation bar');
+    testWidgets('Scroll view bottom clearance reserves 90px for floating bottom nav bar', (WidgetTester tester) async {
+      const double bottomClearance = 90.0;
+      expect(bottomClearance, greaterThanOrEqualTo(90.0),
+          reason: 'Bottom clearance must provide at least 90px padding to clear the bottom navigation bar');
     });
   });
 }
