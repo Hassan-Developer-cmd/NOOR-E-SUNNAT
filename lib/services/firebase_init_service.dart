@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../core/utils/firestore_seeder.dart';
 
@@ -34,18 +35,19 @@ class FirebaseInitService {
     ];
 
     try {
-      for (final email in adminEmails) {
-        final query = await firestore
-            .collection('users')
-            .where('email', isEqualTo: email)
-            .limit(1)
-            .get();
+      final currentUser = FirebaseAuth.instance.currentUser;
+      // Only execute if the currently authenticated user is an admin candidate.
+      // Regular users and guests do not have permission to query /users collection.
+      if (currentUser == null) return;
+      final email = currentUser.email?.toLowerCase().trim();
+      if (email == null || !adminEmails.contains(email)) return;
 
-        if (query.docs.isNotEmpty) {
-          final doc = query.docs.first;
-          if (doc.data()['is_admin'] != true) {
-            await doc.reference.set({'is_admin': true}, SetOptions(merge: true));
-          }
+      final docRef = firestore.collection('users').doc(currentUser.uid);
+      final docSnap = await docRef.get();
+      if (docSnap.exists) {
+        final data = docSnap.data();
+        if (data?['is_admin'] != true) {
+          await docRef.set({'is_admin': true}, SetOptions(merge: true));
         }
       }
     } catch (e) {
@@ -55,3 +57,4 @@ class FirebaseInitService {
     }
   }
 }
+

@@ -138,10 +138,17 @@ class FirestoreSeeder {
       // 5. Check & Seed Global Counter in 'global_counter/main'
       final counterRef = _firestore.collection('global_counter').doc('main');
       final counterSnap = await counterRef.get();
-      results['counters'] = {'count': counterSnap.exists ? 1 : 0};
+      results['counters']['count'] = counterSnap.exists ? 1 : 0;
 
       if (!counterSnap.exists || force) {
-        await recalculateAndSyncGlobalCounter();
+        final todayStr = DateTime.now().toIso8601String().split('T').first;
+        final initialPayload = <String, dynamic>{
+          'globalTotal': 0,
+          'todayTotal': 0,
+          'date': todayStr,
+          'updatedAt': FieldValue.serverTimestamp(),
+        };
+        await counterRef.set(initialPayload);
         results['counters']['seeded'] = true;
         results['counters']['status'] = 'Cleaned & seeded global_counter/main';
       } else {
@@ -154,8 +161,21 @@ class FirestoreSeeder {
             (d != null && (d.containsKey('total_count') || d.containsKey('todayDurood') || d.containsKey('today_count')));
 
         if (hasCorruptedData) {
-          await recalculateAndSyncGlobalCounter();
-          results['counters']['status'] = 'Purged corrupted fields and reset to true aggregated count';
+          final todayStr = DateTime.now().toIso8601String().split('T').first;
+          final int cleanTotal = (currentTotal is num && currentTotal > 0 && currentTotal <= 1000000000 && currentTotal != 125000)
+              ? currentTotal.toInt()
+              : 0;
+          final rawToday = d?['todayTotal'] ?? d?['today_count'];
+          final int cleanToday = (rawToday is num && rawToday > 0 && rawToday <= 1000000000)
+              ? rawToday.toInt()
+              : 0;
+          await counterRef.set({
+            'globalTotal': cleanTotal,
+            'todayTotal': cleanToday,
+            'date': d?['date'] ?? todayStr,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+          results['counters']['status'] = 'Sanitized global_counter/main directly';
         } else {
           results['counters']['status'] = 'Skipped (Already clean)';
         }
@@ -233,6 +253,13 @@ class FirestoreSeeder {
       // Strictly write only to global_counter/main without merge (wipes mock/corrupted fields)
       await _firestore.collection('global_counter').doc('main').set(payload);
       return payload;
+    } on FirebaseException catch (e) {
+      if (e.code == 'permission-denied') {
+        if (kDebugMode) print('[Seeder] recalculateAndSyncGlobalCounter skipped: non-admin client lacks users collection read permissions.');
+        return {};
+      }
+      if (kDebugMode) print('[Seeder] recalculateAndSyncGlobalCounter error: $e');
+      return {};
     } catch (e) {
       if (kDebugMode) print('[Seeder] recalculateAndSyncGlobalCounter error: $e');
       return {};
