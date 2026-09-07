@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../../../core/constants/app_typography.dart';
 import '../../../../core/utils/number_formatter.dart';
 import '../../../../main.dart';
 import '../../../../services/counter_service.dart';
@@ -39,53 +40,69 @@ class DuroodSummaryCard extends StatelessWidget {
         ? (myTotal != null ? math.max(currentSnap.personalTotal, myTotal!) : currentSnap.personalTotal)
         : null;
 
+    // High-contrast typography palette tailored for rich golden background
+    const Color brandTitleColor = Color(0xFF451A03); // Deep rich espresso / amber-brown
+    const Color brandLabelColor = Color(0xFF78350F); // Warm deep bronze / amber
+    const Color brandValueColor = Color(0xFF451A03); // Prominent bold neutral espresso
+    const Color brandDividerColor = Color(0x3378350F); // 20% opacity warm divider
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: const LinearGradient(
           colors: [
-            Color(0xFFFDE047), // Sunny Light Yellow
-            Color(0xFFFACC15), // Vibrant Canary Yellow
+            Color(0xFFFEF08A), // Sunny Warm Golden Yellow
+            Color(0xFFFACC15), // Vibrant Canary Gold
+            Color(0xFFEAB308), // Rich Deep Golden Amber
           ],
+          stops: [0.0, 0.55, 1.0],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFEAB308).withValues(alpha: 0.28),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
+            color: const Color(0xFF78350F).withValues(alpha: 0.18),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+          BoxShadow(
+            color: const Color(0xFFEAB308).withValues(alpha: 0.32),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.45),
-          width: 1,
+          color: const Color(0xFFB45309).withValues(alpha: 0.35),
+          width: 1.2,
         ),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Stack(
           children: [
-            // 1. Islamic Geometric Light Yellow Pattern Background
+            // 1. Islamic Geometric Light Yellow Pattern Background (subtle watermark)
             Positioned.fill(
-              child: Image.asset(
-                'assets/images/durood_pattern_bg.jpeg',
-                fit: BoxFit.cover,
-                alignment: Alignment.center,
-                errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+              child: Opacity(
+                opacity: 0.35,
+                child: Image.asset(
+                  'assets/images/durood_pattern_bg.jpeg',
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                  errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                ),
               ),
             ),
 
-            // 2. Gentle Overlay for Maximum Readability on Light Yellow
+            // 2. Inner Vignette / Soft Shadow for Enhanced Contrast & Definition
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.black.withValues(alpha: 0.04),
+                      Colors.white.withValues(alpha: 0.16),
                       Colors.transparent,
-                      Colors.black.withValues(alpha: 0.16),
+                      const Color(0xFF78350F).withValues(alpha: 0.08),
                     ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
@@ -96,7 +113,7 @@ class DuroodSummaryCard extends StatelessWidget {
 
             // 3. Card Content
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -106,28 +123,22 @@ class DuroodSummaryCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           lp.tr('durood_count_summary'),
-                          style: const TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 0.2,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black45,
-                                blurRadius: 4,
-                                offset: Offset(0, 1),
-                              ),
-                            ],
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: brandTitleColor,
+                            letterSpacing: lp.isUrdu ? 0 : 0.2,
+                            fontFamily: lp.isUrdu ? AppTypography.urduFontFamily : null,
                           ),
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                        padding: const EdgeInsets.symmetric(horizontal: 8.5, vertical: 3.0),
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.22),
+                          color: const Color(0xFF78350F).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.55),
+                            color: const Color(0xFF78350F).withValues(alpha: 0.25),
                             width: 0.8,
                           ),
                         ),
@@ -138,11 +149,11 @@ class DuroodSummaryCard extends StatelessWidget {
                               width: 6.5,
                               height: 6.5,
                               decoration: const BoxDecoration(
-                                color: Color(0xFF4ADE80), // Neon green pulse dot
+                                color: Color(0xFF16A34A), // Vibrant emerald green pulse dot
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Color(0xFF4ADE80),
+                                    color: Color(0xFF16A34A),
                                     blurRadius: 4,
                                     spreadRadius: 1,
                                   ),
@@ -152,11 +163,12 @@ class DuroodSummaryCard extends StatelessWidget {
                             const SizedBox(width: 5),
                             Text(
                               lp.tr('live_updates'),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                                letterSpacing: 0.4,
+                                color: const Color(0xFF78350F),
+                                letterSpacing: lp.isUrdu ? 0 : 0.4,
+                                fontFamily: lp.isUrdu ? AppTypography.urduFontFamily : null,
                               ),
                             ),
                           ],
@@ -171,56 +183,64 @@ class DuroodSummaryCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: _buildStat(
-                          lp.tr('global_total'),
-                          NumberFormatter.formatCompact(effectiveGlobalTotal),
-                          Icons.public_rounded,
-                          Colors.white,
-                          Colors.white,
+                          label: lp.tr('global_total'),
+                          value: NumberFormatter.formatCompact(effectiveGlobalTotal),
+                          icon: Icons.public_rounded,
+                          iconColor: brandLabelColor,
+                          labelColor: brandLabelColor,
+                          valueColor: brandValueColor,
+                          isUrdu: lp.isUrdu,
                         ),
                       ),
                       Container(
                         width: 1,
-                        height: 34,
-                        color: Colors.white.withValues(alpha: 0.28),
+                        height: 32,
+                        color: brandDividerColor,
                       ),
                       Expanded(
                         child: _buildStat(
-                          lp.tr('global_today'),
-                          NumberFormatter.formatCompact(effectiveTodayTotal),
-                          Icons.today_rounded,
-                          const Color(0xFFFFFBEB),
-                          Colors.white,
+                          label: lp.tr('global_today'),
+                          value: NumberFormatter.formatCompact(effectiveTodayTotal),
+                          icon: Icons.today_rounded,
+                          iconColor: brandLabelColor,
+                          labelColor: brandLabelColor,
+                          valueColor: brandValueColor,
+                          isUrdu: lp.isUrdu,
                         ),
                       ),
                       if (isLoggedIn && effectiveMyTotal != null) ...[
                         Container(
                           width: 1,
-                          height: 34,
-                          color: Colors.white.withValues(alpha: 0.28),
+                          height: 32,
+                          color: brandDividerColor,
                         ),
                         Expanded(
                           child: _buildStat(
-                            lp.tr('my_total'),
-                            NumberFormatter.formatCompact(effectiveMyTotal),
-                            Icons.all_inclusive_rounded,
-                            const Color(0xFFFFFBEB),
-                            Colors.white,
+                            label: lp.tr('my_total'),
+                            value: NumberFormatter.formatCompact(effectiveMyTotal),
+                            icon: Icons.all_inclusive_rounded,
+                            iconColor: brandLabelColor,
+                            labelColor: brandLabelColor,
+                            valueColor: brandValueColor,
+                            isUrdu: lp.isUrdu,
                           ),
                         ),
                       ],
                       if (isLoggedIn && effectiveMyToday != null) ...[
                         Container(
                           width: 1,
-                          height: 34,
-                          color: Colors.white.withValues(alpha: 0.28),
+                          height: 32,
+                          color: brandDividerColor,
                         ),
                         Expanded(
                           child: _buildStat(
-                            lp.tr('my_today'),
-                            NumberFormatter.formatCompact(effectiveMyToday),
-                            Icons.timer_rounded,
-                            const Color(0xFFFFFBEB),
-                            Colors.white,
+                            label: lp.tr('my_today'),
+                            value: NumberFormatter.formatCompact(effectiveMyToday),
+                            icon: Icons.timer_rounded,
+                            iconColor: brandLabelColor,
+                            labelColor: brandLabelColor,
+                            valueColor: brandValueColor,
+                            isUrdu: lp.isUrdu,
                           ),
                         ),
                       ],
@@ -235,13 +255,15 @@ class DuroodSummaryCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStat(
-    String label,
-    String value,
-    IconData icon,
-    Color iconColor,
-    Color valueColor,
-  ) {
+  Widget _buildStat({
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color iconColor,
+    required Color labelColor,
+    required Color valueColor,
+    bool isUrdu = false,
+  }) {
     return Column(
       children: [
         Row(
@@ -249,24 +271,18 @@ class DuroodSummaryCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 13.5, color: iconColor),
-            const SizedBox(width: 5),
+            const SizedBox(width: 4.5),
             Flexible(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFFFFFBEB), // Soft warm cream white
-                    letterSpacing: 0.3,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black38,
-                        blurRadius: 3,
-                        offset: Offset(0, 1),
-                      ),
-                    ],
+                    fontWeight: FontWeight.w700,
+                    color: labelColor,
+                    letterSpacing: isUrdu ? 0 : 0.3,
+                    fontFamily: isUrdu ? AppTypography.urduFontFamily : null,
                   ),
                 ),
               ),
@@ -297,15 +313,15 @@ class DuroodSummaryCard extends StatelessWidget {
               value,
               key: ValueKey<String>(value),
               style: TextStyle(
-                fontSize: 18.5,
+                fontSize: 20.0,
                 fontWeight: FontWeight.w800,
                 color: valueColor,
-                letterSpacing: -0.3,
+                letterSpacing: -0.4,
                 shadows: const [
                   Shadow(
-                    color: Colors.black45,
-                    blurRadius: 5,
-                    offset: Offset(0, 1.5),
+                    color: Color(0x1F000000),
+                    blurRadius: 2,
+                    offset: Offset(0, 1),
                   ),
                 ],
               ),
