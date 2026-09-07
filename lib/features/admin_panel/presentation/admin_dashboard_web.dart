@@ -663,8 +663,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
   }
 
   Widget _buildHijriAdjustmentCard(double screenWidth) {
-    final effectiveHijriDate = IslamicDateHelper.calculateOfflineHijriDate(
-      DateTime.now().add(Duration(days: _hijriDayOffset)),
+    final effectiveHijriDate = IslamicDateHelper.getHijriDateSync(
+      dayOffset: _hijriDayOffset,
     );
 
     return Container(

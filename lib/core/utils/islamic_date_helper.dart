@@ -1,8 +1,5 @@
-import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/hijri_date_model.dart';
 
 class IslamicDateHelper {
@@ -40,7 +37,7 @@ class IslamicDateHelper {
     'ذوالحجہ',
   ];
 
-  /// Real-time stream of the day offset (-2 to +2) from Firestore settings/hijri_config
+  /// Real-time stream of the day offset (-2 to +2) from Firestore settings
   static Stream<int> get hijriOffsetStream {
     return _firestore
         .collection(_settingsCollection)
@@ -48,7 +45,8 @@ class IslamicDateHelper {
         .snapshots()
         .map((doc) {
           if (doc.exists && doc.data() != null) {
-            final val = doc.data()!['dayOffset'];
+            final data = doc.data()!;
+            final val = data['dayOffset'] ?? data['offset'] ?? data['hijriOffset'] ?? data['day_offset'];
             if (val is num) return val.toInt().clamp(-2, 2);
           }
           return 0;
@@ -60,7 +58,14 @@ class IslamicDateHelper {
     try {
       final doc = await _firestore.collection(_settingsCollection).doc(_hijriDocId).get();
       if (doc.exists && doc.data() != null) {
-        final val = doc.data()!['dayOffset'];
+        final data = doc.data()!;
+        final val = data['dayOffset'] ?? data['offset'] ?? data['hijriOffset'] ?? data['day_offset'];
+        if (val is num) return val.toInt().clamp(-2, 2);
+      }
+      final altDoc = await _firestore.collection(_settingsCollection).doc('hijri').get();
+      if (altDoc.exists && altDoc.data() != null) {
+        final data = altDoc.data()!;
+        final val = data['dayOffset'] ?? data['offset'] ?? data['hijriOffset'] ?? data['day_offset'];
         if (val is num) return val.toInt().clamp(-2, 2);
       }
     } catch (e) {
@@ -71,85 +76,50 @@ class IslamicDateHelper {
     return 0;
   }
 
-  /// Saves the moon-sighting day offset to Firestore settings/hijri_config
+  /// Saves the moon-sighting day offset to Firestore settings documents for real-time synchronization
   static Future<void> saveHijriOffset(int dayOffset) async {
     final clamped = dayOffset.clamp(-2, 2);
-    await _firestore.collection(_settingsCollection).doc(_hijriDocId).set({
+    final data = {
       'dayOffset': clamped,
+      'offset': clamped,
+      'hijriOffset': clamped,
+      'day_offset': clamped,
       'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+    };
+    try {
+      await Future.wait([
+        _firestore.collection(_settingsCollection).doc(_hijriDocId).set(data, SetOptions(merge: true)),
+        _firestore.collection(_settingsCollection).doc('hijri').set(data, SetOptions(merge: true)),
+        _firestore.collection(_settingsCollection).doc('hijri_adjustment').set(data, SetOptions(merge: true)),
+      ]);
+    } catch (e) {
+      if (kDebugMode) {
+        print('IslamicDateHelper.saveHijriOffset error: $e');
+      }
+      rethrow;
+    }
   }
 
-  /// Calculates the effective Hijri date for the given [gregorianDate] and [dayOffset].
-  /// Uses Aladhan API when available, and falls back to offline algorithmic calculation.
+  /// Synchronously calculates the effective Hijri date for the given [gregorianDate] and [dayOffset].
+  /// Directly harmonized with the Web Admin "Moon Sighting Adjustment" setting as the single source of truth.
+  /// Base is strictly: Standard Hijri Date + Firestore admin offset.
+  static HijriDateModel getHijriDateSync({
+    DateTime? gregorianDate,
+    int? dayOffset,
+  }) {
+    final baseDate = gregorianDate ?? DateTime.now();
+    final offset = dayOffset ?? 0;
+    final effectiveDate = baseDate.add(Duration(days: offset));
+    return calculateOfflineHijriDate(effectiveDate);
+  }
+
+  /// Asynchronously fetches [dayOffset] from Firestore if omitted and returns the harmonized Hijri date.
   static Future<HijriDateModel> getHijriDate({
     DateTime? gregorianDate,
     int? dayOffset,
   }) async {
-    final baseDate = gregorianDate ?? DateTime.now();
     final offset = dayOffset ?? await getHijriOffset();
-    final effectiveDate = baseDate.add(Duration(days: offset));
-
-    // 1. Try local cache first for instant UI response
-    final cached = await _getCachedHijriDate(effectiveDate);
-    if (cached != null) {
-      // Background sync with API
-      _syncWithAladhanApi(effectiveDate).catchError((_) {});
-      return cached;
-    }
-
-    // 2. Try fetching from Aladhan API
-    try {
-      final apiModel = await _fetchFromAladhanApi(effectiveDate);
-      if (apiModel != null) {
-        await _cacheHijriDate(effectiveDate, apiModel);
-        return apiModel;
-      }
-    } catch (_) {}
-
-    // 3. Robust offline fallback
-    final offlineModel = calculateOfflineHijriDate(effectiveDate);
-    await _cacheHijriDate(effectiveDate, offlineModel);
-    return offlineModel;
-  }
-
-  /// Fetches Hijri date from Aladhan API (https://api.aladhan.com/v1/gToH?date=DD-MM-YYYY)
-  static Future<HijriDateModel?> _fetchFromAladhanApi(DateTime date) async {
-    final formattedDate =
-        '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
-    final url = Uri.parse('https://api.aladhan.com/v1/gToH?date=$formattedDate');
-
-    final response = await http.get(url).timeout(const Duration(seconds: 4));
-
-    if (response.statusCode == 200) {
-      final json = jsonDecode(response.body);
-      if (json['code'] == 200 && json['data'] != null) {
-        final hijri = json['data']['hijri'];
-        final day = int.tryParse(hijri['day']?.toString() ?? '') ?? date.day;
-        final monthNum = (hijri['month']?['number'] as num?)?.toInt() ?? 1;
-        final year = int.tryParse(hijri['year']?.toString() ?? '') ?? 1448;
-
-        final clampedMonth = monthNum.clamp(1, 12);
-        return HijriDateModel(
-          day: day,
-          month: clampedMonth,
-          year: year,
-          monthNameEnglish: islamicMonthsEnglish[clampedMonth - 1],
-          monthNameUrdu: islamicMonthsUrdu[clampedMonth - 1],
-        );
-      }
-    }
-    return null;
-  }
-
-  /// Background sync to update local cache
-  static Future<void> _syncWithAladhanApi(DateTime date) async {
-    try {
-      final apiModel = await _fetchFromAladhanApi(date);
-      if (apiModel != null) {
-        await _cacheHijriDate(date, apiModel);
-      }
-    } catch (_) {}
+    return getHijriDateSync(gregorianDate: gregorianDate, dayOffset: offset);
   }
 
   /// Robust algorithmic conversion from Gregorian to Islamic (Hijri) date
@@ -194,29 +164,5 @@ class IslamicDateHelper {
       monthNameEnglish: islamicMonthsEnglish[clampedMonth - 1],
       monthNameUrdu: islamicMonthsUrdu[clampedMonth - 1],
     );
-  }
-
-  // ── Local SharedPreferences Cache ──────────────────────────────────
-
-  static String _cacheKey(DateTime date) => 'hijri_${date.year}_${date.month}_${date.day}';
-
-  static Future<HijriDateModel?> _getCachedHijriDate(DateTime date) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final jsonStr = prefs.getString(_cacheKey(date));
-      if (jsonStr != null) {
-        final map = jsonDecode(jsonStr) as Map<String, dynamic>;
-        return HijriDateModel.fromMap(map);
-      }
-    } catch (_) {}
-    return null;
-  }
-
-  static Future<void> _cacheHijriDate(DateTime date, HijriDateModel model) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final jsonStr = jsonEncode(model.toMap());
-      await prefs.setString(_cacheKey(date), jsonStr);
-    } catch (_) {}
   }
 }

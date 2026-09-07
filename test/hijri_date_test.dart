@@ -72,6 +72,37 @@ void main() {
       expect(IslamicDateHelper.islamicMonthsEnglish[8], 'Ramadan');
       expect(IslamicDateHelper.islamicMonthsUrdu[8], 'رمضان المبارک');
     });
+    test('Harmonization: 2026-09-07 with 0 offset matches Web Admin Preview (24 Rabi al-Awwal 1448 AH)', () {
+      final date = DateTime(2026, 9, 7);
+      final hijri = IslamicDateHelper.getHijriDateSync(gregorianDate: date, dayOffset: 0);
+
+      expect(hijri.day, 24);
+      expect(hijri.month, 3);
+      expect(hijri.year, 1448);
+      expect(hijri.formattedEnglish, "24 Rabi' al-Awwal 1448 AH");
+      expect(hijri.formattedUrdu, "24 ربیع الاول 1448ھ");
+    });
+
+    test('Harmonization: Moon sighting offset adjusts date synchronously and deterministically', () {
+      final date = DateTime(2026, 9, 7);
+
+      final zeroOffset = IslamicDateHelper.getHijriDateSync(gregorianDate: date, dayOffset: 0);
+      final plusOne = IslamicDateHelper.getHijriDateSync(gregorianDate: date, dayOffset: 1);
+      final minusOne = IslamicDateHelper.getHijriDateSync(gregorianDate: date, dayOffset: -1);
+      final plusTwo = IslamicDateHelper.getHijriDateSync(gregorianDate: date, dayOffset: 2);
+      final minusTwo = IslamicDateHelper.getHijriDateSync(gregorianDate: date, dayOffset: -2);
+
+      expect(zeroOffset.formattedEnglish, "24 Rabi' al-Awwal 1448 AH");
+      expect(plusOne.formattedEnglish, "25 Rabi' al-Awwal 1448 AH");
+      expect(minusOne.formattedEnglish, "23 Rabi' al-Awwal 1448 AH");
+      expect(plusTwo.formattedEnglish, "26 Rabi' al-Awwal 1448 AH");
+      expect(minusTwo.formattedEnglish, "22 Rabi' al-Awwal 1448 AH");
+
+      // Verify Urdu
+      expect(zeroOffset.formattedUrdu, "24 ربیع الاول 1448ھ");
+      expect(plusOne.formattedUrdu, "25 ربیع الاول 1448ھ");
+      expect(minusOne.formattedUrdu, "23 ربیع الاول 1448ھ");
+    });
   });
 
   group('Header Hijri Date Widget Tests', () {
@@ -99,6 +130,22 @@ void main() {
 
       expect(find.byIcon(Icons.nightlight_round), findsOneWidget);
       expect(find.text(sampleDate.formattedEnglish), findsOneWidget);
+    });
+
+    testWidgets('Header Badge renders exact Web Admin synchronized date for 2026-09-07 with 0 offset', (WidgetTester tester) async {
+      final date = DateTime(2026, 9, 7);
+      final synchronizedDate = IslamicDateHelper.getHijriDateSync(gregorianDate: date, dayOffset: 0);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Text(synchronizedDate.formattedEnglish),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text("24 Rabi' al-Awwal 1448 AH"), findsOneWidget);
     });
   });
 }

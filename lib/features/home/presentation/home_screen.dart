@@ -6,7 +6,6 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/models/app_user.dart';
 import '../../../core/models/event_model.dart';
-import '../../../core/models/hijri_date_model.dart';
 import '../../../core/utils/islamic_date_helper.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../../main.dart';
@@ -146,73 +145,62 @@ class _HomeScreenState extends State<HomeScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      // Dynamic Localized Hijri Date Badge
+                                      // Dynamic Localized Hijri Date Badge (synchronized in real-time with Web Admin)
                                       StreamBuilder<int>(
                                         stream: IslamicDateHelper.hijriOffsetStream,
                                         builder: (context, offsetSnap) {
                                           final offset = offsetSnap.data ?? 0;
-                                          return FutureBuilder<HijriDateModel>(
-                                            future: IslamicDateHelper.getHijriDate(dayOffset: offset),
-                                            initialData: IslamicDateHelper.calculateOfflineHijriDate(
-                                              DateTime.now().add(Duration(days: offset)),
-                                            ),
-                                            builder: (context, dateSnap) {
-                                              final hijriDate = dateSnap.data ??
-                                                  IslamicDateHelper.calculateOfflineHijriDate(
-                                                    DateTime.now().add(Duration(days: offset)),
-                                                  );
-                                              final dateText = hijriDate.getFormatted(lp.isUrdu);
+                                          final hijriDate = IslamicDateHelper.getHijriDateSync(dayOffset: offset);
+                                          final dateText = hijriDate.getFormatted(lp.isUrdu);
 
-                                              return Container(
-                                                margin: const EdgeInsets.only(bottom: 4),
-                                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 2.5),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.black.withValues(alpha: 0.28),
-                                                  borderRadius: BorderRadius.circular(20),
-                                                  border: Border.all(
-                                                    color: AppColors.accentGold.withValues(alpha: 0.5),
-                                                    width: 1,
-                                                  ),
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: Colors.black.withValues(alpha: 0.25),
-                                                      blurRadius: 6,
-                                                      offset: const Offset(0, 2),
-                                                    ),
-                                                  ],
+                                          return Container(
+                                            margin: const EdgeInsets.only(bottom: 4),
+                                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 2.5),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withValues(alpha: 0.28),
+                                              borderRadius: BorderRadius.circular(20),
+                                              border: Border.all(
+                                                color: AppColors.accentGold.withValues(alpha: 0.5),
+                                                width: 1,
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black.withValues(alpha: 0.25),
+                                                  blurRadius: 6,
+                                                  offset: const Offset(0, 2),
                                                 ),
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    const Icon(
-                                                      Icons.nightlight_round,
-                                                      color: AppColors.goldBright,
-                                                      size: 12,
-                                                    ),
-                                                    const SizedBox(width: 5),
-                                                    Text(
-                                                      dateText,
-                                                      style: TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: lp.isUrdu ? 12 : 11,
-                                                        fontWeight: FontWeight.w600,
-                                                        fontFamily: lp.isUrdu
-                                                            ? AppTypography.urduFontFamily
-                                                            : AppTypography.englishFontFamily,
-                                                        letterSpacing: lp.isUrdu ? 0 : 0.3,
-                                                        shadows: const [
-                                                          Shadow(
-                                                            color: Colors.black54,
-                                                            blurRadius: 4,
-                                                            offset: Offset(0, 1),
-                                                          ),
-                                                        ],
+                                              ],
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(
+                                                  Icons.nightlight_round,
+                                                  color: AppColors.goldBright,
+                                                  size: 12,
+                                                ),
+                                                const SizedBox(width: 5),
+                                                Text(
+                                                  dateText,
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: lp.isUrdu ? 12 : 11,
+                                                    fontWeight: FontWeight.w600,
+                                                    fontFamily: lp.isUrdu
+                                                        ? AppTypography.urduFontFamily
+                                                        : AppTypography.englishFontFamily,
+                                                    letterSpacing: lp.isUrdu ? 0 : 0.3,
+                                                    shadows: const [
+                                                      Shadow(
+                                                        color: Colors.black54,
+                                                        blurRadius: 4,
+                                                        offset: Offset(0, 1),
                                                       ),
-                                                    ),
-                                                  ],
+                                                    ],
+                                                  ),
                                                 ),
-                                              );
-                                            },
+                                              ],
+                                            ),
                                           );
                                         },
                                       ),
