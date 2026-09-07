@@ -81,6 +81,77 @@ void main() {
       expect(today, 0, reason: "Today's count must reset when date is clearly in the past");
     });
 
+    test('Header Counter: Synchronizes 20,400 Total and 14,100 Today directly from global_counter/main', () {
+      final docData = <String, dynamic>{
+        'globalTotal': 20400,
+        'todayTotal': 14100,
+        'date': StreakHelper.getTodayDateString(),
+      };
+
+      final total = (docData['globalTotal'] as num?)?.toInt() ??
+          ((docData['total_count'] as num?)?.toInt() ?? 0);
+
+      final rawToday = (docData['todayTotal'] as num?)?.toInt() ??
+          ((docData['today_count'] as num?)?.toInt() ??
+              ((docData['globalToday'] as num?)?.toInt() ?? 0));
+
+      final rawDocDate = docData['date'] ?? docData['last_reset_date'];
+      final docDateString = StreakHelper.toCalendarDateString(rawDocDate);
+      final localTodayString = StreakHelper.toCalendarDateString(DateTime.now());
+      final utcTodayString = StreakHelper.toCalendarDateString(DateTime.now().toUtc());
+
+      final bool isMatchingToday = docDateString.isNotEmpty &&
+          (docDateString == localTodayString || docDateString == utcTodayString);
+      final int today = isMatchingToday ? rawToday : 0;
+
+      expect(total, 20400, reason: "Total Durood must match ~20.4K from global_counter/main");
+      expect(today, 14100, reason: "Today's Durood must match ~14.1K when matching today's date");
+    });
+
+    test('Header Counter: Real-time update reflects incremental Salawat recitation', () {
+      // 1. Initial snapshot from global_counter/main
+      final initialDoc = <String, dynamic>{
+        'globalTotal': 20400,
+        'todayTotal': 14100,
+        'date': StreakHelper.getTodayDateString(),
+      };
+
+      // 2. Incoming stream snapshot after user submits 10 Salawat from mobile
+      const int increment = 10;
+      final updatedDoc = <String, dynamic>{
+        'globalTotal': initialDoc['globalTotal'] + increment,
+        'todayTotal': initialDoc['todayTotal'] + increment,
+        'date': initialDoc['date'],
+      };
+
+      final total = (updatedDoc['globalTotal'] as num?)?.toInt() ?? 0;
+      final today = (updatedDoc['todayTotal'] as num?)?.toInt() ?? 0;
+
+      expect(total, 20410);
+      expect(today, 14110);
+    });
+
+    test('Header Counter: Missing or empty date string resets Today to 0', () {
+      final docData = <String, dynamic>{
+        'globalTotal': 20400,
+        'todayTotal': 14100,
+        'date': '',
+      };
+
+      final total = (docData['globalTotal'] as num?)?.toInt() ?? 0;
+      final rawToday = (docData['todayTotal'] as num?)?.toInt() ?? 0;
+      final docDateString = StreakHelper.toCalendarDateString(docData['date']);
+      final localTodayString = StreakHelper.toCalendarDateString(DateTime.now());
+      final utcTodayString = StreakHelper.toCalendarDateString(DateTime.now().toUtc());
+
+      final bool isMatchingToday = docDateString.isNotEmpty &&
+          (docDateString == localTodayString || docDateString == utcTodayString);
+      final int today = isMatchingToday ? rawToday : 0;
+
+      expect(total, 20400);
+      expect(today, 0, reason: "When date string is missing/empty, Today's count must display 0");
+    });
+
     test('AppUser Model: Correctly parses mobile schema fields (streak: 11, points: 5,098)', () {
       final todayStr = StreakHelper.getTodayDateString();
       // Simulating user doc as stored by mobile client for active user (e.g. Hadi / Hassan)

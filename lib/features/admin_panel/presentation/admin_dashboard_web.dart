@@ -55,9 +55,19 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
   bool _isLoadingHijri = true;
   bool _isSavingHijri = false;
 
+  late final Stream<DocumentSnapshot<Map<String, dynamic>>> _globalCounterStream;
+  late final Stream<int> _usersCountStream;
+  late final Stream<List<EventModel>> _eventsStream;
+
   @override
   void initState() {
     super.initState();
+    _globalCounterStream = FirebaseFirestore.instance
+        .collection('global_counter')
+        .doc('main')
+        .snapshots();
+    _usersCountStream = AdminService.usersCountStream;
+    _eventsStream = AdminService.eventsStream;
     _loadHijriConfig();
   }
 
@@ -586,39 +596,37 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
 
   Widget _buildDashboardKpiCards(double screenWidth) {
     return StreamBuilder<int>(
-      stream: AdminService.usersCountStream,
+      stream: _usersCountStream,
       initialData: AdminService.currentUsersCount,
       builder: (context, userSnap) {
         final totalUsers = userSnap.data ?? AdminService.currentUsersCount;
         return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-          stream: FirebaseFirestore.instance.collection('global_counter').doc('main').snapshots(),
+          stream: _globalCounterStream,
           builder: (context, snap) {
-            final rawDoc = snap.data?.data() ?? AdminService.currentGlobalCounterData;
+            final rawDoc = snap.data?.data();
 
-            // Total Durood: strictly real user recitations from Firestore (0 if document empty)
-            final total = (rawDoc['globalTotal'] as num?)?.toInt() ??
-                ((rawDoc['total_count'] as num?)?.toInt() ?? 0);
+            // Total Durood: strictly real user recitations from global_counter/main
+            final total = (rawDoc?['globalTotal'] as num?)?.toInt() ??
+                ((rawDoc?['total_count'] as num?)?.toInt() ?? 0);
 
-            // Today's Durood: strictly real user recitations from Firestore
-            final rawToday = (rawDoc['todayTotal'] as num?)?.toInt() ??
-                ((rawDoc['today_count'] as num?)?.toInt() ??
-                ((rawDoc['globalToday'] as num?)?.toInt() ?? 0));
+            // Today's Durood: strictly real user recitations from global_counter/main
+            final rawToday = (rawDoc?['todayTotal'] as num?)?.toInt() ??
+                ((rawDoc?['today_count'] as num?)?.toInt() ??
+                ((rawDoc?['globalToday'] as num?)?.toInt() ?? 0));
 
-            // Midnight rollover verification: prioritize date across local and UTC calendar boundaries
-            final rawDocDate = rawDoc['date'] ?? rawDoc['last_reset_date'];
+            // Midnight rollover verification: strictly verify stored date matches today's date
+            final rawDocDate = rawDoc?['date'] ?? rawDoc?['last_reset_date'];
             final docDateString = StreakHelper.toCalendarDateString(rawDocDate);
             final localTodayString = StreakHelper.toCalendarDateString(DateTime.now());
             final utcTodayString = StreakHelper.toCalendarDateString(DateTime.now().toUtc());
 
-            int today = rawToday;
-            if (docDateString.isNotEmpty &&
-                docDateString != localTodayString &&
-                docDateString != utcTodayString) {
-              today = 0;
-            }
+            final bool isMatchingToday = docDateString.isNotEmpty &&
+                (docDateString == localTodayString || docDateString == utcTodayString);
+
+            final int today = isMatchingToday ? rawToday : 0;
 
             return StreamBuilder<List<EventModel>>(
-              stream: AdminService.eventsStream,
+              stream: _eventsStream,
               builder: (context, eventSnap) {
                 final activeEventsCount = eventSnap.data?.length ?? 0;
 
