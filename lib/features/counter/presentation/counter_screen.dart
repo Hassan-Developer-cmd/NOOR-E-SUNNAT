@@ -101,7 +101,7 @@ class _CounterScreenState extends State<CounterScreen> {
             onPressed: () {
               Navigator.of(context, rootNavigator: true).pop();
               if (_hapticsEnabled) HapticFeedback.mediumImpact();
-              widget.counterService.addBulkDurood(amount);
+              widget.counterService.submitDuroodCount(count: amount);
             },
             child: Text(
               isUrdu ? 'تصدیق کریں' : 'Confirm',
@@ -435,7 +435,7 @@ class _CounterScreenState extends State<CounterScreen> {
                                         if (_hapticsEnabled) {
                                           HapticFeedback.selectionClick();
                                         }
-                                        widget.counterService.increment(1);
+                                        widget.counterService.submitDuroodCount(count: 1);
                                       },
                                     ),
                                   ),

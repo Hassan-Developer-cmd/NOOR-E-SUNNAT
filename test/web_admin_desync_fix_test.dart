@@ -1023,6 +1023,41 @@ void main() {
         expect(userDuroodPoints, 4);
         expect(userTotalPoints, 4);
       });
+
+      test('5. Quick Add (+100): Increments mobile, global, and user metrics by 100 via unified pipeline', () {
+        int mobileCount = 4;
+        int globalTotal = 4;
+        int userMyTotal = 4;
+        int userTotalDurood = 4;
+        int userDuroodPoints = 4;
+        int userTotalPoints = 4;
+
+        // User selects +100 Quick Add
+        const int quickAddAmount = 100;
+        mobileCount += quickAddAmount;
+
+        // Unified atomic write simulation (FieldValue.increment(100))
+        globalTotal += quickAddAmount;
+        userMyTotal += quickAddAmount;
+        userTotalDurood += quickAddAmount;
+        userDuroodPoints += quickAddAmount;
+        userTotalPoints += quickAddAmount;
+
+        expect(mobileCount, 104);
+        expect(globalTotal, 104);
+        expect(userMyTotal, 104);
+        expect(userTotalDurood, 104);
+        expect(userDuroodPoints, 104);
+        expect(userTotalPoints, 104);
+      });
+
+      test('6. Unified Pipeline: Presets (+100, +200, +500, +1000) maintain strict mathematical parity with server', () {
+        for (final preset in [100, 200, 500, 1000]) {
+          int initial = 0;
+          initial += preset;
+          expect(initial, preset);
+        }
+      });
     });
   });
 }

@@ -133,7 +133,6 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
   // Internal buffers for debounced writes & in-flight network synchronization
   int _pendingBuffer = 0;
   int _inFlightBuffer = 0;
-  bool _isFlushing = false;
   DateTime? _lastTapTime;
 
   /// Returns total active uncommitted increment (pending in timer queue + actively in-flight to Firestore)
@@ -696,43 +695,44 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  /// Adds bulk Durood amount to counter.
-  void addBulkDurood(int amount) => increment(amount);
-
-  /// Buffer a tap locally, notify UI immediately, persist to SharedPreferences under daily key,
-  /// and commit to Firestore within 400ms (flushed instantly on app exit).
-  void increment(int count) {
+  /// Unified atomic pipeline for submitting Durood counts (both single-tap and Quick Add).
+  ///
+  /// Atomically updates local optimistic state, notifies UI, and commits directly
+  /// to Firestore via WriteBatch using FieldValue.increment(count) on both global_counter and users documents.
+  Future<void> submitDuroodCount({required int count}) async {
     if (count <= 0) return;
 
-    _pendingBuffer += count;
     _lastTapTime = DateTime.now();
     final todayStr = _todayDateString;
     final updatedMyToday = _snapshot.personalToday + count;
     final updatedStreak = _snapshot.currentStreak <= 0 ? 1 : _snapshot.currentStreak;
     final updatedPoints = _snapshot.duroodPoints + count;
+    final updatedPersonalTotal = _snapshot.personalTotal + count;
+    final updatedGlobalTotal = _snapshot.globalTotal + count;
+    final updatedGlobalToday = _snapshot.globalToday + count;
 
-    // 1. Optimistically update in-memory state
+    // 1. Immediate optimistic UI state update (identical for single tap and quick add)
     _updateSnapshot(CounterSnapshot(
-      globalTotal: _snapshot.globalTotal + count,
-      globalToday: _snapshot.globalToday + count,
-      personalTotal: _snapshot.personalTotal + count,
+      globalTotal: updatedGlobalTotal,
+      globalToday: updatedGlobalToday,
+      personalTotal: updatedPersonalTotal,
       personalToday: updatedMyToday,
       currentStreak: updatedStreak,
       duroodPoints: updatedPoints,
     ));
 
-    // 2. Immediately persist to SharedPreferences under user-specific daily key
+    // 2. Persist to local storage
     final userKey = _todayKey;
     _prefs?.setInt(userKey, updatedMyToday);
     final uid = _activeUid ?? _auth.currentUser?.uid ?? 'guest';
     _prefs?.setInt('my_today_${uid}_$todayStr', updatedMyToday);
-    _prefs?.setInt('my_total_$uid', _snapshot.personalTotal + count);
+    _prefs?.setInt('my_total_$uid', updatedPersonalTotal);
     _prefs?.setInt('durood_points_$uid', updatedPoints);
     _prefs?.setInt('user_streak_$uid', updatedStreak);
 
     if (uid != 'guest') {
       _prefs?.setInt('my_durood_${uid}_$todayStr', updatedMyToday);
-      _prefs?.setInt('${_keyPersonalTotal}_$uid', _snapshot.personalTotal + count);
+      _prefs?.setInt('${_keyPersonalTotal}_$uid', updatedPersonalTotal);
       _prefs?.setInt('${_keyStreak}_$uid', updatedStreak);
       _prefs?.setInt('${_keyPoints}_$uid', updatedPoints);
     }
@@ -743,26 +743,12 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     _prefs?.setInt(_keyPoints, updatedPoints);
     _saveToStorage();
 
-    // 3. Fast debounce flush to Firestore (100ms for instant real-time sync)
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 100), flushImmediately);
-  }
-
-  /// Immediately commits any buffered increments to Firestore.
-  Future<void> flushImmediately() async {
-    _debounceTimer?.cancel();
-    if (_isFlushing || _pendingBuffer <= 0) return;
-    _isFlushing = true;
-
-    final count = _pendingBuffer;
-    _pendingBuffer = 0;
-    _inFlightBuffer += count;
-
+    // 3. Atomically write to Firestore in a single unified WriteBatch
+    final effectiveUid = _auth.currentUser?.uid ?? _activeUid;
     try {
-      final todayStr = _todayDateString;
       final batch = _firestore.batch();
 
-      // 1. Global counter atomic increment strictly in global_counter/main
+      // 1. Atomically update Global Counters
       final globalRef = _firestore.collection('global_counter').doc('main');
       batch.set(
         globalRef,
@@ -776,13 +762,11 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         SetOptions(merge: true),
       );
 
-      // 2. User Lifetime Update & User Daily Subcollection updates
-      final uid = _auth.currentUser?.uid;
-      if (uid != null) {
-        final userRef = _firestore.collection('users').doc(uid);
+      // 2. Atomically update User Document & Daily Stats
+      if (effectiveUid != null && effectiveUid != 'guest') {
+        final userRef = _firestore.collection('users').doc(effectiveUid);
         final dailyStatRef = userRef.collection('daily_stats').doc(todayStr);
 
-        // Subcollection: users/{userId}/daily_stats/{dateString}
         batch.set(
           dailyStatRef,
           {
@@ -795,8 +779,6 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
           },
           SetOptions(merge: true),
         );
-
-        final effectiveStreak = _snapshot.currentStreak <= 0 ? 1 : _snapshot.currentStreak;
 
         batch.set(
           userRef,
@@ -815,9 +797,9 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
             'points': FieldValue.increment(count),
             'durood_points': FieldValue.increment(count),
             'total_durood_points': FieldValue.increment(count),
-            'streak': effectiveStreak,
-            'current_streak': effectiveStreak,
-            'currentStreak': effectiveStreak,
+            'streak': updatedStreak,
+            'current_streak': updatedStreak,
+            'currentStreak': updatedStreak,
             'lastStreakDate': todayStr,
             'lastActiveDate': todayStr,
             'lastDuroodDate': todayStr,
@@ -832,16 +814,23 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
 
       await batch.commit();
     } catch (e) {
-      if (kDebugMode) print('CounterService.flushImmediately error: $e');
-      _pendingBuffer += count;
-    } finally {
-      _inFlightBuffer = (_inFlightBuffer - count) < 0 ? 0 : (_inFlightBuffer - count);
-      _isFlushing = false;
-      // Immediately flush any taps that occurred while the previous batch was committing
-      if (_pendingBuffer > 0) {
-        flushImmediately();
-      }
+      if (kDebugMode) print('CounterService.submitDuroodCount error: $e');
     }
+  }
+
+  /// Adds bulk Durood amount to counter (Quick Add).
+  Future<void> addBulkDurood(int amount) => submitDuroodCount(count: amount);
+
+  /// Single tap increment.
+  Future<void> increment(int count) => submitDuroodCount(count: count);
+
+  /// Immediately commits any buffered increments to Firestore.
+  Future<void> flushImmediately() async {
+    _debounceTimer?.cancel();
+    if (_pendingBuffer <= 0) return;
+    final count = _pendingBuffer;
+    _pendingBuffer = 0;
+    await submitDuroodCount(count: count);
   }
 
   // ── App Lifecycle: Flush on pause, inactive, or detach ───────
