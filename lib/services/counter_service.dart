@@ -71,6 +71,7 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
   static const String _prefixMyTodayLegacy = 'my_durood_today_';
   static const String _keyMyDuroodDate = 'my_durood_date';
   static const String _keyActiveUid = 'cached_active_uid';
+  static const String _kProductionZeroResetKey = 'production_zero_reset_v1';
 
   static SharedPreferences? _prefs;
 
@@ -158,9 +159,38 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
   static Future<void> initStorage() async {
     try {
       _prefs = await SharedPreferences.getInstance();
+
+      // CRITICAL PRODUCTION ZERO RESET GUARD:
+      // Purge all legacy test client cache across SharedPreferences on first launch.
+      if (_prefs?.getBool(_kProductionZeroResetKey) != true) {
+        await _clearAllLocalCounterCache(_prefs);
+        await _prefs?.setBool(_kProductionZeroResetKey, true);
+      }
+
       _instance._hydrateFromStorage();
     } catch (e) {
       if (kDebugMode) print('CounterService.initStorage error: $e');
+    }
+  }
+
+  /// Clears all local counter, points, and streak caches across SharedPreferences.
+  static Future<void> _clearAllLocalCounterCache(SharedPreferences? prefs) async {
+    if (prefs == null) return;
+    final keys = prefs.getKeys().toList();
+    for (final key in keys) {
+      if (key.startsWith('cached_global_') ||
+          key.startsWith('cached_personal_') ||
+          key.startsWith('cached_current_streak') ||
+          key.startsWith('cached_durood_points') ||
+          key.startsWith('my_today_') ||
+          key.startsWith('my_durood_') ||
+          key.startsWith('my_total_') ||
+          key.startsWith('durood_points_') ||
+          key.startsWith('user_streak_') ||
+          key.startsWith('last_streak_date_') ||
+          key.startsWith('last_active_date_')) {
+        await prefs.remove(key);
+      }
     }
   }
 
@@ -458,9 +488,10 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         final int incomingToday = cloudMyToday + pendingBuffer;
         final int currentLocal = _snapshot.personalToday;
 
-        // STRICT MONOTONIC INCREMENT:
-        // Never allow an incoming stream snapshot to decrement the local displayed count on the same day.
-        final int effectiveMyToday = incomingToday >= currentLocal ? incomingToday : currentLocal;
+        // Optimistic while bursting/tapping; authoritative from cloud when idle or reset
+        final int effectiveMyToday = (pendingBuffer > 0 || isBurstActive)
+            ? (incomingToday >= currentLocal ? incomingToday : currentLocal)
+            : incomingToday;
 
         if (effectiveMyToday != _snapshot.personalToday) {
           _updateSnapshot(_snapshot.copyWith(personalToday: effectiveMyToday));
@@ -475,7 +506,9 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         // Document does not exist yet in Firestore today:
         final int currentLocal = _snapshot.personalToday;
         final int incomingToday = pendingBuffer;
-        final int effectiveMyToday = incomingToday >= currentLocal ? incomingToday : currentLocal;
+        final int effectiveMyToday = (pendingBuffer > 0 || isBurstActive)
+            ? (incomingToday >= currentLocal ? incomingToday : currentLocal)
+            : 0;
         if (effectiveMyToday != _snapshot.personalToday) {
           _updateSnapshot(_snapshot.copyWith(personalToday: effectiveMyToday));
         }
@@ -510,6 +543,7 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         _snapshot.globalToday < 0;
 
     // Detect if database was cleaned/reset or has a massive discrepancy (> 10,000)
+    final bool isCleanReset = firestoreTotal == 0 && pendingBuffer == 0 && !isBurstActive;
     final bool largeDiscrepancy = (_snapshot.globalTotal - firestoreTotal).abs() > 10000;
 
     final int incomingGlobalTotal = firestoreTotal + pendingBuffer;
@@ -518,7 +552,7 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     final int effectiveGlobalTotal;
     final int effectiveGlobalToday;
 
-    if (isCorrupted || largeDiscrepancy) {
+    if (isCorrupted || largeDiscrepancy || isCleanReset || (pendingBuffer == 0 && !isBurstActive)) {
       // Authoritative cloud value (+ any pending local buffer)
       effectiveGlobalTotal = incomingGlobalTotal;
       effectiveGlobalToday = incomingGlobalToday;
@@ -588,11 +622,13 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         data['total_count'] ??
         data['totalDurood']) as num?)?.toInt() ?? 0;
 
-    // Single source of truth with strict monotonic non-decreasing guarantee:
+    final bool isCleanReset = firestorePersonalTotal == 0 && pendingBuffer == 0 && !isBurstActive;
+
+    // Single source of truth with strict monotonic non-decreasing guarantee during tap bursts:
     final int incomingPersonalTotal = firestorePersonalTotal + pendingBuffer;
-    final int effectivePersonalTotal = incomingPersonalTotal >= _snapshot.personalTotal
+    final int effectivePersonalTotal = (isCleanReset || (pendingBuffer == 0 && !isBurstActive))
         ? incomingPersonalTotal
-        : _snapshot.personalTotal;
+        : (incomingPersonalTotal >= _snapshot.personalTotal ? incomingPersonalTotal : _snapshot.personalTotal);
 
     // 3. PERSONAL TODAY: If doc contains today count for same day and subcollection hasn't fired yet
     final bool isSameDay = StreakHelper.isSameDay(lastActive, todayStr);
@@ -603,23 +639,25 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     final int effectivePersonalToday;
     if (firestorePersonalToday != null) {
       final int incomingPersonalToday = firestorePersonalToday + pendingBuffer;
-      effectivePersonalToday = incomingPersonalToday >= _snapshot.personalToday
+      effectivePersonalToday = (isCleanReset || (pendingBuffer == 0 && !isBurstActive))
           ? incomingPersonalToday
-          : _snapshot.personalToday;
+          : (incomingPersonalToday >= _snapshot.personalToday ? incomingPersonalToday : _snapshot.personalToday);
+    } else if (isCleanReset || (pendingBuffer == 0 && !isBurstActive)) {
+      effectivePersonalToday = 0;
     } else {
       effectivePersonalToday = _snapshot.personalToday;
     }
 
-    // 4. DUROOD POINTS: Parse across all field variations with strict monotonic guarantee
+    // 4. DUROOD POINTS: Parse across all field variations with strict monotonic guarantee during tap bursts:
     final int firestorePoints = ((data['duroodPoints'] ??
         data['total_durood_points'] ??
         data['durood_points'] ??
         data['points']) as num?)?.toInt() ?? 0;
 
     final int incomingPoints = firestorePoints + pendingBuffer;
-    final int effectivePoints = incomingPoints >= _snapshot.duroodPoints
+    final int effectivePoints = (isCleanReset || (pendingBuffer == 0 && !isBurstActive))
         ? incomingPoints
-        : _snapshot.duroodPoints;
+        : (incomingPoints >= _snapshot.duroodPoints ? incomingPoints : _snapshot.duroodPoints);
 
     _updateSnapshot(CounterSnapshot(
       globalTotal: _snapshot.globalTotal,

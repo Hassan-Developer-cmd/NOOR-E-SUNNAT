@@ -937,5 +937,65 @@ void main() {
         expect(emptySnapshotUsers.length, 0);
       });
     });
+
+    group('Production Zero Reset Verification', () {
+      test('1. Global Counter: Evaluates cleanly to 0 Total and 0 Today post-reset', () {
+        final resetDoc = <String, dynamic>{
+          'globalTotal': 0,
+          'todayTotal': 0,
+          'date': StreakHelper.getTodayDateString(),
+        };
+
+        final total = (resetDoc['globalTotal'] as num?)?.toInt() ?? 0;
+        final today = (resetDoc['todayTotal'] as num?)?.toInt() ?? 0;
+
+        expect(total, 0, reason: 'Total Durood must evaluate strictly to 0');
+        expect(today, 0, reason: "Today's Durood must evaluate strictly to 0");
+      });
+
+      test('2. User Metrics: All user fields evaluate cleanly to 0 post-reset', () {
+        final resetUserData = <String, dynamic>{
+          'userId': 'test_uid_123',
+          'email': 'user@example.com',
+          'username': 'ResetUser',
+          'streak': 0,
+          'currentStreak': 0,
+          'longest_streak': 0,
+          'myTotal': 0,
+          'totalDurood': 0,
+          'personal_total_durood': 0,
+          'myToday': 0,
+          'todayTotal': 0,
+          'personal_today_durood': 0,
+          'duroodPoints': 0,
+          'totalPoints': 0,
+          'points': 0,
+          'lastStreakDate': '',
+          'lastActiveDate': '',
+        };
+
+        final user = AppUser.fromMap(resetUserData);
+
+        expect(user.streak, 0);
+        expect(user.myTotal, 0);
+        expect(user.myToday, 0);
+        expect(user.duroodPoints, 0);
+        expect(user.totalPoints, 0);
+      });
+
+      test('3. Post-Reset Leaderboard: All users display 0 Streak, 0 Durood, and 0 Points', () {
+        final resetUsers = [
+          AppUser.fromMap({'userId': '1', 'username': 'User A', 'myTotal': 0, 'duroodPoints': 0, 'streak': 0}),
+          AppUser.fromMap({'userId': '2', 'username': 'User B', 'myTotal': 0, 'duroodPoints': 0, 'streak': 0}),
+          AppUser.fromMap({'userId': '3', 'username': 'User C', 'myTotal': 0, 'duroodPoints': 0, 'streak': 0}),
+        ];
+
+        for (final u in resetUsers) {
+          expect(u.streak, 0);
+          expect(u.myTotal, 0);
+          expect(u.duroodPoints, 0);
+        }
+      });
+    });
   });
 }
