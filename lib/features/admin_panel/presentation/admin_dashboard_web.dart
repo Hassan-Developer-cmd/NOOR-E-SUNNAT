@@ -948,16 +948,21 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
           ], const []);
         }
 
-        // Dynamically sort snapshot docs based strictly on Number(user.totalPoints || user.duroodPoints || 0) descending
+        // Dynamically sort snapshot docs by Current Streak descending, then Total Durood descending, then Total Points
         final sortedUsers = List<AppUser>.from(allUsers)
           ..sort((a, b) {
+            // 1. Primary: Current Streak descending
+            final streakCmp = b.streak.compareTo(a.streak);
+            if (streakCmp != 0) return streakCmp;
+            // 2. Secondary: Total Durood count descending
+            final duroodA = a.myTotal > 0 ? a.myTotal : a.totalCount;
+            final duroodB = b.myTotal > 0 ? b.myTotal : b.totalCount;
+            final duroodCmp = duroodB.compareTo(duroodA);
+            if (duroodCmp != 0) return duroodCmp;
+            // 3. Tertiary: Total Points descending
             final pointsA = a.totalPoints > 0 ? a.totalPoints : a.duroodPoints;
             final pointsB = b.totalPoints > 0 ? b.totalPoints : b.duroodPoints;
-            final cmp = pointsB.compareTo(pointsA);
-            if (cmp != 0) return cmp;
-            final totalCmp = b.myTotal.compareTo(a.myTotal);
-            if (totalCmp != 0) return totalCmp;
-            return b.streak.compareTo(a.streak);
+            return pointsB.compareTo(pointsA);
           });
 
         final filteredUsers = sortedUsers.where((u) {

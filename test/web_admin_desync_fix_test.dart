@@ -772,40 +772,44 @@ void main() {
         expect(u3.streak, 3);
       });
 
-      test('2. Dynamic Sorting: Strictly orders by Number(user.totalPoints || user.duroodPoints || 0) descending', () {
+      test('2. Dynamic Sorting: Strictly orders by Current Streak descending, then Total Durood', () {
+        final todayStr = StreakHelper.getTodayDateString();
         final users = [
-          AppUser.fromMap({'userId': 'u_low', 'username': 'Low', 'totalPoints': 100, 'myTotal': 50, 'streak': 1}),
-          AppUser.fromMap({'userId': 'u_high', 'username': 'High', 'duroodPoints': 5000, 'myTotal': 2500, 'streak': 15}),
-          AppUser.fromMap({'userId': 'u_mid', 'username': 'Mid', 'points': '2000', 'myTotal': 1000, 'streak': 8}),
+          AppUser.fromMap({'userId': 'u_low', 'username': 'Low', 'totalPoints': 100, 'myTotal': 50, 'streak': 1, 'lastStreakDate': todayStr}),
+          AppUser.fromMap({'userId': 'u_high', 'username': 'High', 'duroodPoints': 5000, 'myTotal': 2500, 'streak': 15, 'lastStreakDate': todayStr}),
+          AppUser.fromMap({'userId': 'u_mid', 'username': 'Mid', 'points': '2000', 'myTotal': 1000, 'streak': 8, 'lastStreakDate': todayStr}),
           AppUser.fromMap({'userId': 'u_zero', 'username': 'Zero', 'totalPoints': 0, 'myTotal': 0, 'streak': 0}),
         ];
 
         users.sort((a, b) {
+          final streakCmp = b.streak.compareTo(a.streak);
+          if (streakCmp != 0) return streakCmp;
+          final duroodA = a.myTotal > 0 ? a.myTotal : a.totalCount;
+          final duroodB = b.myTotal > 0 ? b.myTotal : b.totalCount;
+          final duroodCmp = duroodB.compareTo(duroodA);
+          if (duroodCmp != 0) return duroodCmp;
           final pointsA = a.totalPoints > 0 ? a.totalPoints : a.duroodPoints;
           final pointsB = b.totalPoints > 0 ? b.totalPoints : b.duroodPoints;
-          final cmp = pointsB.compareTo(pointsA);
-          if (cmp != 0) return cmp;
-          final totalCmp = b.myTotal.compareTo(a.myTotal);
-          if (totalCmp != 0) return totalCmp;
-          return b.streak.compareTo(a.streak);
+          return pointsB.compareTo(pointsA);
         });
 
         expect(users[0].username, 'High');
-        expect(users[0].totalPoints, 5000);
+        expect(users[0].streak, 15);
         expect(users[1].username, 'Mid');
-        expect(users[1].totalPoints, 2000);
+        expect(users[1].streak, 8);
         expect(users[2].username, 'Low');
-        expect(users[2].totalPoints, 100);
+        expect(users[2].streak, 1);
         expect(users[3].username, 'Zero');
-        expect(users[3].totalPoints, 0);
+        expect(users[3].streak, 0);
       });
 
       test('3. Dynamic Rank Calculation: Computed purely at render time from row index (index + 1)', () {
+        final todayStr = StreakHelper.getTodayDateString();
         final sortedUsers = [
-          AppUser.fromMap({'userId': '1', 'username': 'Leader 1', 'totalPoints': 5000}),
-          AppUser.fromMap({'userId': '2', 'username': 'Leader 2', 'totalPoints': 4000}),
-          AppUser.fromMap({'userId': '3', 'username': 'Leader 3', 'totalPoints': 3000}),
-          AppUser.fromMap({'userId': '4', 'username': 'Runner 4', 'totalPoints': 2000}),
+          AppUser.fromMap({'userId': '1', 'username': 'Leader 1', 'totalPoints': 5000, 'streak': 10, 'lastStreakDate': todayStr}),
+          AppUser.fromMap({'userId': '2', 'username': 'Leader 2', 'totalPoints': 4000, 'streak': 8, 'lastStreakDate': todayStr}),
+          AppUser.fromMap({'userId': '3', 'username': 'Leader 3', 'totalPoints': 3000, 'streak': 5, 'lastStreakDate': todayStr}),
+          AppUser.fromMap({'userId': '4', 'username': 'Runner 4', 'totalPoints': 2000, 'streak': 2, 'lastStreakDate': todayStr}),
         ];
 
         for (int index = 0; index < sortedUsers.length; index++) {
@@ -825,21 +829,24 @@ void main() {
         }
       });
 
-      test('4. Real-Time Auto-Reorder: Incremental points update triggers dynamic live re-rank', () {
-        // Initial state: User B is #1, User A is #2
-        final userA = AppUser.fromMap({'userId': 'uA', 'username': 'User A', 'totalPoints': 3000, 'myTotal': 1500, 'streak': 5});
-        final userB = AppUser.fromMap({'userId': 'uB', 'username': 'User B', 'totalPoints': 4000, 'myTotal': 2000, 'streak': 10});
+      test('4. Real-Time Auto-Reorder: Incremental streak update triggers dynamic live re-rank', () {
+        final todayStr = StreakHelper.getTodayDateString();
+        // Initial state: User B is #1 (streak 10), User A is #2 (streak 5)
+        final userA = AppUser.fromMap({'userId': 'uA', 'username': 'User A', 'totalPoints': 3000, 'myTotal': 1500, 'streak': 5, 'lastStreakDate': todayStr});
+        final userB = AppUser.fromMap({'userId': 'uB', 'username': 'User B', 'totalPoints': 4000, 'myTotal': 2000, 'streak': 10, 'lastStreakDate': todayStr});
 
         List<AppUser> currentList = [userA, userB];
         void sortList(List<AppUser> list) {
           list.sort((a, b) {
+            final streakCmp = b.streak.compareTo(a.streak);
+            if (streakCmp != 0) return streakCmp;
+            final duroodA = a.myTotal > 0 ? a.myTotal : a.totalCount;
+            final duroodB = b.myTotal > 0 ? b.myTotal : b.totalCount;
+            final duroodCmp = duroodB.compareTo(duroodA);
+            if (duroodCmp != 0) return duroodCmp;
             final pointsA = a.totalPoints > 0 ? a.totalPoints : a.duroodPoints;
             final pointsB = b.totalPoints > 0 ? b.totalPoints : b.duroodPoints;
-            final cmp = pointsB.compareTo(pointsA);
-            if (cmp != 0) return cmp;
-            final totalCmp = b.myTotal.compareTo(a.myTotal);
-            if (totalCmp != 0) return totalCmp;
-            return b.streak.compareTo(a.streak);
+            return pointsB.compareTo(pointsA);
           });
         }
 
@@ -848,16 +855,16 @@ void main() {
         expect(currentList[1].username, 'User A');
         expect(0 + 1, 1); // User B is #1
 
-        // Real-time update arrives from mobile: User A recites Durood and scores 2000 more points
-        final updatedUserA = AppUser.fromMap({'userId': 'uA', 'username': 'User A', 'totalPoints': 5000, 'myTotal': 3500, 'streak': 6});
+        // Real-time update arrives from mobile: User A recites Durood and streak increments to 11
+        final updatedUserA = AppUser.fromMap({'userId': 'uA', 'username': 'User A', 'totalPoints': 5000, 'myTotal': 3500, 'streak': 11, 'lastStreakDate': todayStr});
         currentList = [updatedUserA, userB];
         sortList(currentList);
 
         // Auto-reorder immediately places User A at #1 and User B at #2 without page refresh
         expect(currentList[0].username, 'User A');
-        expect(currentList[0].totalPoints, 5000);
+        expect(currentList[0].streak, 11);
         expect(currentList[1].username, 'User B');
-        expect(currentList[1].totalPoints, 4000);
+        expect(currentList[1].streak, 10);
 
         // Dynamic ranks recompute strictly by row index
         final rankUserA = currentList.indexOf(updatedUserA) + 1;
@@ -866,7 +873,65 @@ void main() {
         expect(rankUserB, 2, reason: 'User B dynamically becomes #2 (Silver)');
       });
 
-      test('5. Zero Mock Fallback: Empty snapshot evaluates cleanly to 0 users without presets', () {
+      test('5. Equal Streak Tiebreaker: Sorts by Total Durood descending when streaks are equal', () {
+        final users = [
+          AppUser.fromMap({'userId': 'u1', 'username': 'Awais Khan', 'myTotal': 10, 'streak': 0}),
+          AppUser.fromMap({'userId': 'u2', 'username': 'Hassan', 'myTotal': 2513, 'streak': 0}),
+          AppUser.fromMap({'userId': 'u3', 'username': 'David', 'myTotal': 1763, 'streak': 0}),
+        ];
+
+        users.sort((a, b) {
+          final streakCmp = b.streak.compareTo(a.streak);
+          if (streakCmp != 0) return streakCmp;
+          final duroodA = a.myTotal > 0 ? a.myTotal : a.totalCount;
+          final duroodB = b.myTotal > 0 ? b.myTotal : b.totalCount;
+          final duroodCmp = duroodB.compareTo(duroodA);
+          if (duroodCmp != 0) return duroodCmp;
+          final pointsA = a.totalPoints > 0 ? a.totalPoints : a.duroodPoints;
+          final pointsB = b.totalPoints > 0 ? b.totalPoints : b.duroodPoints;
+          return pointsB.compareTo(pointsA);
+        });
+
+        expect(users[0].username, 'Hassan'); // 2513
+        expect(users[1].username, 'David'); // 1763
+        expect(users[2].username, 'Awais Khan'); // 10
+      });
+
+      test('6. Real Portal Dataset: Hafsa Zakir (3 Days) is #1, Hadi (2 Days) is #2, Hassan (0 Days, 2513) is #3', () {
+        final todayStr = StreakHelper.getTodayDateString();
+        final yesterdayStr = StreakHelper.toCalendarDateString(DateTime.now().subtract(const Duration(days: 1)));
+        final portalUsers = [
+          AppUser.fromMap({'userId': '1', 'username': 'Hadi', 'myTotal': 12613, 'duroodPoints': 15198, 'streak': 2, 'lastStreakDate': yesterdayStr}),
+          AppUser.fromMap({'userId': '2', 'username': 'Hassan', 'myTotal': 2513, 'duroodPoints': 5098, 'streak': 0}),
+          AppUser.fromMap({'userId': '3', 'username': 'David', 'myTotal': 1763, 'duroodPoints': 3526, 'streak': 0}),
+          AppUser.fromMap({'userId': '4', 'username': 'Hafsa Zakir', 'myTotal': 673, 'duroodPoints': 673, 'streak': 3, 'lastStreakDate': todayStr}),
+          AppUser.fromMap({'userId': '5', 'username': 'Awais Khan', 'myTotal': 10, 'duroodPoints': 20, 'streak': 0}),
+          AppUser.fromMap({'userId': '6', 'username': 'Asim Khan', 'myTotal': 9, 'duroodPoints': 18, 'streak': 0}),
+        ];
+
+        portalUsers.sort((a, b) {
+          final streakCmp = b.streak.compareTo(a.streak);
+          if (streakCmp != 0) return streakCmp;
+          final duroodA = a.myTotal > 0 ? a.myTotal : a.totalCount;
+          final duroodB = b.myTotal > 0 ? b.myTotal : b.totalCount;
+          final duroodCmp = duroodB.compareTo(duroodA);
+          if (duroodCmp != 0) return duroodCmp;
+          final pointsA = a.totalPoints > 0 ? a.totalPoints : a.duroodPoints;
+          final pointsB = b.totalPoints > 0 ? b.totalPoints : b.duroodPoints;
+          return pointsB.compareTo(pointsA);
+        });
+
+        expect(portalUsers[0].username, 'Hafsa Zakir', reason: 'Hafsa Zakir has 3 Days streak -> #1 🥇');
+        expect(portalUsers[0].streak, 3);
+        expect(portalUsers[1].username, 'Hadi', reason: 'Hadi has 2 Days streak -> #2 🥈');
+        expect(portalUsers[1].streak, 2);
+        expect(portalUsers[2].username, 'Hassan', reason: 'Hassan has 0 Days streak, highest Durood (2,513) -> #3 🥉');
+        expect(portalUsers[3].username, 'David', reason: 'David has 0 Days streak, second highest Durood (1,763) -> #4');
+        expect(portalUsers[4].username, 'Awais Khan');
+        expect(portalUsers[5].username, 'Asim Khan');
+      });
+
+      test('7. Zero Mock Fallback: Empty snapshot evaluates cleanly to 0 users without presets', () {
         final List<AppUser> emptySnapshotUsers = [];
         expect(emptySnapshotUsers.isEmpty, isTrue);
         expect(emptySnapshotUsers.length, 0);
