@@ -36,47 +36,71 @@ class AppUser {
     this.rawData,
   });
 
+  /// Safely extracts an integer from any numeric or string representation.
+  /// Handles Firestore schema variations where numbers may be int, double, or String.
+  static int parseNumeric(dynamic value, [int defaultValue = 0]) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) {
+      final clean = value.replaceAll(',', '').trim();
+      final parsed = int.tryParse(clean) ?? double.tryParse(clean)?.toInt();
+      if (parsed != null) return parsed;
+    }
+    return defaultValue;
+  }
+
   int get myTotal => (rawData != null && rawData!['myTotal'] != null)
-      ? ((rawData!['myTotal'] as num?)?.toInt() ?? 0)
+      ? parseNumeric(rawData!['myTotal'])
       : totalCount;
 
   int get myToday => (rawData != null && rawData!['myToday'] != null)
-      ? ((rawData!['myToday'] as num?)?.toInt() ?? 0)
+      ? parseNumeric(rawData!['myToday'])
       : personalTodayDurood;
 
   int get streak => currentStreak;
   int get effectiveStreak => currentStreak;
 
-  int get duroodPoints => (rawData != null && rawData!['duroodPoints'] != null)
-      ? ((rawData!['duroodPoints'] as num?)?.toInt() ?? 0)
-      : (totalDuroodPoints > 0
-          ? totalDuroodPoints
-          : (((rawData?['points'] ??
-                  rawData?['durood_points'] ??
-                  rawData?['total_durood_points'] ??
-                  rawData?['totalPoints']) as num?)
-                  ?.toInt() ??
-              0));
+  int get duroodPoints {
+    if (rawData != null) {
+      for (final key in const [
+        'totalPoints',
+        'duroodPoints',
+        'points',
+        'total_durood_points',
+        'durood_points',
+      ]) {
+        if (rawData!.containsKey(key) && rawData![key] != null) {
+          final val = parseNumeric(rawData![key]);
+          if (val > 0) return val;
+        }
+      }
+    }
+    if (totalDuroodPoints > 0) return totalDuroodPoints;
+    return 0;
+  }
 
   int get points => duroodPoints;
   int get totalPoints => duroodPoints;
 
-  int get totalCount => (rawData != null &&
-          (rawData!['myTotal'] != null ||
-              rawData!['totalCount'] != null ||
-              rawData!['duroodCount'] != null ||
-              rawData!['total_count'] != null ||
-              rawData!['personal_total_durood'] != null ||
-              rawData!['totalDurood'] != null))
-      ? (((rawData!['myTotal'] ??
-              rawData!['totalCount'] ??
-              rawData!['duroodCount'] ??
-              rawData!['total_count'] ??
-              rawData!['personal_total_durood'] ??
-              rawData!['totalDurood']) as num?)
-              ?.toInt() ??
-          0)
-      : personalTotalDurood;
+  int get totalCount {
+    if (rawData != null) {
+      for (final key in const [
+        'myTotal',
+        'totalCount',
+        'duroodCount',
+        'total_count',
+        'personal_total_durood',
+        'totalDurood',
+      ]) {
+        if (rawData!.containsKey(key) && rawData![key] != null) {
+          final val = parseNumeric(rawData![key]);
+          if (val > 0) return val;
+        }
+      }
+    }
+    return personalTotalDurood;
+  }
 
   int get duroodCount => totalCount;
   int get totalDurood => totalCount;
@@ -130,13 +154,16 @@ class AppUser {
       updatedDate = DateTime.fromMillisecondsSinceEpoch(rawUpdated);
     }
 
-    final int rawStreak = ((map['streak'] ??
-            map['current_streak'] ??
-            map['currentStreak'] ??
-            map['daily_streak']) as num?)
-            ?.toInt() ??
-        0;
-    final int rawLongest = ((map['longest_streak'] ?? map['best_streak']) as num?)?.toInt() ?? rawStreak;
+    final int rawStreak = parseNumeric(
+      map['streak'] ??
+          map['current_streak'] ??
+          map['currentStreak'] ??
+          map['daily_streak'],
+    );
+    final int rawLongest = parseNumeric(
+      map['longest_streak'] ?? map['best_streak'],
+      rawStreak,
+    );
 
     // Snapchat-style effective streak calculation: resets to 0 if inactive for > 1 calendar day
     final int effectiveStreak = StreakHelper.calculateEffectiveStreak(
@@ -159,33 +186,33 @@ class AppUser {
       photoUrl: map['photo_url'] as String? ?? map['photoUrl'] as String? ?? map['photoURL'] as String? ?? '',
       profileImageBase64: map['profileImageBase64'] as String? ?? map['profile_image_base64'] as String?,
       isAdmin: map['is_admin'] as bool? ?? map['isAdmin'] as bool? ?? false,
-      personalTotalDurood: ((map['myTotal'] ??
-              map['totalCount'] ??
-              map['duroodCount'] ??
-              map['personal_total_durood'] ??
-              map['total_durood_count'] ??
-              map['personal_durood'] ??
-              map['total_recitations'] ??
-              map['total_count'] ??
-              map['totalDurood']) as num?)
-              ?.toInt() ??
-          0,
-      personalTodayDurood: ((map['myToday'] ??
-              map['personal_today_durood'] ??
-              map['today_durood_count'] ??
-              map['today_count'] ??
-              map['todayTotal']) as num?)
-              ?.toInt() ??
-          0,
+      personalTotalDurood: parseNumeric(
+        map['myTotal'] ??
+            map['totalCount'] ??
+            map['duroodCount'] ??
+            map['personal_total_durood'] ??
+            map['total_durood_count'] ??
+            map['personal_durood'] ??
+            map['total_recitations'] ??
+            map['total_count'] ??
+            map['totalDurood'],
+      ),
+      personalTodayDurood: parseNumeric(
+        map['myToday'] ??
+            map['personal_today_durood'] ??
+            map['today_durood_count'] ??
+            map['today_count'] ??
+            map['todayTotal'],
+      ),
       currentStreak: effectiveStreak,
       longestStreak: rawLongest >= effectiveStreak ? rawLongest : effectiveStreak,
-      totalDuroodPoints: ((map['duroodPoints'] ??
-              map['points'] ??
-              map['durood_points'] ??
-              map['total_durood_points'] ??
-              map['totalPoints']) as num?)
-              ?.toInt() ??
-          0,
+      totalDuroodPoints: parseNumeric(
+        map['totalPoints'] ??
+            map['duroodPoints'] ??
+            map['points'] ??
+            map['durood_points'] ??
+            map['total_durood_points'],
+      ),
       lastActiveDuroodDate: activeDate,
       createdAt: createdDate,
       updatedAt: updatedDate,

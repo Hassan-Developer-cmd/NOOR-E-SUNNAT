@@ -937,10 +937,23 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
         }
 
         final allUsers = snap.data ?? [];
-        // Ensure strictly sorted in descending order of individual Durood points, then myTotal, then streak
+        if (allUsers.isEmpty) {
+          return _tableCard([
+            const DataColumn(label: Text('Rank (#)', style: TextStyle(fontWeight: FontWeight.bold))),
+            const DataColumn(label: Text('User Name', style: TextStyle(fontWeight: FontWeight.bold))),
+            const DataColumn(label: Text('Gmail / Email', style: TextStyle(fontWeight: FontWeight.bold))),
+            const DataColumn(label: Text('Current Streak', style: TextStyle(fontWeight: FontWeight.bold))),
+            const DataColumn(label: Text('Total Durood', style: TextStyle(fontWeight: FontWeight.bold))),
+            const DataColumn(label: Text('Total Points', style: TextStyle(fontWeight: FontWeight.bold))),
+          ], const []);
+        }
+
+        // Dynamically sort snapshot docs based strictly on Number(user.totalPoints || user.duroodPoints || 0) descending
         final sortedUsers = List<AppUser>.from(allUsers)
           ..sort((a, b) {
-            final cmp = b.duroodPoints.compareTo(a.duroodPoints);
+            final pointsA = a.totalPoints > 0 ? a.totalPoints : a.duroodPoints;
+            final pointsB = b.totalPoints > 0 ? b.totalPoints : b.duroodPoints;
+            final cmp = pointsB.compareTo(pointsA);
             if (cmp != 0) return cmp;
             final totalCmp = b.myTotal.compareTo(a.myTotal);
             if (totalCmp != 0) return totalCmp;
@@ -955,17 +968,19 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
         }).toList();
 
         final rows = <DataRow>[];
-        for (int i = 0; i < filteredUsers.length; i++) {
-          final u = filteredUsers[i];
-          // Overall rank position in sortedUsers list (1-indexed)
-          final rank = sortedUsers.indexOf(u) + 1;
+        for (int index = 0; index < filteredUsers.length; index++) {
+          final u = filteredUsers[index];
+          // Pure dynamic rank calculation at render time: const rank = index + 1
+          final rankIndex = _searchQuery.trim().isEmpty ? index : sortedUsers.indexOf(u);
+          final rank = rankIndex + 1;
 
+          // Dynamically assign row background highlight tint based on rankIndex
           Color? rowBgColor;
-          if (rank == 1) {
+          if (rankIndex == 0) {
             rowBgColor = const Color(0xFFFFFDF0); // Gold Highlight Tint
-          } else if (rank == 2) {
+          } else if (rankIndex == 1) {
             rowBgColor = const Color(0xFFF8F9FA); // Silver Highlight Tint
-          } else if (rank == 3) {
+          } else if (rankIndex == 2) {
             rowBgColor = const Color(0xFFFFF9F5); // Bronze Highlight Tint
           }
 
@@ -988,12 +1003,12 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                       Text(
                         u.username.isNotEmpty ? u.username : 'User',
                         style: TextStyle(
-                          fontWeight: rank <= 3 ? FontWeight.bold : FontWeight.w600,
-                          color: rank == 1
+                          fontWeight: rankIndex < 3 ? FontWeight.bold : FontWeight.w600,
+                          color: rankIndex == 0
                               ? Colors.amber.shade900
-                              : rank == 2
+                              : rankIndex == 1
                                   ? Colors.blueGrey.shade900
-                                  : rank == 3
+                                  : rankIndex == 2
                                       ? Colors.brown.shade900
                                       : Colors.black87,
                         ),
@@ -1052,7 +1067,7 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 ),
                 DataCell(
                   Text(
-                    '${_fmt(u.duroodPoints)} pts ⭐',
+                    '${_fmt(u.totalPoints > 0 ? u.totalPoints : u.duroodPoints)} pts ⭐',
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       color: AppColors.primaryEmerald,
@@ -1079,7 +1094,9 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
 
 
   Widget _buildRankBadge(int rank) {
-    if (rank == 1) {
+    final index = rank - 1;
+    if (index == 0) {
+      // Gold for #1 (index === 0)
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
@@ -1110,7 +1127,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
           ],
         ),
       );
-    } else if (rank == 2) {
+    } else if (index == 1) {
+      // Silver for #2 (index === 1)
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
@@ -1141,7 +1159,8 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
           ],
         ),
       );
-    } else if (rank == 3) {
+    } else if (index == 2) {
+      // Bronze for #3 (index === 2)
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(

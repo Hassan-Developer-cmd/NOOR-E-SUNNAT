@@ -866,7 +866,10 @@ class AdminService {
               .map((doc) => AppUser.fromMap({'user_id': doc.id, ...doc.data()}))
               .toList();
           users.sort((a, b) {
-            final cmp = b.duroodPoints.compareTo(a.duroodPoints);
+            // Strictly dynamically sort snapshot docs based on Number(user.totalPoints || user.duroodPoints || 0) descending
+            final pointsA = a.totalPoints > 0 ? a.totalPoints : a.duroodPoints;
+            final pointsB = b.totalPoints > 0 ? b.totalPoints : b.duroodPoints;
+            final cmp = pointsB.compareTo(pointsA);
             if (cmp != 0) return cmp;
             final totalCmp = b.myTotal.compareTo(a.myTotal);
             if (totalCmp != 0) return totalCmp;
