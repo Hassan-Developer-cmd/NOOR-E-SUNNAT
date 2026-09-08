@@ -45,46 +45,59 @@ class CampaignPopupService {
   static Future<CampaignPopupModel> getCampaignPopup() async {
     try {
       // 1. Check campaigns/active
-      final activeCampaignDoc =
-          await _firestore.collection('campaigns').doc('active').get();
-      if (activeCampaignDoc.exists && activeCampaignDoc.data() != null) {
-        final model = CampaignPopupModel.fromMap(
-            activeCampaignDoc.id, activeCampaignDoc.data());
-        return model;
-      }
+      try {
+        final activeCampaignDoc = await _firestore
+            .collection('campaigns')
+            .doc('active')
+            .get()
+            .timeout(const Duration(seconds: 3));
+        if (activeCampaignDoc.exists && activeCampaignDoc.data() != null) {
+          final model = CampaignPopupModel.fromMap(
+              activeCampaignDoc.id, activeCampaignDoc.data());
+          return model;
+        }
+      } catch (_) {}
 
       // 2. Settings check: settings/launch_popup
-      final doc =
-          await _firestore.collection(_settingsCollection).doc(_docId).get();
-      if (doc.exists && doc.data() != null) {
-        final model = CampaignPopupModel.fromMap(doc.id, doc.data());
-        if (model.isActive) return model;
-      }
+      try {
+        final doc = await _firestore
+            .collection(_settingsCollection)
+            .doc(_docId)
+            .get()
+            .timeout(const Duration(seconds: 3));
+        if (doc.exists && doc.data() != null) {
+          final model = CampaignPopupModel.fromMap(doc.id, doc.data());
+          if (model.isActive) return model;
+        }
+      } catch (_) {}
 
       // 3. Fallback check: app_popups/launch_popup
-      final fallbackDoc =
-          await _firestore.collection(_popupsCollection).doc(_docId).get();
-      if (fallbackDoc.exists && fallbackDoc.data() != null) {
-        final model =
-            CampaignPopupModel.fromMap(fallbackDoc.id, fallbackDoc.data());
-        if (model.isActive) return model;
-      }
+      try {
+        final fallbackDoc = await _firestore
+            .collection(_popupsCollection)
+            .doc(_docId)
+            .get()
+            .timeout(const Duration(seconds: 3));
+        if (fallbackDoc.exists && fallbackDoc.data() != null) {
+          final model =
+              CampaignPopupModel.fromMap(fallbackDoc.id, fallbackDoc.data());
+          if (model.isActive) return model;
+        }
+      } catch (_) {}
 
       // 4. Collection query: app_popups where isActive == true
-      final activeQuery = await _firestore
-          .collection(_popupsCollection)
-          .where('isActive', isEqualTo: true)
-          .limit(1)
-          .get();
-      if (activeQuery.docs.isNotEmpty) {
-        final activeDoc = activeQuery.docs.first;
-        return CampaignPopupModel.fromMap(activeDoc.id, activeDoc.data());
-      }
-
-      // 5. If settings doc exists (even if explicitly inactive), return that config
-      if (doc.exists && doc.data() != null) {
-        return CampaignPopupModel.fromMap(doc.id, doc.data());
-      }
+      try {
+        final activeQuery = await _firestore
+            .collection(_popupsCollection)
+            .where('isActive', isEqualTo: true)
+            .limit(1)
+            .get()
+            .timeout(const Duration(seconds: 3));
+        if (activeQuery.docs.isNotEmpty) {
+          final activeDoc = activeQuery.docs.first;
+          return CampaignPopupModel.fromMap(activeDoc.id, activeDoc.data());
+        }
+      } catch (_) {}
     } catch (e) {
       if (kDebugMode) {
         print('CampaignPopupService.getCampaignPopup error: $e');
