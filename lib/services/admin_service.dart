@@ -774,14 +774,9 @@ class AdminService {
           final data = snap.data();
           if (data != null && data.isNotEmpty) {
             _lastGlobalCounterData = {
-              'globalTotal': (data['globalTotal'] as num?)?.toInt() ??
-                  ((data['total_count'] as num?)?.toInt() ?? 0),
-              'todayTotal': (data['todayTotal'] as num?)?.toInt() ??
-                  ((data['today_count'] as num?)?.toInt() ??
-                  ((data['globalToday'] as num?)?.toInt() ?? 0)),
-              'date': data['date']?.toString() ??
-                  data['last_reset_date']?.toString() ??
-                  '',
+              'globalTotal': (data['globalTotal'] as num?)?.toInt() ?? 0,
+              'todayTotal': (data['todayTotal'] as num?)?.toInt() ?? 0,
+              'date': data['date']?.toString() ?? '',
             };
             return _lastGlobalCounterData;
           }
@@ -799,14 +794,9 @@ class AdminService {
       if (snap.exists && snap.data() != null && snap.data()!.isNotEmpty) {
         final data = snap.data()!;
         _lastGlobalCounterData = {
-          'globalTotal': (data['globalTotal'] as num?)?.toInt() ??
-              ((data['total_count'] as num?)?.toInt() ?? 0),
-          'todayTotal': (data['todayTotal'] as num?)?.toInt() ??
-              ((data['today_count'] as num?)?.toInt() ??
-              ((data['globalToday'] as num?)?.toInt() ?? 0)),
-          'date': data['date']?.toString() ??
-              data['last_reset_date']?.toString() ??
-              '',
+          'globalTotal': (data['globalTotal'] as num?)?.toInt() ?? 0,
+          'todayTotal': (data['todayTotal'] as num?)?.toInt() ?? 0,
+          'date': data['date']?.toString() ?? '',
         };
         return _lastGlobalCounterData;
       }
