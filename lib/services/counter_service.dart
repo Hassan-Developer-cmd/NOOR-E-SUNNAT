@@ -71,7 +71,7 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
   static const String _prefixMyTodayLegacy = 'my_durood_today_';
   static const String _keyMyDuroodDate = 'my_durood_date';
   static const String _keyActiveUid = 'cached_active_uid';
-  static const String _kProductionZeroResetKey = 'production_zero_reset_v1';
+  static const String _kProductionZeroResetKey = 'production_zero_reset_v2';
 
   static SharedPreferences? _prefs;
 
@@ -188,9 +188,16 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
           key.startsWith('durood_points_') ||
           key.startsWith('user_streak_') ||
           key.startsWith('last_streak_date_') ||
-          key.startsWith('last_active_date_')) {
+          key.startsWith('last_active_date_') ||
+          key.startsWith('streak_') ||
+          key == 'cached_active_uid' ||
+          key == 'my_durood_date') {
         await prefs.remove(key);
       }
+    }
+    _instance._snapshot = const CounterSnapshot();
+    if (!_instance._snapshotController.isClosed) {
+      _instance._snapshotController.add(const CounterSnapshot());
     }
   }
 
