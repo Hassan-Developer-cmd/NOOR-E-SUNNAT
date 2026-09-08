@@ -184,7 +184,10 @@ class AppTranslations {
 
       // ── Auth & Login ──
       'continue_with_google': 'Continue with Google',
-      'sign_in': 'Sign In',
+      'login_button': 'Log In',
+      'signup_button': 'Sign Up',
+      'btn_login': 'Log In',
+      'sign_in': 'Log In',
       'sign_up': 'Sign Up',
       'login_subtitle_signin': 'Welcome back — sign in to continue',
       'login_subtitle_signup': 'Create your account to get started',
@@ -603,6 +606,9 @@ class AppTranslations {
 
       // ── Auth & Login ──
       'continue_with_google': 'گوگل کے ساتھ جاری رکھیں',
+      'login_button': 'لاگ ان کریں',
+      'signup_button': 'نیا اکاؤنٹ بنائیں',
+      'btn_login': 'لاگ ان کریں',
       'sign_in': 'لاگ ان کریں',
       'sign_up': 'نیا اکاؤنٹ بنائیں',
       'login_subtitle_signin': 'خوش آمدید — جاری رکھنے کے لیے لاگ ان کریں',

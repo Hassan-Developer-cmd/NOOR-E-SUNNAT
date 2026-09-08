@@ -10,11 +10,11 @@ void main() {
       final model = CampaignPopupModel.defaultConfig();
       expect(model.isActive, isTrue);
       expect(model.showActionButton, isTrue);
-      expect(model.titleEnglish, contains("Rabi'ul Awwal"));
-      expect(model.titleUrdu, contains('ربیع الاول'));
-      expect(model.buttonTextEnglish, 'Get Started');
-      expect(model.buttonTextUrdu, 'شروع کریں');
-      expect(model.targetRoute, '/events');
+      expect(model.titleEnglish, contains('Global Durood Campaign'));
+      expect(model.titleUrdu, contains('خصوصی مہم برائے درود پاک'));
+      expect(model.buttonTextEnglish, 'Recite Now');
+      expect(model.buttonTextUrdu, 'شرکت کریں');
+      expect(model.targetRoute, '/counter');
       expect(model.imageType, 'url');
     });
 

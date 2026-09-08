@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_typography.dart';
 import '../../../core/providers/language_provider.dart';
 import '../../../core/services/email_otp_service.dart';
 import '../../../core/widgets/app_exit_confirmation_dialog.dart';
@@ -391,11 +392,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Text(
-                                              _isSignUp ? lp.tr('sign_up') : lp.tr('sign_in'),
-                                              style: const TextStyle(
+                                              _isSignUp ? lp.tr('signup_button') : lp.tr('login_button'),
+                                              style: TextStyle(
+                                                fontFamily: lp.isUrdu ? AppTypography.urduFontFamily : AppTypography.englishFontFamily,
                                                 fontSize: 20,
                                                 fontWeight: FontWeight.bold,
                                                 color: AppColors.textPrimary,
+                                                letterSpacing: 0.0,
+                                                height: lp.isUrdu ? 1.3 : 1.2,
                                               ),
                                             ),
                                             const SizedBox(height: 2),
@@ -480,78 +484,89 @@ class _LoginScreenState extends State<LoginScreen> {
                                                     ),
                                                     const SizedBox(height: 8),
                                                   ] else
-                                                    const SizedBox(height: 12),
+                                                   const SizedBox(height: 12),
 
-                                                  // Email Auth Button
-                                                  SizedBox(
-                                                    width: double.infinity,
-                                                    height: 48,
-                                                    child: ElevatedButton(
-                                                      style: ElevatedButton.styleFrom(
-                                                        backgroundColor: AppColors.primaryEmerald,
-                                                        foregroundColor: Colors.white,
-                                                        shape: RoundedRectangleBorder(
-                                                          borderRadius: BorderRadius.circular(12),
-                                                        ),
-                                                        elevation: 1.5,
-                                                      ),
-                                                      onPressed: (_loading || _googleLoading) ? null : _handleEmailAuth,
-                                                      child: _loading
-                                                          ? const SizedBox(
-                                                              width: 20,
-                                                              height: 20,
-                                                              child: CircularProgressIndicator(
-                                                                strokeWidth: 2.2,
-                                                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                                              ),
-                                                            )
-                                                          : Text(
-                                                              _isSignUp ? lp.tr('sign_up') : lp.tr('sign_in'),
-                                                              style: const TextStyle(
-                                                                fontSize: 15,
-                                                                fontWeight: FontWeight.bold,
-                                                              ),
-                                                            ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
+                                                   // Email Auth Button
+                                                   SizedBox(
+                                                     width: double.infinity,
+                                                     height: 50,
+                                                     child: ElevatedButton(
+                                                       style: ElevatedButton.styleFrom(
+                                                         backgroundColor: AppColors.primaryEmerald,
+                                                         foregroundColor: Colors.white,
+                                                         alignment: Alignment.center,
+                                                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                         shape: RoundedRectangleBorder(
+                                                           borderRadius: BorderRadius.circular(12),
+                                                         ),
+                                                         elevation: 1.5,
+                                                       ),
+                                                       onPressed: (_loading || _googleLoading) ? null : _handleEmailAuth,
+                                                       child: _loading
+                                                           ? const SizedBox(
+                                                               width: 20,
+                                                               height: 20,
+                                                               child: CircularProgressIndicator(
+                                                                 strokeWidth: 2.2,
+                                                                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                                               ),
+                                                             )
+                                                           : Text(
+                                                               _isSignUp ? lp.tr('signup_button') : lp.tr('login_button'),
+                                                               textAlign: TextAlign.center,
+                                                               style: TextStyle(
+                                                                 fontFamily: lp.isUrdu
+                                                                     ? AppTypography.urduFontFamily
+                                                                     : AppTypography.englishFontFamily,
+                                                                 fontSize: lp.isUrdu ? 16 : 15,
+                                                                 fontWeight: FontWeight.bold,
+                                                                 letterSpacing: 0.0,
+                                                                 height: lp.isUrdu ? 1.25 : 1.2,
+                                                                 color: Colors.white,
+                                                               ),
+                                                             ),
+                                                     ),
+                                                   ),
+                                                 ],
+                                               ),
+                                             ),
 
-                                            const SizedBox(height: 10),
+                                             const SizedBox(height: 10),
 
-                                            // Toggle Sign In / Sign Up
-                                            Center(
-                                              child: GestureDetector(
-                                                onTap: () => setState(() {
-                                                  _isSignUp = !_isSignUp;
-                                                  _formKey.currentState?.reset();
-                                                }),
-                                                child: Padding(
-                                                  padding: const EdgeInsets.symmetric(vertical: 2),
-                                                  child: RichText(
-                                                    text: TextSpan(
-                                                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                                                      children: [
-                                                        TextSpan(
-                                                          text: _isSignUp
-                                                              ? lp.tr('already_have_account_prefix')
-                                                              : lp.tr('dont_have_account_prefix'),
-                                                        ),
-                                                        TextSpan(
-                                                          text: _isSignUp ? lp.tr('sign_in') : lp.tr('sign_up'),
-                                                          style: const TextStyle(
-                                                            color: AppColors.primaryEmerald,
-                                                            fontWeight: FontWeight.w700,
-                                                            fontSize: 12,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
+                                             // Toggle Sign In / Sign Up
+                                             Center(
+                                               child: GestureDetector(
+                                                 onTap: () => setState(() {
+                                                   _isSignUp = !_isSignUp;
+                                                   _formKey.currentState?.reset();
+                                                 }),
+                                                 child: Padding(
+                                                   padding: const EdgeInsets.symmetric(vertical: 2),
+                                                   child: RichText(
+                                                     text: TextSpan(
+                                                       style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                                       children: [
+                                                         TextSpan(
+                                                           text: _isSignUp
+                                                               ? lp.tr('already_have_account_prefix')
+                                                               : lp.tr('dont_have_account_prefix'),
+                                                         ),
+                                                         TextSpan(
+                                                           text: _isSignUp ? lp.tr('login_button') : lp.tr('signup_button'),
+                                                           style: TextStyle(
+                                                             fontFamily: lp.isUrdu ? AppTypography.urduFontFamily : AppTypography.englishFontFamily,
+                                                             color: AppColors.primaryEmerald,
+                                                             fontWeight: FontWeight.w700,
+                                                             fontSize: 12,
+                                                             letterSpacing: 0.0,
+                                                           ),
+                                                         ),
+                                                       ],
+                                                     ),
+                                                   ),
+                                                 ),
+                                               ),
+                                             ),
 
                                             const SizedBox(height: 10),
 
@@ -663,11 +678,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(width: 12),
                   Text(
                     lp.tr('continue_with_google'),
-                    style: const TextStyle(
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: lp.isUrdu ? AppTypography.urduFontFamily : AppTypography.englishFontFamily,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF3C4043),
-                      letterSpacing: 0.1,
+                      color: const Color(0xFF3C4043),
+                      letterSpacing: lp.isUrdu ? 0.0 : 0.1,
+                      height: lp.isUrdu ? 1.25 : 1.2,
                     ),
                   ),
                 ],
