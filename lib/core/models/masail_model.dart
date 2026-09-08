@@ -95,6 +95,7 @@ class MasailItemModel {
   final String answerUr;
   final String book;
   final String bookUr;
+  final int orderIndex;
 
   const MasailItemModel({
     required this.id,
@@ -105,6 +106,7 @@ class MasailItemModel {
     this.answerUr = '',
     required this.book,
     this.bookUr = '',
+    this.orderIndex = 0,
     String? citation,
     String? citationUr,
     String? referenceBook,
@@ -123,7 +125,31 @@ class MasailItemModel {
   String getCitation(bool isUrdu) => getBook(isUrdu);
   String getReferenceBook(bool isUrdu) => getBook(isUrdu);
 
-  factory MasailItemModel.fromMap(String id, Map<String, dynamic> map) {
+  MasailItemModel copyWith({
+    String? id,
+    String? categoryId,
+    String? question,
+    String? questionUr,
+    String? answer,
+    String? answerUr,
+    String? book,
+    String? bookUr,
+    int? orderIndex,
+  }) {
+    return MasailItemModel(
+      id: id ?? this.id,
+      categoryId: categoryId ?? this.categoryId,
+      question: question ?? this.question,
+      questionUr: questionUr ?? this.questionUr,
+      answer: answer ?? this.answer,
+      answerUr: answerUr ?? this.answerUr,
+      book: book ?? this.book,
+      bookUr: bookUr ?? this.bookUr,
+      orderIndex: orderIndex ?? this.orderIndex,
+    );
+  }
+
+  factory MasailItemModel.fromMap(String id, Map<String, dynamic> map, {int defaultOrderIndex = 0}) {
     final rawBook = (map['book'] as String?)?.trim();
     final rawBookUr = (map['book_ur'] as String?)?.trim();
     final rawCit = (map['citation'] as String?)?.trim();
@@ -143,6 +169,10 @@ class MasailItemModel {
             ? rawCitUr
             : (rawRefUr ?? ''));
 
+    final parsedOrder = (map['orderIndex'] as num?)?.toInt() ??
+        (map['order'] as num?)?.toInt() ??
+        defaultOrderIndex;
+
     return MasailItemModel(
       id: id,
       categoryId: map['category_id'] as String? ?? '',
@@ -152,6 +182,7 @@ class MasailItemModel {
       answerUr: map['answer_ur'] as String? ?? '',
       book: effectiveBook,
       bookUr: effectiveBookUr,
+      orderIndex: parsedOrder,
     );
   }
 
@@ -163,6 +194,7 @@ class MasailItemModel {
         'answer_ur': answerUr,
         'book': book,
         'book_ur': bookUr,
+        'orderIndex': orderIndex,
         // Keep legacy fields for backward compatibility
         'citation': book,
         'citation_ur': bookUr,

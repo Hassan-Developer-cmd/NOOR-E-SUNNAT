@@ -1853,7 +1853,6 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
 
   // ── Masail Table (Category-Wise) ──────────────────────────────
 
-
   Widget _buildMasailTable() {
     return StreamBuilder<List<MasailItemModel>>(
       stream: AdminService.masailStream,
@@ -1931,36 +1930,41 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 ),
               ),
             ),
-            _tableCard([
-              const DataColumn(label: Text('Question', style: TextStyle(fontWeight: FontWeight.bold))),
-              const DataColumn(label: Text('Category', style: TextStyle(fontWeight: FontWeight.bold))),
-              const DataColumn(label: Text('Book', style: TextStyle(fontWeight: FontWeight.bold))),
-              const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
-            ], filtered.map((m) => DataRow(cells: [
-              DataCell(Text(m.question, style: const TextStyle(fontWeight: FontWeight.w600))),
-              DataCell(_statusChip(m.categoryId.toUpperCase(), AppColors.emeraldContainer, AppColors.primaryEmerald)),
-              DataCell(Text(m.getBook(false), style: const TextStyle(fontSize: 12))),
-              DataCell(Row(
-                mainAxisSize: MainAxisSize.min,
+            // Drag-and-drop Hint Banner
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              decoration: BoxDecoration(
+                color: AppColors.primaryEmerald.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.primaryEmerald.withValues(alpha: 0.25)),
+              ),
+              child: Row(
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit_rounded, size: 18, color: AppColors.primaryEmerald),
-                    tooltip: 'Edit Masail',
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                    onPressed: () => _showEditMasailModal(context, m),
-                  ),
-                  const SizedBox(width: 6),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red),
-                    tooltip: 'Delete Masail',
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                    onPressed: () => _confirmDelete(context, () => AdminService.deleteMasail(m.id)),
+                  const Icon(Icons.drag_indicator_rounded, size: 18, color: AppColors.primaryEmerald),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _searchQuery.isNotEmpty
+                          ? 'Showing search results for "$_searchQuery". Clear search to reorganize the complete list.'
+                          : 'Drag items using the grip handle (⠿) on the left to reorder. The custom order persists automatically.',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.emeraldDark,
+                      ),
+                    ),
                   ),
                 ],
-              )),
-            ])).toList()),
+              ),
+            ),
+            // Reorderable List Table
+            _MasailReorderableListView(
+              items: filtered,
+              onEdit: (m) => _showEditMasailModal(context, m),
+              onDelete: (m) => _confirmDelete(context, () => AdminService.deleteMasail(m.id)),
+              statusChip: _statusChip,
+            ),
           ],
         );
       },
@@ -2044,36 +2048,41 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                 ),
               ),
             ),
-            _tableCard([
-              const DataColumn(label: Text('Title', style: TextStyle(fontWeight: FontWeight.bold))),
-              const DataColumn(label: Text('Category', style: TextStyle(fontWeight: FontWeight.bold))),
-              const DataColumn(label: Text('Book', style: TextStyle(fontWeight: FontWeight.bold))),
-              const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
-            ], filtered.map((a) => DataRow(cells: [
-              DataCell(Text(a.title, style: const TextStyle(fontWeight: FontWeight.w600))),
-              DataCell(_statusChip(a.categoryId.toUpperCase(), AppColors.emeraldContainer, AppColors.primaryEmerald)),
-              DataCell(Text(a.getBook(false), style: const TextStyle(fontSize: 12))),
-              DataCell(Row(
-                mainAxisSize: MainAxisSize.min,
+            // Drag-and-drop Hint Banner
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              decoration: BoxDecoration(
+                color: AppColors.primaryEmerald.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.primaryEmerald.withValues(alpha: 0.25)),
+              ),
+              child: Row(
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit_rounded, size: 18, color: AppColors.primaryEmerald),
-                    tooltip: 'Edit Aqaid',
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                    onPressed: () => _showEditAqaidModal(context, a),
-                  ),
-                  const SizedBox(width: 6),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red),
-                    tooltip: 'Delete Aqaid',
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                    onPressed: () => _confirmDelete(context, () => AdminService.deleteAqaid(a.id)),
+                  const Icon(Icons.drag_indicator_rounded, size: 18, color: AppColors.primaryEmerald),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _searchQuery.isNotEmpty
+                          ? 'Showing search results for "$_searchQuery". Clear search to reorganize the complete list.'
+                          : 'Drag items using the grip handle (⠿) on the left to reorder. The custom order persists automatically.',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.emeraldDark,
+                      ),
+                    ),
                   ),
                 ],
-              )),
-            ])).toList()),
+              ),
+            ),
+            // Reorderable List Table
+            _AqaidReorderableListView(
+              items: filtered,
+              onEdit: (a) => _showEditAqaidModal(context, a),
+              onDelete: (a) => _confirmDelete(context, () => AdminService.deleteAqaid(a.id)),
+              statusChip: _statusChip,
+            ),
           ],
         );
       },
@@ -6019,3 +6028,694 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     );
   }
 }
+
+// ── Masail Reorderable List View ──────────────────────────────────────────────
+
+class _MasailReorderableListView extends StatefulWidget {
+  final List<MasailItemModel> items;
+  final ValueChanged<MasailItemModel> onEdit;
+  final ValueChanged<MasailItemModel> onDelete;
+  final Widget Function(String, Color, Color) statusChip;
+
+  const _MasailReorderableListView({
+    required this.items,
+    required this.onEdit,
+    required this.onDelete,
+    required this.statusChip,
+  });
+
+  @override
+  State<_MasailReorderableListView> createState() => _MasailReorderableListViewState();
+}
+
+class _MasailReorderableListViewState extends State<_MasailReorderableListView> {
+  late List<MasailItemModel> _localItems;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _localItems = List.from(widget.items);
+  }
+
+  @override
+  void didUpdateWidget(_MasailReorderableListView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_isSaving) {
+      _localItems = List.from(widget.items);
+    }
+  }
+
+  Future<void> _onReorder(int oldIndex, int newIndex) async {
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+    setState(() {
+      final moved = _localItems.removeAt(oldIndex);
+      _localItems.insert(newIndex, moved);
+      _isSaving = true;
+    });
+
+    try {
+      final docIds = _localItems.map((e) => e.id).toList();
+      await AdminService.reorderMasail(docIds);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save Masail order: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  Widget _proxyDecorator(Widget child, int index, Animation<double> animation) {
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, child) {
+        final animValue = Curves.easeInOut.transform(animation.value);
+        final double elevation = 1.0 + (animValue * 7.0);
+        return Material(
+          elevation: elevation,
+          shadowColor: AppColors.primaryEmerald.withValues(alpha: 0.35),
+          borderRadius: BorderRadius.circular(10),
+          color: Colors.white,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: AppColors.primaryEmerald,
+                width: 1.8,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primaryEmerald.withValues(alpha: 0.18),
+                  blurRadius: 16,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: child,
+          ),
+        );
+      },
+      child: child,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_localItems.isEmpty) {
+      return Card(
+        elevation: 1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        child: Container(
+          padding: const EdgeInsets.all(36),
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.inbox_rounded, size: 48, color: Colors.grey.shade400),
+              const SizedBox(height: 12),
+              Text(
+                'No Masail entries found',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Try changing the category filter or add a new entry.',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      clipBehavior: Clip.antiAlias,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final content = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header Row
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+                ),
+                child: const Row(
+                  children: [
+                    SizedBox(
+                      width: 48,
+                      child: Center(
+                        child: Tooltip(
+                          message: 'Drag handle column',
+                          child: Icon(Icons.drag_handle_rounded, size: 18, color: AppColors.textSecondary),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 44,
+                      child: Text('#', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
+                    ),
+                    Expanded(
+                      flex: 4,
+                      child: Text('Question / Title', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text('Category', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text('Book / Reference', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
+                    ),
+                    SizedBox(
+                      width: 90,
+                      child: Text('Actions', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
+                    ),
+                  ],
+                ),
+              ),
+              // Reorderable list
+              ReorderableListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                buildDefaultDragHandles: false,
+                itemCount: _localItems.length,
+                // ignore: deprecated_member_use
+                onReorder: _onReorder,
+                proxyDecorator: _proxyDecorator,
+                itemBuilder: (context, index) {
+                  final m = _localItems[index];
+                  return Container(
+                    key: ValueKey('masail_${m.id}'),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: index.isEven ? Colors.white : const Color(0xFFFCFCFD),
+                      border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                    ),
+                    child: Row(
+                      children: [
+                        // Visual Drag Handle
+                        SizedBox(
+                          width: 48,
+                          child: Center(
+                            child: ReorderableDragStartListener(
+                              index: index,
+                              child: MouseRegion(
+                                cursor: SystemMouseCursors.grab,
+                                child: Tooltip(
+                                  message: 'Drag to reorder',
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: Colors.grey.shade300),
+                                    ),
+                                    child: const Icon(
+                                      Icons.drag_indicator_rounded,
+                                      size: 18,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Numbering badge
+                        SizedBox(
+                          width: 44,
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryEmerald.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              '${index + 1}',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primaryEmerald,
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Question (English + Urdu)
+                        Expanded(
+                          flex: 4,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                m.question,
+                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (m.questionUr.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  m.questionUr,
+                                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        // Category Chip
+                        Expanded(
+                          flex: 2,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: widget.statusChip(
+                              m.categoryId.toUpperCase(),
+                              AppColors.emeraldContainer,
+                              AppColors.primaryEmerald,
+                            ),
+                          ),
+                        ),
+                        // Book / Reference
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            m.getBook(false).isEmpty ? '-' : m.getBook(false),
+                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        // Actions
+                        SizedBox(
+                          width: 90,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit_rounded, size: 18, color: AppColors.primaryEmerald),
+                                tooltip: 'Edit Masail',
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                onPressed: () => widget.onEdit(m),
+                              ),
+                              const SizedBox(width: 4),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red),
+                                tooltip: 'Delete Masail',
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                onPressed: () => widget.onDelete(m),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          );
+
+          if (constraints.maxWidth < 750) {
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: 750,
+                child: content,
+              ),
+            );
+          }
+          return content;
+        },
+      ),
+    );
+  }
+}
+
+// ── Aqaid Reorderable List View ───────────────────────────────────────────────
+
+class _AqaidReorderableListView extends StatefulWidget {
+  final List<AqaidItemModel> items;
+  final ValueChanged<AqaidItemModel> onEdit;
+  final ValueChanged<AqaidItemModel> onDelete;
+  final Widget Function(String, Color, Color) statusChip;
+
+  const _AqaidReorderableListView({
+    required this.items,
+    required this.onEdit,
+    required this.onDelete,
+    required this.statusChip,
+  });
+
+  @override
+  State<_AqaidReorderableListView> createState() => _AqaidReorderableListViewState();
+}
+
+class _AqaidReorderableListViewState extends State<_AqaidReorderableListView> {
+  late List<AqaidItemModel> _localItems;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _localItems = List.from(widget.items);
+  }
+
+  @override
+  void didUpdateWidget(_AqaidReorderableListView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_isSaving) {
+      _localItems = List.from(widget.items);
+    }
+  }
+
+  Future<void> _onReorder(int oldIndex, int newIndex) async {
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+    setState(() {
+      final moved = _localItems.removeAt(oldIndex);
+      _localItems.insert(newIndex, moved);
+      _isSaving = true;
+    });
+
+    try {
+      final docIds = _localItems.map((e) => e.id).toList();
+      await AdminService.reorderAqaid(docIds);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save Aqaid order: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  Widget _proxyDecorator(Widget child, int index, Animation<double> animation) {
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, child) {
+        final animValue = Curves.easeInOut.transform(animation.value);
+        final double elevation = 1.0 + (animValue * 7.0);
+        return Material(
+          elevation: elevation,
+          shadowColor: AppColors.primaryEmerald.withValues(alpha: 0.35),
+          borderRadius: BorderRadius.circular(10),
+          color: Colors.white,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: AppColors.primaryEmerald,
+                width: 1.8,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primaryEmerald.withValues(alpha: 0.18),
+                  blurRadius: 16,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: child,
+          ),
+        );
+      },
+      child: child,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_localItems.isEmpty) {
+      return Card(
+        elevation: 1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        child: Container(
+          padding: const EdgeInsets.all(36),
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.inbox_rounded, size: 48, color: Colors.grey.shade400),
+              const SizedBox(height: 12),
+              Text(
+                'No Aqaid entries found',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Try changing the category filter or add a new entry.',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      clipBehavior: Clip.antiAlias,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final content = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header Row
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+                ),
+                child: const Row(
+                  children: [
+                    SizedBox(
+                      width: 48,
+                      child: Center(
+                        child: Tooltip(
+                          message: 'Drag handle column',
+                          child: Icon(Icons.drag_handle_rounded, size: 18, color: AppColors.textSecondary),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 44,
+                      child: Text('#', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
+                    ),
+                    Expanded(
+                      flex: 4,
+                      child: Text('Title', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text('Category', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text('Book / Reference', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
+                    ),
+                    SizedBox(
+                      width: 90,
+                      child: Text('Actions', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary)),
+                    ),
+                  ],
+                ),
+              ),
+              // Reorderable list
+              ReorderableListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                buildDefaultDragHandles: false,
+                itemCount: _localItems.length,
+                // ignore: deprecated_member_use
+                onReorder: _onReorder,
+                proxyDecorator: _proxyDecorator,
+                itemBuilder: (context, index) {
+                  final a = _localItems[index];
+                  return Container(
+                    key: ValueKey('aqaid_${a.id}'),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: index.isEven ? Colors.white : const Color(0xFFFCFCFD),
+                      border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+                    ),
+                    child: Row(
+                      children: [
+                        // Visual Drag Handle
+                        SizedBox(
+                          width: 48,
+                          child: Center(
+                            child: ReorderableDragStartListener(
+                              index: index,
+                              child: MouseRegion(
+                                cursor: SystemMouseCursors.grab,
+                                child: Tooltip(
+                                  message: 'Drag to reorder',
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: Colors.grey.shade300),
+                                    ),
+                                    child: const Icon(
+                                      Icons.drag_indicator_rounded,
+                                      size: 18,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Numbering badge
+                        SizedBox(
+                          width: 44,
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryEmerald.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              '${index + 1}',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primaryEmerald,
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Title (English + Urdu)
+                        Expanded(
+                          flex: 4,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                a.title,
+                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (a.titleUr.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  a.titleUr,
+                                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        // Category Chip
+                        Expanded(
+                          flex: 2,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: widget.statusChip(
+                              a.categoryId.toUpperCase(),
+                              AppColors.emeraldContainer,
+                              AppColors.primaryEmerald,
+                            ),
+                          ),
+                        ),
+                        // Book / Reference
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            a.getBook(false).isEmpty ? '-' : a.getBook(false),
+                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        // Actions
+                        SizedBox(
+                          width: 90,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit_rounded, size: 18, color: AppColors.primaryEmerald),
+                                tooltip: 'Edit Aqaid',
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                onPressed: () => widget.onEdit(a),
+                              ),
+                              const SizedBox(width: 4),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red),
+                                tooltip: 'Delete Aqaid',
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                onPressed: () => widget.onDelete(a),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          );
+
+          if (constraints.maxWidth < 750) {
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: 750,
+                child: content,
+              ),
+            );
+          }
+          return content;
+        },
+      ),
+    );
+  }
+}
+

@@ -100,6 +100,7 @@ class AqaidItemModel {
   final String explanationUr;
   final String book;
   final String bookUr;
+  final int orderIndex;
 
   const AqaidItemModel({
     required this.id,
@@ -111,6 +112,7 @@ class AqaidItemModel {
     this.explanationUr = '',
     required this.book,
     this.bookUr = '',
+    this.orderIndex = 0,
     String? reference,
     String? referenceUr,
     String? citation,
@@ -129,7 +131,33 @@ class AqaidItemModel {
   String getReference(bool isUrdu) => getBook(isUrdu);
   String getCitation(bool isUrdu) => getBook(isUrdu);
 
-  factory AqaidItemModel.fromMap(String id, Map<String, dynamic> map) {
+  AqaidItemModel copyWith({
+    String? id,
+    String? categoryId,
+    String? title,
+    String? titleUr,
+    String? arabicText,
+    String? explanation,
+    String? explanationUr,
+    String? book,
+    String? bookUr,
+    int? orderIndex,
+  }) {
+    return AqaidItemModel(
+      id: id ?? this.id,
+      categoryId: categoryId ?? this.categoryId,
+      title: title ?? this.title,
+      titleUr: titleUr ?? this.titleUr,
+      arabicText: arabicText ?? this.arabicText,
+      explanation: explanation ?? this.explanation,
+      explanationUr: explanationUr ?? this.explanationUr,
+      book: book ?? this.book,
+      bookUr: bookUr ?? this.bookUr,
+      orderIndex: orderIndex ?? this.orderIndex,
+    );
+  }
+
+  factory AqaidItemModel.fromMap(String id, Map<String, dynamic> map, {int defaultOrderIndex = 0}) {
     final rawBook = (map['book'] as String?)?.trim();
     final rawBookUr = (map['book_ur'] as String?)?.trim();
     final rawRef = (map['reference'] as String?)?.trim();
@@ -149,6 +177,10 @@ class AqaidItemModel {
             ? rawRefUr
             : (rawCitUr ?? ''));
 
+    final parsedOrder = (map['orderIndex'] as num?)?.toInt() ??
+        (map['order'] as num?)?.toInt() ??
+        defaultOrderIndex;
+
     return AqaidItemModel(
       id: id,
       categoryId: map['category_id'] as String? ?? '',
@@ -159,6 +191,7 @@ class AqaidItemModel {
       explanationUr: map['explanation_ur'] as String? ?? '',
       book: effectiveBook,
       bookUr: effectiveBookUr,
+      orderIndex: parsedOrder,
     );
   }
 
@@ -171,6 +204,8 @@ class AqaidItemModel {
         'explanation_ur': explanationUr,
         'book': book,
         'book_ur': bookUr,
+        'orderIndex': orderIndex,
+        'order': orderIndex,
         // Keep legacy fields for backward compatibility
         'reference': book,
         'reference_ur': bookUr,

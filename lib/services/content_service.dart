@@ -187,12 +187,19 @@ class ContentService {
     try {
       return _firestore
           .collection('masail_entries')
-          .orderBy('created_at', descending: false)
           .snapshots()
           .map((snap) {
-        return snap.docs
-            .map((doc) => MasailItemModel.fromMap(doc.id, doc.data()))
-            .toList();
+        final list = <MasailItemModel>[];
+        for (int i = 0; i < snap.docs.length; i++) {
+          final doc = snap.docs[i];
+          list.add(MasailItemModel.fromMap(doc.id, doc.data(), defaultOrderIndex: i));
+        }
+        list.sort((a, b) {
+          final cmp = a.orderIndex.compareTo(b.orderIndex);
+          if (cmp != 0) return cmp;
+          return a.id.compareTo(b.id);
+        });
+        return list;
       }).handleError((e) {
         if (kDebugMode) print('ContentService masail error: $e');
         return <MasailItemModel>[];
@@ -209,12 +216,19 @@ class ContentService {
     try {
       return _firestore
           .collection('aqaid_entries')
-          .orderBy('created_at', descending: false)
           .snapshots()
           .map((snap) {
-        return snap.docs
-            .map((doc) => AqaidItemModel.fromMap(doc.id, doc.data()))
-            .toList();
+        final list = <AqaidItemModel>[];
+        for (int i = 0; i < snap.docs.length; i++) {
+          final doc = snap.docs[i];
+          list.add(AqaidItemModel.fromMap(doc.id, doc.data(), defaultOrderIndex: i));
+        }
+        list.sort((a, b) {
+          final cmp = a.orderIndex.compareTo(b.orderIndex);
+          if (cmp != 0) return cmp;
+          return a.id.compareTo(b.id);
+        });
+        return list;
       }).handleError((e) {
         if (kDebugMode) print('ContentService aqaid error: $e');
         return <AqaidItemModel>[];

@@ -317,15 +317,39 @@ class AdminService {
   static Stream<List<MasailItemModel>> get masailStream {
     return _firestore
         .collection('masail_entries')
-        .orderBy('created_at', descending: false)
         .snapshots()
-        .map((snap) => snap.docs
-            .map((doc) => MasailItemModel.fromMap(doc.id, doc.data()))
-            .toList());
+        .map((snap) {
+          final list = <MasailItemModel>[];
+          for (int i = 0; i < snap.docs.length; i++) {
+            final doc = snap.docs[i];
+            list.add(MasailItemModel.fromMap(doc.id, doc.data(), defaultOrderIndex: i));
+          }
+          list.sort((a, b) {
+            final cmp = a.orderIndex.compareTo(b.orderIndex);
+            if (cmp != 0) return cmp;
+            return a.id.compareTo(b.id);
+          });
+          return list;
+        });
   }
 
   static Future<void> addMasail(MasailItemModel item) async {
-    await _firestore.collection('masail_entries').add(item.toMap());
+    final snap = await _firestore.collection('masail_entries').get();
+    int maxIndex = -1;
+    for (var doc in snap.docs) {
+      final idx = (doc.data()['orderIndex'] as num?)?.toInt() ??
+          (doc.data()['order'] as num?)?.toInt();
+      if (idx != null && idx > maxIndex) {
+        maxIndex = idx;
+      }
+    }
+    if (maxIndex < snap.docs.length - 1) {
+      maxIndex = snap.docs.length - 1;
+    }
+    final newIndex = maxIndex + 1;
+    final map = item.toMap();
+    map['orderIndex'] = newIndex;
+    await _firestore.collection('masail_entries').add(map);
   }
 
   static Future<void> updateMasail(String id, Map<String, dynamic> data) async {
@@ -339,20 +363,58 @@ class AdminService {
     await _firestore.collection('masail_entries').doc(id).delete();
   }
 
+  static Future<void> reorderMasail(List<String> orderedDocIds) async {
+    if (orderedDocIds.isEmpty) return;
+    final batch = _firestore.batch();
+    for (int index = 0; index < orderedDocIds.length; index++) {
+      final docRef = _firestore.collection('masail_entries').doc(orderedDocIds[index]);
+      batch.update(docRef, {
+        'orderIndex': index,
+        'updated_at': FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
+  }
+
   // ── Aqaid CRUD ──────────────────────────────────────────────
 
   static Stream<List<AqaidItemModel>> get aqaidStream {
     return _firestore
         .collection('aqaid_entries')
-        .orderBy('created_at', descending: false)
         .snapshots()
-        .map((snap) => snap.docs
-            .map((doc) => AqaidItemModel.fromMap(doc.id, doc.data()))
-            .toList());
+        .map((snap) {
+          final list = <AqaidItemModel>[];
+          for (int i = 0; i < snap.docs.length; i++) {
+            final doc = snap.docs[i];
+            list.add(AqaidItemModel.fromMap(doc.id, doc.data(), defaultOrderIndex: i));
+          }
+          list.sort((a, b) {
+            final cmp = a.orderIndex.compareTo(b.orderIndex);
+            if (cmp != 0) return cmp;
+            return a.id.compareTo(b.id);
+          });
+          return list;
+        });
   }
 
   static Future<void> addAqaid(AqaidItemModel item) async {
-    await _firestore.collection('aqaid_entries').add(item.toMap());
+    final snap = await _firestore.collection('aqaid_entries').get();
+    int maxIndex = -1;
+    for (var doc in snap.docs) {
+      final idx = (doc.data()['orderIndex'] as num?)?.toInt() ??
+          (doc.data()['order'] as num?)?.toInt();
+      if (idx != null && idx > maxIndex) {
+        maxIndex = idx;
+      }
+    }
+    if (maxIndex < snap.docs.length - 1) {
+      maxIndex = snap.docs.length - 1;
+    }
+    final newIndex = maxIndex + 1;
+    final map = item.toMap();
+    map['orderIndex'] = newIndex;
+    map['order'] = newIndex;
+    await _firestore.collection('aqaid_entries').add(map);
   }
 
   static Future<void> updateAqaid(String id, Map<String, dynamic> data) async {
@@ -364,6 +426,20 @@ class AdminService {
 
   static Future<void> deleteAqaid(String id) async {
     await _firestore.collection('aqaid_entries').doc(id).delete();
+  }
+
+  static Future<void> reorderAqaid(List<String> orderedDocIds) async {
+    if (orderedDocIds.isEmpty) return;
+    final batch = _firestore.batch();
+    for (int index = 0; index < orderedDocIds.length; index++) {
+      final docRef = _firestore.collection('aqaid_entries').doc(orderedDocIds[index]);
+      batch.update(docRef, {
+        'orderIndex': index,
+        'order': index,
+        'updated_at': FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
   }
 
   // ── Daily Hadith / Ayat CRUD ────────────────────────────────
