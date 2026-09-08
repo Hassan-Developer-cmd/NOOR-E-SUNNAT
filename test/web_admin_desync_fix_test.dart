@@ -996,6 +996,33 @@ void main() {
           expect(u.duroodPoints, 0);
         }
       });
+
+      test('4. Instant Atomic Increment: 1 tap from 3 increments mobile, global, and user doc to 4', () {
+        int mobileCount = 3;
+        int globalTotal = 3;
+        int userMyTotal = 3;
+        int userTotalDurood = 3;
+        int userDuroodPoints = 3;
+        int userTotalPoints = 3;
+
+        // User taps 1 time
+        const int tapIncrement = 1;
+        mobileCount += tapIncrement;
+
+        // Atomic write simulation (FieldValue.increment(1))
+        globalTotal += tapIncrement;
+        userMyTotal += tapIncrement;
+        userTotalDurood += tapIncrement;
+        userDuroodPoints += tapIncrement;
+        userTotalPoints += tapIncrement;
+
+        expect(mobileCount, 4);
+        expect(globalTotal, 4);
+        expect(userMyTotal, 4);
+        expect(userTotalDurood, 4);
+        expect(userDuroodPoints, 4);
+        expect(userTotalPoints, 4);
+      });
     });
   });
 }

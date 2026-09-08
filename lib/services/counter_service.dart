@@ -133,6 +133,7 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
   // Internal buffers for debounced writes & in-flight network synchronization
   int _pendingBuffer = 0;
   int _inFlightBuffer = 0;
+  bool _isFlushing = false;
   DateTime? _lastTapTime;
 
   /// Returns total active uncommitted increment (pending in timer queue + actively in-flight to Firestore)
@@ -742,15 +743,17 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     _prefs?.setInt(_keyPoints, updatedPoints);
     _saveToStorage();
 
-    // 3. Fast debounce flush to Firestore
+    // 3. Fast debounce flush to Firestore (100ms for instant real-time sync)
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 400), flushImmediately);
+    _debounceTimer = Timer(const Duration(milliseconds: 100), flushImmediately);
   }
 
   /// Immediately commits any buffered increments to Firestore.
   Future<void> flushImmediately() async {
     _debounceTimer?.cancel();
-    if (_pendingBuffer <= 0) return;
+    if (_isFlushing || _pendingBuffer <= 0) return;
+    _isFlushing = true;
+
     final count = _pendingBuffer;
     _pendingBuffer = 0;
     _inFlightBuffer += count;
@@ -759,27 +762,19 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
       final todayStr = _todayDateString;
       final batch = _firestore.batch();
 
-      // 1. Global counter update strictly in global_counter/main with midnight check
+      // 1. Global counter atomic increment strictly in global_counter/main
       final globalRef = _firestore.collection('global_counter').doc('main');
-      final globalSnap = await globalRef.get();
-      final globalData = globalSnap.data() ?? {};
-      final String? globalDate = (globalData['date'] ?? globalData['last_reset_date'] ?? globalData['lastUpdatedDate'])?.toString();
-
-      final Map<String, dynamic> globalPayload = (globalDate != todayStr)
-          ? {
-              'globalTotal': FieldValue.increment(count),
-              'todayTotal': count,
-              'date': todayStr,
-              'updatedAt': FieldValue.serverTimestamp(),
-            }
-          : {
-              'globalTotal': FieldValue.increment(count),
-              'todayTotal': FieldValue.increment(count),
-              'date': todayStr,
-              'updatedAt': FieldValue.serverTimestamp(),
-            };
-
-      batch.set(globalRef, globalPayload, SetOptions(merge: true));
+      batch.set(
+        globalRef,
+        {
+          'globalTotal': FieldValue.increment(count),
+          'todayTotal': FieldValue.increment(count),
+          'date': todayStr,
+          'lastUpdated': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
 
       // 2. User Lifetime Update & User Daily Subcollection updates
       final uid = _auth.currentUser?.uid;
@@ -801,46 +796,35 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
           SetOptions(merge: true),
         );
 
-        final userSnap = await userRef.get();
-        final data = userSnap.data() ?? {};
-        final lastActive = data['lastStreakDate'] ??
-            data['lastActiveDate'] ??
-            data['lastDuroodDate'] ??
-            data['last_active_durood_date'];
-
-        final currentStoredStreak = ((data['streak'] ?? data['current_streak'] ?? data['daily_streak']) as num?)?.toInt() ?? 0;
-        final longestStoredStreak = ((data['longest_streak'] ?? data['best_streak']) as num?)?.toInt() ?? currentStoredStreak;
-
-        final streakUpdates = StreakHelper.computeStreakOnDuroodRecitation(
-          currentStoredStreak: currentStoredStreak,
-          longestStoredStreak: longestStoredStreak,
-          lastActiveDate: lastActive,
-          todayDateStr: todayStr,
-        );
-        final isUserNewDay = lastActive == null || !StreakHelper.isSameDay(lastActive, todayStr);
+        final effectiveStreak = _snapshot.currentStreak <= 0 ? 1 : _snapshot.currentStreak;
 
         batch.set(
           userRef,
           {
             'myTotal': FieldValue.increment(count),
+            'totalDurood': FieldValue.increment(count),
+            'totalCount': FieldValue.increment(count),
+            'personal_total_durood': FieldValue.increment(count),
+            'myToday': FieldValue.increment(count),
+            'todayTotal': FieldValue.increment(count),
+            'todayCount': FieldValue.increment(count),
+            'todayDuroodCount': FieldValue.increment(count),
+            'personal_today_durood': FieldValue.increment(count),
             'duroodPoints': FieldValue.increment(count),
+            'totalPoints': FieldValue.increment(count),
+            'points': FieldValue.increment(count),
+            'durood_points': FieldValue.increment(count),
+            'total_durood_points': FieldValue.increment(count),
+            'streak': effectiveStreak,
+            'current_streak': effectiveStreak,
+            'currentStreak': effectiveStreak,
             'lastStreakDate': todayStr,
             'lastActiveDate': todayStr,
-            // Legacy keys maintained for bidirectional compatibility
-            'personal_total_durood': FieldValue.increment(count),
-            'personal_today_durood': isUserNewDay ? count : FieldValue.increment(count),
-            'myToday': isUserNewDay ? count : FieldValue.increment(count),
-            'todayCount': isUserNewDay ? count : FieldValue.increment(count),
-            'todayDuroodCount': isUserNewDay ? count : FieldValue.increment(count),
             'lastDuroodDate': todayStr,
-            'total_durood_points': FieldValue.increment(count),
-            'durood_points': FieldValue.increment(count),
-            'points': FieldValue.increment(count),
             'last_active_durood_date': todayStr,
             'last_active_timestamp': FieldValue.serverTimestamp(),
             'last_durood_at': FieldValue.serverTimestamp(),
             'updatedAt': FieldValue.serverTimestamp(),
-            ...streakUpdates,
           },
           SetOptions(merge: true),
         );
@@ -851,8 +835,12 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
       if (kDebugMode) print('CounterService.flushImmediately error: $e');
       _pendingBuffer += count;
     } finally {
-      _inFlightBuffer -= count;
-      if (_inFlightBuffer < 0) _inFlightBuffer = 0;
+      _inFlightBuffer = (_inFlightBuffer - count) < 0 ? 0 : (_inFlightBuffer - count);
+      _isFlushing = false;
+      // Immediately flush any taps that occurred while the previous batch was committing
+      if (_pendingBuffer > 0) {
+        flushImmediately();
+      }
     }
   }
 

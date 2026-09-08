@@ -24,6 +24,12 @@ class _CounterScreenState extends State<CounterScreen> {
   final bool _hapticsEnabled = true;
   int _dailyTargetGoal = 500;
 
+  @override
+  void dispose() {
+    widget.counterService.flushImmediately();
+    super.dispose();
+  }
+
 
   void _confirmBulkAddDialog(BuildContext context, int amount) {
     final lp = globalLanguageProvider;
