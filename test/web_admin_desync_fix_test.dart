@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:islamic_app/core/models/app_user.dart';
+import 'package:islamic_app/core/models/campaign_popup_model.dart';
 import 'package:islamic_app/core/utils/streak_helper.dart';
+import 'package:islamic_app/services/campaign_popup_service.dart';
 
 void main() {
   group('Web Admin Dashboard Desync Fix Verification', () {
@@ -1059,5 +1061,63 @@ void main() {
         }
       });
     });
+
+    group('Campaign Popup Dialog On App Open Requirements', () {
+      test('1. Default Config: Active by default, targets /counter, provides English & Urdu defaults', () {
+        final config = CampaignPopupModel.defaultConfig();
+        expect(config.isActive, isTrue);
+        expect(config.showActionButton, isTrue);
+        expect(config.targetRoute, '/counter');
+        expect(config.getTitle(false), 'Global Durood Campaign');
+        expect(config.getTitle(true), 'خصوصی مہم برائے درود پاک');
+        expect(config.getButtonText(false), 'Recite Now');
+        expect(config.getButtonText(true), 'شرکت کریں');
+        expect(config.getDetails(false), contains('Salawat'));
+      });
+
+      test('2. Remote Firestore Payload: Correctly parses remote document with title and message', () {
+        final remoteData = <String, dynamic>{
+          'isActive': true,
+          'title': 'Milad-un-Nabi Global Durood Drive',
+          'message': 'Recite 10,000 Salawat today for special blessings.',
+          'buttonText': 'Recite Now',
+          'targetRoute': '/counter',
+        };
+
+        final model = CampaignPopupModel.fromMap('active', remoteData);
+        expect(model.isActive, isTrue);
+        expect(model.getTitle(false), 'Milad-un-Nabi Global Durood Drive');
+        expect(model.getDetails(false), 'Recite 10,000 Salawat today for special blessings.');
+        expect(model.getButtonText(false), 'Recite Now');
+        expect(model.targetRoute, '/counter');
+      });
+
+      test('3. Inactive Remote Campaign: Correctly respects isActive: false flag', () {
+        final inactiveData = <String, dynamic>{
+          'isActive': false,
+          'title': 'Expired Campaign',
+          'message': 'This campaign has ended.',
+        };
+
+        final model = CampaignPopupModel.fromMap('active', inactiveData);
+        expect(model.isActive, isFalse);
+      });
+
+      test('4. Session Guard: Only shows once per fresh session and resets on app restart', () {
+        CampaignPopupService.resetSession();
+        expect(CampaignPopupService.hasShownInSession, isFalse);
+
+        CampaignPopupService.markShownInSession();
+        expect(CampaignPopupService.hasShownInSession, isTrue);
+
+        // Subsequent tab switches will see hasShownInSession == true and skip
+        expect(CampaignPopupService.hasShownInSession, isTrue);
+
+        // Fresh app launch resets session
+        CampaignPopupService.resetSession();
+        expect(CampaignPopupService.hasShownInSession, isFalse);
+      });
+    });
   });
 }
+

@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../core/models/campaign_popup_model.dart';
 import '../core/widgets/campaign_popup_dialog.dart';
 
@@ -10,7 +9,6 @@ class CampaignPopupService {
   static const String _settingsCollection = 'settings';
   static const String _docId = 'launch_popup';
   static const String _popupsCollection = 'app_popups';
-  static const String _prefKeyLastShownPopup = 'last_shown_campaign_popup_fingerprint';
 
   /// Session guard: tracks if the launch popup was already displayed during the current app session.
   static bool _hasShownInSession = false;
@@ -43,24 +41,36 @@ class CampaignPopupService {
   }
 
   /// One-shot fetch of the campaign popup configuration from Firestore.
-  /// Checks settings/launch_popup and app_popups collection for active campaigns.
+  /// Checks campaigns/active, settings/launch_popup, and app_popups collection for active campaigns.
   static Future<CampaignPopupModel> getCampaignPopup() async {
     try {
-      // 1. Primary check: settings/launch_popup
-      final doc = await _firestore.collection(_settingsCollection).doc(_docId).get();
+      // 1. Check campaigns/active
+      final activeCampaignDoc =
+          await _firestore.collection('campaigns').doc('active').get();
+      if (activeCampaignDoc.exists && activeCampaignDoc.data() != null) {
+        final model = CampaignPopupModel.fromMap(
+            activeCampaignDoc.id, activeCampaignDoc.data());
+        return model;
+      }
+
+      // 2. Settings check: settings/launch_popup
+      final doc =
+          await _firestore.collection(_settingsCollection).doc(_docId).get();
       if (doc.exists && doc.data() != null) {
         final model = CampaignPopupModel.fromMap(doc.id, doc.data());
         if (model.isActive) return model;
       }
 
-      // 2. Fallback check: app_popups/launch_popup
-      final fallbackDoc = await _firestore.collection(_popupsCollection).doc(_docId).get();
+      // 3. Fallback check: app_popups/launch_popup
+      final fallbackDoc =
+          await _firestore.collection(_popupsCollection).doc(_docId).get();
       if (fallbackDoc.exists && fallbackDoc.data() != null) {
-        final model = CampaignPopupModel.fromMap(fallbackDoc.id, fallbackDoc.data());
+        final model =
+            CampaignPopupModel.fromMap(fallbackDoc.id, fallbackDoc.data());
         if (model.isActive) return model;
       }
 
-      // 3. Collection query: app_popups where isActive == true
+      // 4. Collection query: app_popups where isActive == true
       final activeQuery = await _firestore
           .collection(_popupsCollection)
           .where('isActive', isEqualTo: true)
@@ -71,7 +81,7 @@ class CampaignPopupService {
         return CampaignPopupModel.fromMap(activeDoc.id, activeDoc.data());
       }
 
-      // 4. If settings doc exists (even if explicitly inactive), return that config
+      // 5. If settings doc exists (even if explicitly inactive), return that config
       if (doc.exists && doc.data() != null) {
         return CampaignPopupModel.fromMap(doc.id, doc.data());
       }
@@ -117,7 +127,7 @@ class CampaignPopupService {
     await batch.commit();
   }
 
-  /// Checks Firestore on mobile startup and displays the modal only once.
+  /// Checks Firestore on mobile startup and displays the modal once per fresh app session.
   static Future<void> checkAndShowStartupPopup(
     BuildContext context, {
     bool force = false,
@@ -133,26 +143,6 @@ class CampaignPopupService {
     try {
       final config = await getCampaignPopup();
       if (!config.isActive) return;
-
-      // Unique campaign fingerprint so updated campaigns show once
-      final campaignFingerprint = '${config.id}_${config.titleEnglish}_${config.titleUrdu}_${config.targetRoute}';
-
-      if (!force) {
-        final prefs = await SharedPreferences.getInstance();
-        final lastShown = prefs.getString(_prefKeyLastShownPopup);
-        if (lastShown == campaignFingerprint) {
-          // Already shown to user — do not show again
-          return;
-        }
-      }
-
-      if (!context.mounted) return;
-
-      // Persist locally
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(_prefKeyLastShownPopup, campaignFingerprint);
-      } catch (_) {}
 
       if (!context.mounted) return;
       await CampaignPopupDialog.show(context, config);

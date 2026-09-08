@@ -42,14 +42,16 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _isDialogShowing) return;
-      _isDialogShowing = true;
-      CampaignPopupService.checkAndShowStartupPopup(context).then((_) {
-        if (mounted) {
-          _isDialogShowing = false;
-        }
-      });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _showCampaignPopup());
+  }
+
+  void _showCampaignPopup() {
+    if (!mounted || _isDialogShowing) return;
+    _isDialogShowing = true;
+    CampaignPopupService.checkAndShowStartupPopup(context).then((_) {
+      if (mounted) {
+        _isDialogShowing = false;
+      }
     });
   }
 

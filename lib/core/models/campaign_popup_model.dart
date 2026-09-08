@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CampaignPopupModel {
-  static const String defaultTargetRoute = '/events';
+  static const String defaultTargetRoute = '/counter';
   static const String imageTypeUrl = 'url';
   static const String imageTypeBase64 = 'base64';
 
@@ -24,12 +24,14 @@ class CampaignPopupModel {
     this.id = 'launch_popup',
     this.isActive = true,
     this.showActionButton = true,
-    this.titleEnglish = "Rabi'ul Awwal 2026",
-    this.titleUrdu = 'ربیع الاول ۱۴۴۸ / ۲۰۲۶',
-    this.detailsEnglish = 'Complete Durood, Shamail, Seerah, and courses to win prizes!',
-    this.detailsUrdu = 'انعامات جیتنے کے لیے درود پاک، شمائل، سیرت اور کورسز مکمل کریں!',
-    this.buttonTextEnglish = 'Get Started',
-    this.buttonTextUrdu = 'شروع کریں',
+    this.titleEnglish = 'Global Durood Campaign',
+    this.titleUrdu = 'خصوصی مہم برائے درود پاک',
+    this.detailsEnglish =
+        'Join thousands of believers worldwide in sending Salawat upon the Beloved Prophet ﷺ today.',
+    this.detailsUrdu =
+        'آج ہی حضور نبی اکرم ﷺ کی بارگاہِ اقدس میں صلوات و سلام کا نذرانہ پیش کریں اور عالمی مہم کا حصہ بنیں۔',
+    this.buttonTextEnglish = 'Recite Now',
+    this.buttonTextUrdu = 'شرکت کریں',
     this.targetRoute = defaultTargetRoute,
     this.imageType = imageTypeUrl,
     this.imageUrl,
@@ -41,7 +43,7 @@ class CampaignPopupModel {
     if (isUrdu && titleUrdu.trim().isNotEmpty) {
       return titleUrdu;
     }
-    return titleEnglish.isNotEmpty ? titleEnglish : "Rabi'ul Awwal 2026";
+    return titleEnglish.isNotEmpty ? titleEnglish : 'Global Durood Campaign';
   }
 
   String getDetails(bool isUrdu) {
@@ -50,14 +52,14 @@ class CampaignPopupModel {
     }
     return detailsEnglish.isNotEmpty
         ? detailsEnglish
-        : 'Complete Durood, Shamail, Seerah, and courses to win prizes!';
+        : 'Join thousands of believers worldwide in sending Salawat upon the Beloved Prophet ﷺ today.';
   }
 
   String getButtonText(bool isUrdu) {
     if (isUrdu && buttonTextUrdu.trim().isNotEmpty) {
       return buttonTextUrdu;
     }
-    return buttonTextEnglish.isNotEmpty ? buttonTextEnglish : 'Get Started';
+    return buttonTextEnglish.isNotEmpty ? buttonTextEnglish : 'Recite Now';
   }
 
   Map<String, dynamic> toMap() {
@@ -84,14 +86,14 @@ class CampaignPopupModel {
     // Support both camelCase and snake_case keys for resilience
     final isActive = (map['isActive'] ?? map['is_active'] ?? map['active']) as bool? ?? true;
     final showActionButton = (map['showActionButton'] ?? map['show_action_button'] ?? true) as bool? ?? true;
-    final titleEn = (map['titleEnglish'] ?? map['title_en'] ?? map['title']) as String? ?? "Rabi'ul Awwal 2026";
-    final titleUr = (map['titleUrdu'] ?? map['title_ur'] ?? '') as String? ?? 'ربیع الاول ۱۴۴۸ / ۲۰۲۶';
-    final detailsEn = (map['detailsEnglish'] ?? map['details_en'] ?? map['details'] ?? map['body_en']) as String? ??
-        'Complete Durood, Shamail, Seerah, and courses to win prizes!';
-    final detailsUr = (map['detailsUrdu'] ?? map['details_ur'] ?? map['body_ur']) as String? ??
-        'انعامات جیتنے کے لیے درود پاک، شمائل، سیرت اور کورسز مکمل کریں!';
-    final btnEn = (map['buttonTextEnglish'] ?? map['button_text_en'] ?? map['buttonText'] ?? 'Get Started') as String;
-    final btnUr = (map['buttonTextUrdu'] ?? map['button_text_ur'] ?? 'شروع کریں') as String;
+    final titleEn = (map['titleEnglish'] ?? map['title_en'] ?? map['title'] ?? map['heading']) as String? ?? 'Global Durood Campaign';
+    final titleUr = (map['titleUrdu'] ?? map['title_ur'] ?? map['heading_ur'] ?? '') as String? ?? 'خصوصی مہم برائے درود پاک';
+    final detailsEn = (map['detailsEnglish'] ?? map['details_en'] ?? map['details'] ?? map['body_en'] ?? map['message'] ?? map['body'] ?? map['description']) as String? ??
+        'Join thousands of believers worldwide in sending Salawat upon the Beloved Prophet ﷺ today.';
+    final detailsUr = (map['detailsUrdu'] ?? map['details_ur'] ?? map['body_ur'] ?? map['message_ur'] ?? map['description_ur'] ?? '') as String? ??
+        'آج ہی حضور نبی اکرم ﷺ کی بارگاہِ اقدس میں صلوات و سلام کا نذرانہ پیش کریں اور عالمی مہم کا حصہ بنیں۔';
+    final btnEn = (map['buttonTextEnglish'] ?? map['button_text_en'] ?? map['buttonText'] ?? map['cta_text'] ?? 'Recite Now') as String;
+    final btnUr = (map['buttonTextUrdu'] ?? map['button_text_ur'] ?? 'شرکت کریں') as String;
     final targetRoute = (map['targetRoute'] ?? map['target_route'] ?? defaultTargetRoute) as String;
     final imageType = (map['imageType'] ?? map['image_type'] ?? imageTypeUrl) as String;
     final imageUrl = (map['imageUrl'] ?? map['image_url']) as String?;
@@ -121,12 +123,14 @@ class CampaignPopupModel {
       id: id,
       isActive: true,
       showActionButton: true,
-      titleEnglish: "Rabi'ul Awwal 2026",
-      titleUrdu: 'ربیع الاول ۱۴۴۸ / ۲۰۲۶',
-      detailsEnglish: 'Complete Durood, Shamail, Seerah, and courses to win prizes!',
-      detailsUrdu: 'انعامات جیتنے کے لیے درود پاک، شمائل، سیرت اور کورسز مکمل کریں!',
-      buttonTextEnglish: 'Get Started',
-      buttonTextUrdu: 'شروع کریں',
+      titleEnglish: 'Global Durood Campaign',
+      titleUrdu: 'خصوصی مہم برائے درود پاک',
+      detailsEnglish:
+          'Join thousands of believers worldwide in sending Salawat upon the Beloved Prophet ﷺ today.',
+      detailsUrdu:
+          'آج ہی حضور نبی اکرم ﷺ کی بارگاہِ اقدس میں صلوات و سلام کا نذرانہ پیش کریں اور عالمی مہم کا حصہ بنیں۔',
+      buttonTextEnglish: 'Recite Now',
+      buttonTextUrdu: 'شرکت کریں',
       targetRoute: defaultTargetRoute,
       imageType: imageTypeUrl,
       imageUrl: null,

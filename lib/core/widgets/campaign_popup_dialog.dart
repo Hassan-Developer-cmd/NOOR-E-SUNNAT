@@ -28,7 +28,7 @@ class CampaignPopupDialog extends StatelessWidget {
   static Future<void> show(BuildContext context, CampaignPopupModel config) {
     return showGeneralDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       useRootNavigator: true,
       barrierLabel: 'Dismiss Campaign Popup',
       barrierColor: Colors.black.withValues(alpha: 0.75),
@@ -65,7 +65,11 @@ class CampaignPopupDialog extends StatelessWidget {
         context,
         MaterialPageRoute(builder: (_) => const UpcomingEventsScreen()),
       );
-    } else if (target.contains('counter') || target.contains('durood')) {
+    } else if (target.contains('counter') ||
+        target.contains('durood') ||
+        target.isEmpty ||
+        target == '/home' ||
+        target == 'home') {
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -94,13 +98,18 @@ class CampaignPopupDialog extends StatelessWidget {
           builder: (_) => ProfileScreen(counterService: CounterService()),
         ),
       );
-    } else if (target == '/home' || target == 'home') {
-      // Already on home, no-op
     } else {
-      // Attempt generic named route navigation if defined
+      // Attempt generic named route navigation if defined, fallback to Counter
       try {
         Navigator.of(context).pushNamed(config.targetRoute);
-      } catch (_) {}
+      } catch (_) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CounterScreen(counterService: CounterService()),
+          ),
+        );
+      }
     }
   }
 
@@ -273,10 +282,10 @@ class CampaignPopupDialog extends StatelessWidget {
                             ),
                           ),
 
-                          // 3. Bottom Action CTA Area (Only rendered if showActionButton is true)
-                          if (showBtn)
+                          // 3. Bottom Action CTA Area
+                          if (showBtn) ...[
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(22, 0, 22, 22),
+                              padding: const EdgeInsets.fromLTRB(22, 0, 22, 4),
                               child: SizedBox(
                                 width: double.infinity,
                                 height: 48,
@@ -321,6 +330,50 @@ class CampaignPopupDialog extends StatelessWidget {
                                 ),
                               ),
                             ),
+                            Center(
+                              child: TextButton(
+                                onPressed: () {
+                                  if (!isPreview) {
+                                    Navigator.of(context, rootNavigator: true).pop();
+                                  }
+                                },
+                                child: Text(
+                                  isUrdu ? 'بعد میں دیکھیں' : 'Maybe Later',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.75),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    fontFamily: isUrdu
+                                        ? AppTypography.urduFontFamily
+                                        : AppTypography.englishFontFamily,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                          ] else ...[
+                            Center(
+                              child: TextButton(
+                                onPressed: () {
+                                  if (!isPreview) {
+                                    Navigator.of(context, rootNavigator: true).pop();
+                                  }
+                                },
+                                child: Text(
+                                  isUrdu ? 'بند کریں' : 'Dismiss',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.85),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: isUrdu
+                                        ? AppTypography.urduFontFamily
+                                        : AppTypography.englishFontFamily,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
                         ],
                       ),
                     ),
