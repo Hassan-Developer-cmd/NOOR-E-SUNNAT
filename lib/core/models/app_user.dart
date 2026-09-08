@@ -16,6 +16,8 @@ class AppUser {
   final DateTime? lastActiveDuroodDate;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final bool hasAcceptedTerms;
+  final DateTime? termsAcceptedAt;
   final Map<String, dynamic>? rawData;
 
   const AppUser({
@@ -33,6 +35,8 @@ class AppUser {
     this.lastActiveDuroodDate,
     this.createdAt,
     this.updatedAt,
+    this.hasAcceptedTerms = false,
+    this.termsAcceptedAt,
     this.rawData,
   });
 
@@ -179,6 +183,20 @@ class AppUser {
                 ? (map['username'] as String).trim()
                 : 'User'));
 
+    DateTime? termsDate;
+    final rawTermsAt = map['termsAcceptedAt'] ?? map['terms_accepted_at'];
+    if (rawTermsAt is Timestamp) {
+      termsDate = rawTermsAt.toDate();
+    } else if (rawTermsAt is String && rawTermsAt.isNotEmpty) {
+      termsDate = DateTime.tryParse(rawTermsAt);
+    } else if (rawTermsAt is int && rawTermsAt > 0) {
+      termsDate = DateTime.fromMillisecondsSinceEpoch(rawTermsAt);
+    }
+
+    final bool acceptedTerms = map['hasAcceptedTerms'] == true ||
+        map['has_accepted_terms'] == true ||
+        map['has_accepted_terms_v1'] == true;
+
     return AppUser(
       userId: map['user_id'] as String? ?? map['userId'] as String? ?? map['uid'] as String? ?? '',
       email: map['email'] as String? ?? '',
@@ -216,6 +234,8 @@ class AppUser {
       lastActiveDuroodDate: activeDate,
       createdAt: createdDate,
       updatedAt: updatedDate,
+      hasAcceptedTerms: acceptedTerms,
+      termsAcceptedAt: termsDate,
       rawData: map,
     );
   }
@@ -227,6 +247,8 @@ class AppUser {
         'photo_url': photoUrl,
         if (profileImageBase64 != null) 'profileImageBase64': profileImageBase64,
         'is_admin': isAdmin,
+        'hasAcceptedTerms': hasAcceptedTerms,
+        if (termsAcceptedAt != null) 'termsAcceptedAt': termsAcceptedAt?.toIso8601String(),
         'myTotal': personalTotalDurood,
         'personal_total_durood': personalTotalDurood,
         'totalCount': personalTotalDurood,

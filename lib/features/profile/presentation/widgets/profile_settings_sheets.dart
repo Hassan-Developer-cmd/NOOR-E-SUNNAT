@@ -1441,6 +1441,8 @@ class ProfileSettingsSheets {
                               _buildPolicyPoint(Icons.verified_rounded, lp.tr('terms_point_1')),
                               const SizedBox(height: 10),
                               _buildPolicyPoint(Icons.favorite_rounded, lp.tr('terms_point_2')),
+                              const SizedBox(height: 10),
+                              _buildPolicyPoint(Icons.info_outline_rounded, lp.tr('terms_point_disclaimer')),
                             ],
                           )
                         : Column(

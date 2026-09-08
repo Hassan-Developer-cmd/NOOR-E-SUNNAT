@@ -13,6 +13,7 @@ import '../../../services/auth_service.dart';
 import '../../../services/counter_service.dart';
 import '../../../services/events_service.dart';
 import '../../../services/campaign_popup_service.dart';
+import '../../../services/terms_acceptance_service.dart';
 import '../../events/presentation/events_screen.dart';
 import 'widgets/event_card.dart';
 import 'widgets/durood_summary_card.dart';
@@ -42,17 +43,27 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _showCampaignPopup());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initStartupModals());
   }
 
-  void _showCampaignPopup() {
+  Future<void> _initStartupModals() async {
     if (!mounted || _isDialogShowing) return;
     _isDialogShowing = true;
-    CampaignPopupService.checkAndShowStartupPopup(context).then((_) {
+
+    try {
+      // 1. Check and display blocking Terms & Conditions modal if not yet accepted
+      await TermsAcceptanceService.checkAndShowTerms(context);
+
+      if (!mounted) return;
+
+      // 2. Check and display Campaign / Announcement popup if active
+      await CampaignPopupService.checkAndShowStartupPopup(context);
+    } catch (_) {
+    } finally {
       if (mounted) {
         _isDialogShowing = false;
       }
-    });
+    }
   }
 
   @override
