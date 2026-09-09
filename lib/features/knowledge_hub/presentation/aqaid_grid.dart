@@ -766,47 +766,28 @@ class _AqaidItemCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Row: Star indicator + Forward chevron
+                // Title & Forward chevron
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.emeraldContainer,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.star_rounded, size: 13, color: AppColors.primaryEmerald),
-                          SizedBox(width: 4),
-                          Text(
-                            'مستند عقیدہ',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primaryEmerald,
-                            ),
-                          ),
-                        ],
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                          fontFamily: isUrdu ? 'UrduFont' : null,
+                          height: 1.3,
+                        ),
                       ),
                     ),
-                    const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 2),
+                      child: Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Colors.grey),
+                    ),
                   ],
-                ),
-                const SizedBox(height: 12),
-
-                // Title
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                    fontFamily: isUrdu ? 'UrduFont' : null,
-                    height: 1.3,
-                  ),
                 ),
                 const SizedBox(height: 8),
 

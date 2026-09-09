@@ -121,8 +121,68 @@ class _HomeScreenState extends State<HomeScreen> {
               SliverAppBar(
                 expandedHeight: appBarExpandedHeight,
                 pinned: true,
+                automaticallyImplyLeading: false,
+                centerTitle: false,
+                titleSpacing: 16,
                 backgroundColor: AppColors.primaryEmerald,
                 surfaceTintColor: Colors.transparent,
+                title: StreamBuilder<int>(
+                  stream: IslamicDateHelper.hijriOffsetStream,
+                  builder: (context, offsetSnap) {
+                    final offset = offsetSnap.data ?? 0;
+                    final hijriDate = IslamicDateHelper.getHijriDateSync(dayOffset: offset);
+                    final dateText = hijriDate.getFormatted(lp.isUrdu);
+
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.0),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.28),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppColors.accentGold.withValues(alpha: 0.5),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.25),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.nightlight_round,
+                            color: AppColors.goldBright,
+                            size: 12,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            dateText,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: lp.isUrdu ? 12 : 11,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: lp.isUrdu
+                                  ? AppTypography.urduFontFamily
+                                  : AppTypography.englishFontFamily,
+                              letterSpacing: lp.isUrdu ? 0 : 0.3,
+                              shadows: const [
+                                Shadow(
+                                  color: Colors.black54,
+                                  blurRadius: 4,
+                                  offset: Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
                 flexibleSpace: FlexibleSpaceBar(
                   collapseMode: CollapseMode.parallax,
                   background: Stack(
@@ -170,11 +230,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
 
-                      // 3. User Welcome Greeting & Dynamic Hijri Date Badge
+                      // 4. User Welcome Greeting
                       Positioned(
                         left: 16,
                         right: 16,
-                        bottom: 10,
+                        bottom: 12,
                         child: StreamBuilder<AppUser?>(
                           stream: AuthService.currentUserStream,
                           builder: (context, userSnap) {
@@ -196,65 +256,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      // Dynamic Localized Hijri Date Badge (synchronized in real-time with Web Admin)
-                                      StreamBuilder<int>(
-                                        stream: IslamicDateHelper.hijriOffsetStream,
-                                        builder: (context, offsetSnap) {
-                                          final offset = offsetSnap.data ?? 0;
-                                          final hijriDate = IslamicDateHelper.getHijriDateSync(dayOffset: offset);
-                                          final dateText = hijriDate.getFormatted(lp.isUrdu);
-
-                                          return Container(
-                                            margin: const EdgeInsets.only(bottom: 4),
-                                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 2.5),
-                                            decoration: BoxDecoration(
-                                              color: Colors.black.withValues(alpha: 0.28),
-                                              borderRadius: BorderRadius.circular(20),
-                                              border: Border.all(
-                                                color: AppColors.accentGold.withValues(alpha: 0.5),
-                                                width: 1,
-                                              ),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.black.withValues(alpha: 0.25),
-                                                  blurRadius: 6,
-                                                  offset: const Offset(0, 2),
-                                                ),
-                                              ],
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                const Icon(
-                                                  Icons.nightlight_round,
-                                                  color: AppColors.goldBright,
-                                                  size: 12,
-                                                ),
-                                                const SizedBox(width: 5),
-                                                Text(
-                                                  dateText,
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: lp.isUrdu ? 12 : 11,
-                                                    fontWeight: FontWeight.w600,
-                                                    fontFamily: lp.isUrdu
-                                                        ? AppTypography.urduFontFamily
-                                                        : AppTypography.englishFontFamily,
-                                                    letterSpacing: lp.isUrdu ? 0 : 0.3,
-                                                    shadows: const [
-                                                      Shadow(
-                                                        color: Colors.black54,
-                                                        blurRadius: 4,
-                                                        offset: Offset(0, 1),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      ),
                                       Text(
                                         lp.tr('welcome_greeting'),
                                         style: TextStyle(

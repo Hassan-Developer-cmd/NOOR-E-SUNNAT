@@ -1941,18 +1941,30 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.drag_indicator_rounded, size: 18, color: AppColors.primaryEmerald),
+                  const Icon(Icons.drag_indicator_rounded, size: 20, color: AppColors.primaryEmerald),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       _searchQuery.isNotEmpty
                           ? 'Showing search results for "$_searchQuery". Clear search to reorganize the complete list.'
-                          : 'Drag items using the grip handle (⠿) on the left to reorder. The custom order persists automatically.',
+                          : 'Drag items using the grip button (⠿) on the left to reorder. The custom order persists automatically.',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: AppColors.emeraldDark,
                       ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton.icon(
+                    onPressed: () => _showAddMasailModal(context),
+                    icon: const Icon(Icons.add_rounded, size: 16),
+                    label: const Text('Add Entry', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryEmerald,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
                   ),
                 ],
@@ -2059,18 +2071,30 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.drag_indicator_rounded, size: 18, color: AppColors.primaryEmerald),
+                  const Icon(Icons.drag_indicator_rounded, size: 20, color: AppColors.primaryEmerald),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       _searchQuery.isNotEmpty
                           ? 'Showing search results for "$_searchQuery". Clear search to reorganize the complete list.'
-                          : 'Drag items using the grip handle (⠿) on the left to reorder. The custom order persists automatically.',
+                          : 'Drag items using the grip button (⠿) on the left to reorder. The custom order persists automatically.',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: AppColors.emeraldDark,
                       ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton.icon(
+                    onPressed: () => _showAddAqaidModal(context),
+                    icon: const Icon(Icons.add_rounded, size: 16),
+                    label: const Text('Add Entry', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryEmerald,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
                   ),
                 ],
@@ -6178,11 +6202,11 @@ class _MasailReorderableListViewState extends State<_MasailReorderableListView> 
                 child: const Row(
                   children: [
                     SizedBox(
-                      width: 48,
+                      width: 54,
                       child: Center(
                         child: Tooltip(
-                          message: 'Drag handle column',
-                          child: Icon(Icons.drag_handle_rounded, size: 18, color: AppColors.textSecondary),
+                          message: 'Drag grip column (click and drag to reorder)',
+                          child: Icon(Icons.drag_indicator_rounded, size: 18, color: AppColors.primaryEmerald),
                         ),
                       ),
                     ),
@@ -6231,7 +6255,7 @@ class _MasailReorderableListViewState extends State<_MasailReorderableListView> 
                       children: [
                         // Visual Drag Handle
                         SizedBox(
-                          width: 48,
+                          width: 54,
                           child: Center(
                             child: ReorderableDragStartListener(
                               index: index,
@@ -6240,16 +6264,16 @@ class _MasailReorderableListViewState extends State<_MasailReorderableListView> 
                                 child: Tooltip(
                                   message: 'Drag to reorder',
                                   child: Container(
-                                    padding: const EdgeInsets.all(6),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                                     decoration: BoxDecoration(
-                                      color: Colors.grey.shade100,
+                                      color: AppColors.primaryEmerald.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: Colors.grey.shade300),
+                                      border: Border.all(color: AppColors.primaryEmerald.withValues(alpha: 0.35)),
                                     ),
                                     child: const Icon(
                                       Icons.drag_indicator_rounded,
                                       size: 18,
-                                      color: AppColors.textSecondary,
+                                      color: AppColors.primaryEmerald,
                                     ),
                                   ),
                                 ),
@@ -6523,11 +6547,11 @@ class _AqaidReorderableListViewState extends State<_AqaidReorderableListView> {
                 child: const Row(
                   children: [
                     SizedBox(
-                      width: 48,
+                      width: 54,
                       child: Center(
                         child: Tooltip(
-                          message: 'Drag handle column',
-                          child: Icon(Icons.drag_handle_rounded, size: 18, color: AppColors.textSecondary),
+                          message: 'Drag grip column (click and drag to reorder)',
+                          child: Icon(Icons.drag_indicator_rounded, size: 18, color: AppColors.primaryEmerald),
                         ),
                       ),
                     ),
@@ -6576,7 +6600,7 @@ class _AqaidReorderableListViewState extends State<_AqaidReorderableListView> {
                       children: [
                         // Visual Drag Handle
                         SizedBox(
-                          width: 48,
+                          width: 54,
                           child: Center(
                             child: ReorderableDragStartListener(
                               index: index,
@@ -6585,16 +6609,16 @@ class _AqaidReorderableListViewState extends State<_AqaidReorderableListView> {
                                 child: Tooltip(
                                   message: 'Drag to reorder',
                                   child: Container(
-                                    padding: const EdgeInsets.all(6),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                                     decoration: BoxDecoration(
-                                      color: Colors.grey.shade100,
+                                      color: AppColors.primaryEmerald.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: Colors.grey.shade300),
+                                      border: Border.all(color: AppColors.primaryEmerald.withValues(alpha: 0.35)),
                                     ),
                                     child: const Icon(
                                       Icons.drag_indicator_rounded,
                                       size: 18,
-                                      color: AppColors.textSecondary,
+                                      color: AppColors.primaryEmerald,
                                     ),
                                   ),
                                 ),
