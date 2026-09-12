@@ -170,39 +170,14 @@ class AqaidDetailScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: AppColors.goldLight,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Text(
-                                'النَّصُّ الشَّرْعِيُّ',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.goldDark,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          item.arabicText,
-                          textAlign: TextAlign.center,
-                          style: AppTypography.arabicText.copyWith(
-                            fontSize: 22,
-                            height: 1.8,
-                            color: const Color(0xFF1E293B),
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      item.arabicText,
+                      textAlign: TextAlign.center,
+                      style: AppTypography.arabicText.copyWith(
+                        fontSize: 22,
+                        height: 1.8,
+                        color: const Color(0xFF1E293B),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 18),

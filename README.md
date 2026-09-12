@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/images/app_logo.png" alt="NOOR E SUNNAT Logo" width="130" style="border-radius: 24px;" />
+
 # 🕌 NOOR E SUNNAT (نورِ سنت)
 ### *Enterprise-Grade Islamic Knowledge Hub, Global Salawat Counter & Real-Time Cloud Administration Platform*
 
@@ -9,35 +11,103 @@
 [![FCM v1](https://img.shields.io/badge/Push%20Engine-FCM%20v1%20REST-FF6F00?style=for-the-badge&logo=firebase&logoColor=white)](https://firebase.google.com/docs/cloud-messaging)
 [![Web Admin](https://img.shields.io/badge/Live%20Portal-Firebase%20Hosting-00B0FF?style=for-the-badge&logo=google-cloud&logoColor=white)](https://islamic-app-ed1ed.web.app)
 [![Play Store](https://img.shields.io/badge/Google%20Play-com.nooresunnat.islamic__app-34A853?style=for-the-badge&logo=googleplay&logoColor=white)](https://play.google.com/store/apps/details?id=com.nooresunnat.islamic_app)
-[![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/Hassan-Developer-cmd/FAIZAN-E-DUROOD/actions)
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/Hassan-Developer-cmd/NOOR-E-SUNNAT/actions)
 [![License](https://img.shields.io/badge/License-MIT-064E3B?style=for-the-badge)](LICENSE)
 
 <br/>
 
-**[🌐 Live Web Admin Portal](https://islamic-app-ed1ed.web.app)** • **[📱 Google Play Store](https://play.google.com/store/apps/details?id=com.nooresunnat.islamic_app)** • **[📦 GitHub Repository](https://github.com/Hassan-Developer-cmd/FAIZAN-E-DUROOD.git)** • **[🐛 Report an Issue](https://github.com/Hassan-Developer-cmd/FAIZAN-E-DUROOD/issues)**
+**[🌐 Live Web Admin Portal](https://islamic-app-ed1ed.web.app)** • **[📱 Google Play Store](https://play.google.com/store/apps/details?id=com.nooresunnat.islamic_app)** • **[📦 GitHub Repository](https://github.com/Hassan-Developer-cmd/NOOR-E-SUNNAT.git)** • **[🐛 Report an Issue](https://github.com/Hassan-Developer-cmd/NOOR-E-SUNNAT/issues)**
 
 ---
 
 </div>
 
-## 📌 Overview
+## 📑 Table of Contents
 
-**NOOR E SUNNAT (نورِ سنت)** is a production-ready, cross-platform mobile application and web administrative ecosystem designed to revive sacred Sunnah practices, encourage continuous recitation of Salawat (Durood Sharif) upon the Holy Prophet Muhammad (ﷺ), provide authenticated Fiqh guidance and Islamic Aqaid (Creed), and foster a global spiritual community through verified Islamic events, Q&A, and community campaigns.
+- [📌 Overview & Mission](#-overview--mission)
+- [🌟 Key Features & Systems](#-key-features--systems)
+  - [1. Real-Time Global & Personal Salawat Engine](#1--real-time-global--personal-salawat-engine)
+  - [2. Islamic Aqaid (Creed) Knowledge Hub](#2-️-islamic-aqaid-creed-knowledge-hub)
+  - [3. Fiqh Masail (Jurisprudence) Repository](#3--fiqh-masail-jurisprudence-repository)
+  - [4. Direct Islamic Q&A System](#4--direct-islamic-qa-system)
+  - [5. Daily Wisdom Archive (Hadith, Ayat & Topics)](#5--daily-wisdom-archive-hadith-ayat--topics)
+  - [6. Islamic Events & Hijri Calendar](#6--islamic-events--hijri-calendar)
+  - [7. Dynamic Campaign & Announcement Popups](#7--dynamic-campaign--announcement-popups)
+  - [8. Legal & Authenticity Compliance Gate](#8--legal--authenticity-compliance-gate)
+  - [9. Push Notification & FCM v1 Service](#9--push-notification--fcm-v1-service)
+  - [10. Cloud Web Administration Dashboard](#10--cloud-web-administration-dashboard)
+- [🏗️ Architecture & Data Flow](#-architecture--data-flow)
+- [🗄️ Firestore Database Schema](#-firestore-database-schema)
+- [🎨 Design System & Branding](#-design-system--branding)
+- [📁 Repository Structure](#-repository-structure)
+- [🚀 Getting Started](#-getting-started)
+  - [Prerequisites](#prerequisites)
+  - [1. Clone Repository](#1-clone-the-repository)
+  - [2. Install Dependencies](#2-install-dependencies)
+  - [3. Firebase Configuration](#3-firebase-setup)
+  - [4. Running the Application](#4-running-the-application)
+- [🧪 Testing & Quality Assurance](#-testing--quality-assurance)
+- [🚢 CI/CD & Deployment](#-cicd--deployment)
+- [🔒 Security & Data Integrity](#-security--data-integrity)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
 
-Engineered with **Flutter**, **Dart**, and **Google Firebase**, NOOR E SUNNAT pairs a polished mobile experience (Android & iOS) with an enterprise-grade **Web Administration Management Dashboard** deployed live on **Firebase Hosting** with automated **GitHub Actions CI/CD**.
+---
+
+## 📌 Overview & Mission
+
+**NOOR E SUNNAT (نورِ سنت)** is a production-ready, cross-platform mobile application and web administrative ecosystem dedicated to making authentic Islamic knowledge accessible through modern technology, especially for Muslim youth. 
+
+Our mission is to help users understand the fundamental beliefs and essential teachings of Islam, revive sacred Sunnahs of our beloved Prophet Muhammad (ﷺ) in their daily lives, encourage continuous recitation of Salawat (Durood Sharif), provide authenticated Fiqh guidance and Islamic Creed (Aqaid), and foster a global spiritual community through verified Islamic events, Q&A, and community campaigns.
+
+Engineered with **Flutter**, **Dart**, and **Google Firebase**, NOOR E SUNNAT pairs an optimized mobile experience (Android & iOS) with an enterprise-grade **Web Administration Management Dashboard** deployed live on **Firebase Hosting** with automated **GitHub Actions CI/CD**.
+
+> [!NOTE]
+> All content is compiled from recognized books and authentic sources of Ahl al-Sunnah wal-Jama'ah under the rigorous review of Islamic researchers and scholars.
 
 ---
 
 ## 🌟 Key Features & Systems
 
 ### 1. 📿 Real-Time Global & Personal Salawat Engine
-- **Atomic Global Aggregation**: Real-time counter synchronization anchored to `global_counter/main` via Firestore atomic `FieldValue.increment` writes, ensuring zero desynchronization between mobile clients and the web administration dashboard.
+- **Atomic Cloud Synchronization**: Real-time counter synchronization anchored to `global_counter/main` via Firestore atomic `FieldValue.increment` writes, ensuring zero desynchronization between mobile clients and the web administration dashboard.
 - **Personal Recitation Tracking**: Tracks daily counts (`myToday`), lifetime recitations (`myTotal`), Durood points, and personal milestone goals (`100`, `300`, `500`, `1,000`, `5,000`).
-- **Unified Tap & Quick-Add Pipeline**: Presets (`+100`, `+200`, `+500`, `+1,000`) and manual taps share a single asynchronous debounce/flush pipeline with instant optimistic UI response.
+- **Unified Tap & Quick-Add Pipeline**: Presets (`+100`, `+200`, `+500`, `+1,000`) and single manual taps share a single asynchronous debounce/flush pipeline with instant optimistic UI feedback.
 - **Snapchat-Style Daily Streaks**: True calendar-day window tracking that rewards continuous daily engagement with grace periods and automated midnight roll-overs.
 - **Dynamic Leaderboard**: Live community rankings query-driven by active streaks and total Salawat recitations.
 
-### 2. 📜 Legal & Compliance Onboarding
+### 2. 🏛️ Islamic Aqaid (Creed) Knowledge Hub
+- **Pillars of Faith**: Foundational articles covering *Tauheed (Oneness of Allah)*, *Risalat (Prophethood)*, *Ishq-e-Rasool (Love of the Prophet ﷺ)*, *Sahaba-e-Kiram (Noble Companions)*, *Awliya-e-Kiram / Wilayat (Saints & Friends of Allah)*, *Ahle Sunnat*, and *Quran-o-Sunnat*.
+- **Canonical Proofs**: Fully referenced with Quranic Ayahs, authentic Hadith citations, and classical scholarly consensus.
+- **Custom Categorization & Drag-and-Drop Order**: Persistent `orderIndex` architecture allows administrators to organize doctrines seamlessly from the web portal.
+- **Full-Text Bilingual Search**: Instant search filtering across English and Urdu titles and article bodies.
+
+### 3. 📚 Fiqh Masail (Jurisprudence) Repository
+- **Practical Categories**: Covers *Namaz (Prayer)*, *Wuzu (Ablution)*, *Tayamum (Dry Ablution)*, *Roza (Fasting)*, *Zakat (Almsgiving)*, *Hajj & Umrah*, *Nikah (Marriage)*, *Taharat (Purification)*, and *Miras (Inheritance)*.
+- **Authoritative Classical Sources**: Referenced from classical Hanafi and Ahl al-Sunnah literature including *Bahar-e-Shariat*, *Fatawa Ridawiyyah*, *Fatawa Alamgiri*, *Sahih al-Bukhari*, and *Sahih Muslim*.
+- **Copy & Share**: Single-tap clipboard copying and native system sharing.
+
+### 4. 💬 Direct Islamic Q&A System
+- **Community Inquiries**: Users submit religious inquiries directly through the secure mobile interface.
+- **Moderation Workflow**: Inquiries appear in the Web Admin Portal where certified researchers and scholars review, draft verified answers, and publish rulings.
+- **Status Lifecycle**: Visual tracking badges (`Pending Review`, `Answered`) with push notifications on resolution.
+
+### 5. 📖 Daily Wisdom Archive (Hadith, Ayat & Topics)
+- **Multi-Document Historical Archive**: Non-destructive storage allowing browsing through past daily wisdom records.
+- **Hadith of the Day**: Arabic Matn, translation, canonical book citation, and authenticity grading.
+- **Ayat of the Day**: Quranic Arabic with diacritics, Urdu/English translation, Surah name, and Ayah index.
+- **Topic of the Day**: Concise thematic breakdowns with practical daily takeaways.
+
+### 6. 📅 Islamic Events & Hijri Calendar
+- **Snapping Carousel**: Highlights significant dates in the Islamic Hijri calendar (e.g., Rabi-ul-Awwal, Shab-e-Barat, Laylat-ul-Qadr, Eid-ul-Fitr, Eid-ul-Adha, Gyarween Sharif, Ashura).
+- **Event Metadata**: Dates, significance summaries, locations, and live status badges.
+
+### 7. 📣 Dynamic Campaign & Announcement Popups
+- **Startup Announcement Modal**: Automatically triggered on fresh app launches to broadcast active campaigns, Milad events, and community targets.
+- **Remote Cloud Config**: Dual-written to `settings/launch_popup` and `app_popups/launch_popup` with custom titles, descriptions, route targets, and image banners.
+- **Session Protection**: Displays once per session to avoid disrupting the user when navigating between bottom navigation tabs.
+
+### 8. 📜 Legal & Authenticity Compliance Gate
 - **One-Time Onboarding Modal**: Non-dismissible Terms of Service and Privacy Policy gate blocking app interaction on fresh launches until explicitly accepted.
 - **Dual-State Persistence**: Checks local storage (`has_accepted_terms_v1` in `SharedPreferences`) and the Firestore user document (`hasAcceptedTerms: true`, `termsAcceptedAt`).
 - **Scholarly Authenticity & Accuracy Clauses**:
@@ -45,41 +115,11 @@ Engineered with **Flutter**, **Dart**, and **Google Firebase**, NOOR E SUNNAT pa
   - *Content Accuracy*: "Despite our efforts, there may be occasional errors in the content, such as text or data mistakes."
 - **Bilingual & RTL-Ready**: Supports live toggling between Urdu and English with custom typographic rendering (`Noto Sans Arabic` & `Inter`).
 
-### 3. 📣 Dynamic Campaign & Announcement Popup System
-- **Startup Announcement Modal**: Automatically triggered on fresh app launches to broadcast active campaigns, Milad events, and community targets.
-- **Remote Cloud Config**: Dual-written to `settings/launch_popup` and `app_popups/launch_popup` with custom titles, descriptions, route targets, and image banners.
-- **Session Protection**: Displays once per session to avoid disrupting the user when navigating between bottom navigation tabs.
-
-### 4. 🏛️ Islamic Aqaid (Creed) Knowledge Base
-- **Pillars of Faith**: Foundational articles covering *Tauheed*, *Risalat*, *Ishq-e-Rasool*, *Sahaba-e-Kiram*, *Awliya-e-Kiram / Wilayat*, *Ahle Sunnat*, and *Quran-o-Sunnat*.
-- **Canonical Proofs**: Fully referenced with Quranic Ayahs, authentic Hadith citations, and classical scholarly consensus.
-- **Full-Text Bilingual Search**: Instant search filtering across English and Urdu titles and article bodies.
-
-### 5. 📚 Fiqh Masail (Jurisprudence) Hub
-- **Practical Categories**: Covers *Namaz (Prayer)*, *Wuzu (Ablution)*, *Tayamum*, *Roza (Fasting)*, *Zakat (Almsgiving)*, *Hajj & Umrah*, *Nikah (Marriage)*, *Taharat (Purification)*, and *Miras (Inheritance)*.
-- **Authoritative Classical Sources**: Referenced from classical Hanafi and Ahl al-Sunnah literature including *Bahar-e-Shariat*, *Fatawa Ridawiyyah*, *Fatawa Alamgiri*, *Sahih al-Bukhari*, and *Sahih Muslim*.
-- **Copy & Share**: Single-tap clipboard copying and native system sharing.
-
-### 6. 💬 "Ask the Scholar" Q&A System
-- **Private & Public Queries**: Users submit religious inquiries directly through the app.
-- **Scholar Workflow**: Inquiries appear in the Web Admin Portal where certified scholars review, draft verified answers, and publish rulings.
-- **Status Lifecycle**: Visual tracking badges (`Pending Review`, `Answered`) with push notifications on resolution.
-
-### 7. 📖 Daily Wisdom: Hadith, Quranic Ayat & Daily Topics
-- **Multi-Document Historical Archive**: Non-destructive storage allowing browsing through past daily wisdom records.
-- **Hadith of the Day**: Arabic Matn, translation, canonical book citation, and authenticity grading.
-- **Ayat of the Day**: Quranic Arabic with diacritics, Urdu/English translation, Surah name, and Ayah index.
-- **Topic of the Day**: Concise thematic breakdowns with practical takeaways.
-
-### 8. 📅 Islamic Events Calendar
-- **Snapping Carousel**: Highlights significant dates in the Islamic Hijri calendar (e.g. Rabi-ul-Awwal, Shab-e-Barat, Laylat-ul-Qadr, Eid-ul-Fitr, Eid-ul-Adha, Gyarween Sharif).
-- **Event Metadata**: Dates, significance summaries, locations, and live status badges.
-
-### 9. 🔔 Push Notifications & FCM v1 Service
+### 9. 🔔 Push Notification & FCM v1 Service
 - **Modern FCM v1 REST Engine**: Uses Google OAuth2 service accounts for server-to-client push notification broadcasts.
 - **In-App Notification Center**: Real-time Firestore notification stream with unread badge count, mark-all-as-read, and swipe-to-delete.
 
-### 10. 💻 Comprehensive Web Admin Dashboard
+### 10. 💻 Cloud Web Administration Dashboard
 - **Executive Metrics**: Live stats for total registered users, global Durood volume, today's recitations, active campaigns, and pending questions.
 - **Dynamic Leaderboard Management**: Real-time user performance metrics and streak monitoring.
 - **Registered User Management**: Detailed user profile inspection modal showing avatars, email, join date, streak, and lifetime counts.
@@ -139,10 +179,10 @@ graph TB
 | `settings/launch_popup` | Configuration for mobile startup announcement | `isActive` (bool), `titleEnglish`, `titleUrdu`, `detailsEnglish`, `detailsUrdu`, `buttonTextEnglish`, `buttonTextUrdu`, `targetRoute`, `imageUrl` |
 | `app_popups/launch_popup` | Secondary collection mirror for universal popup reading | Same schema as `settings/launch_popup` (dual-write sync) |
 | `daily_content/{docId}` | Daily Hadith, Ayat, and Topics of the Day | `type` (`hadith` \| `ayat` \| `topic`), `arabic`, `translation_en`, `translation_ur`, `reference`, `title_en`, `title_ur`, `date`, `isActive` |
-| `masail/{docId}` | Authenticated Fiqh rulings | `categoryId`, `question_en`, `question_ur`, `answer_en`, `answer_ur`, `references` (array), `createdAt` |
-| `aqaid/{docId}` | Core Islamic doctrine and belief articles | `categoryId`, `title_en`, `title_ur`, `content_en`, `content_ur`, `proofs` (array), `imageUrl`, `order` |
+| `masail/{docId}` | Authenticated Fiqh rulings | `categoryId`, `orderIndex`, `question_en`, `question_ur`, `answer_en`, `answer_ur`, `references` (array), `createdAt` |
+| `aqaid/{docId}` | Core Islamic doctrine and belief articles | `categoryId`, `orderIndex`, `title_en`, `title_ur`, `content_en`, `content_ur`, `proofs` (array), `imageUrl`, `order` |
 | `events/{docId}` | Hijri calendar occasions and gatherings | `title_en`, `title_ur`, `description_en`, `description_ur`, `eventDate`, `location`, `status`, `isFeatured` |
-| `questions/{docId}` | User inquiries for the "Ask the Scholar" portal | `userId`, `userName`, `question`, `category`, `status` (`pending` \| `answered`), `answer`, `answeredBy`, `answeredAt` |
+| `questions/{docId}` | User inquiries for the Q&A portal | `userId`, `userName`, `question`, `category`, `status` (`pending` \| `answered`), `answer`, `answeredBy`, `answeredAt` |
 | `notifications/{docId}` | System alerts and broadcast notifications | `title_en`, `title_ur`, `body_en`, `body_ur`, `type`, `targetUserId`, `createdAt`, `readBy` (array) |
 
 ---
@@ -151,15 +191,15 @@ graph TB
 
 NOOR E SUNNAT adheres to a modern, spiritual aesthetic blending deep Islamic emeralds, shimmering gold accents, and clean white card layouts.
 
-| Token Name | Hex Value | Visual Appearance | Application |
+| Token Name | Hex Value | Preview | Application |
 |---|---|---|---|
-| **Emerald Deep** | `#064E3B` | ![#064E3B](https://via.placeholder.com/15/064E3B/000000?text=+) Deep Islamic Emerald | App bars, primary banners, dialog headers |
-| **Primary Emerald** | `#047857` | ![#047857](https://via.placeholder.com/15/047857/000000?text=+) Forest Emerald | Primary CTA buttons, active state indicators |
-| **Accent Gold** | `#D4AF37` | ![#D4AF37](https://via.placeholder.com/15/D4AF37/000000?text=+) Traditional Gold | Badges, streak icons, milestone rings, borders |
-| **Gold Bright** | `#F59E0B` | ![#F59E0B](https://via.placeholder.com/15/F59E0B/000000?text=+) Radiant Amber Gold | Glow effects, rating stars, alert highlights |
-| **Background Primary** | `#F8FAF9` | ![#F8FAF9](https://via.placeholder.com/15/F8FAF9/000000?text=+) Off-White Light Tint | Main screen scaffold background |
-| **Card Surface** | `#FFFFFF` | ![#FFFFFF](https://via.placeholder.com/15/FFFFFF/000000?text=+) Pure White | Elevated cards, modals, sheets, dialog surfaces |
-| **Text Primary** | `#0F172A` | ![#0F172A](https://via.placeholder.com/15/0F172A/000000?text=+) Slate 900 | High-contrast body, titles, and headers |
+| **Emerald Deep** | `#064E3B` | `🟩 #064E3B` | App bars, primary banners, dialog headers |
+| **Primary Emerald** | `#047857` | `🟩 #047857` | Primary CTA buttons, active state indicators |
+| **Accent Gold** | `#D4AF37` | `🟨 #D4AF37` | Badges, streak icons, milestone rings, borders |
+| **Gold Bright** | `#F59E0B` | `🟧 #F59E0B` | Glow effects, rating stars, alert highlights |
+| **Background Primary** | `#F8FAF9` | `⬜ #F8FAF9` | Main screen scaffold background |
+| **Card Surface** | `#FFFFFF` | `⬜ #FFFFFF` | Elevated cards, modals, sheets, dialog surfaces |
+| **Text Primary** | `#0F172A` | `⬛ #0F172A` | High-contrast body, titles, and headers |
 
 ### Typography
 - **Urdu Script**: Handled by **Google Fonts Noto Sans Arabic** with zero letter-spacing (`letterSpacing: 0.0`) and adjusted line-height (`1.2`–`1.5`) to preserve Arabic/Urdu ligatures and prevent ascender/descender clipping.
@@ -170,7 +210,7 @@ NOOR E SUNNAT adheres to a modern, spiritual aesthetic blending deep Islamic eme
 ## 📁 Repository Structure
 
 ```text
-islamic_app/
+NOOR-E-SUNNAT/
 ├── .github/
 │   └── workflows/
 │       ├── firebase-hosting-merge.yml         # CI/CD: Automated build & deploy to Firebase Hosting on main push
@@ -230,8 +270,8 @@ Make sure you have the following installed on your machine:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/Hassan-Developer-cmd/FAIZAN-E-DUROOD.git
-cd FAIZAN-E-DUROOD
+git clone https://github.com/Hassan-Developer-cmd/NOOR-E-SUNNAT.git
+cd NOOR-E-SUNNAT
 ```
 
 ### 2. Install Dependencies
@@ -268,12 +308,12 @@ flutter run -d chrome
 
 ---
 
-## 🧪 Testing & Verification
+## 🧪 Testing & Quality Assurance
 
-The project includes an extensive automated test suite covering state management, Firestore synchronization, streak math, and widget rendering:
+The project includes an extensive automated test suite covering state management, Firestore synchronization, streak math, image compression, and widget rendering:
 
 ```bash
-# Run all automated tests (185+ tests)
+# Run all automated tests
 flutter test
 
 # Run static code analysis
@@ -316,7 +356,7 @@ firebase deploy --only hosting
 
 We welcome contributions from the community! To contribute:
 
-1. **Fork** the repository: [https://github.com/Hassan-Developer-cmd/FAIZAN-E-DUROOD/fork](https://github.com/Hassan-Developer-cmd/FAIZAN-E-DUROOD/fork)
+1. **Fork** the repository: [https://github.com/Hassan-Developer-cmd/NOOR-E-SUNNAT/fork](https://github.com/Hassan-Developer-cmd/NOOR-E-SUNNAT/fork)
 2. Create your Feature Branch:
    ```bash
    git checkout -b feature/AmazingFeature
