@@ -637,11 +637,19 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         ? incomingPersonalTotal
         : (incomingPersonalTotal >= _snapshot.personalTotal ? incomingPersonalTotal : _snapshot.personalTotal);
 
-    // 3. PERSONAL TODAY: If doc contains today count for same day and subcollection hasn't fired yet
+    // 3. PERSONAL TODAY: Sourced primarily from userDailyStatsStream (daily_stats/{todayDateString}).
+    // Guard against contaminated user doc where myToday was erroneously set to myTotal.
     final bool isSameDay = StreakHelper.isSameDay(lastActive, todayStr);
-    final int? firestorePersonalToday = isSameDay
+    final int? rawUserDocToday = isSameDay
         ? (((data['myToday'] ?? data['todayDuroodCount'] ?? data['personal_today_durood'] ?? data['todayCount']) as num?)?.toInt())
         : null;
+
+    final bool isContaminatedWithTotal = rawUserDocToday != null &&
+        firestorePersonalTotal > 0 &&
+        rawUserDocToday >= firestorePersonalTotal &&
+        _snapshot.personalToday < rawUserDocToday;
+
+    final int? firestorePersonalToday = isContaminatedWithTotal ? null : rawUserDocToday;
 
     final int effectivePersonalToday;
     if (firestorePersonalToday != null) {
@@ -711,10 +719,12 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
 
     _lastTapTime = DateTime.now();
     final todayStr = _todayDateString;
-    final updatedMyToday = _snapshot.personalToday + count;
+    final int currentTodayCount = _snapshot.personalToday;
+    final int currentTotalCount = _snapshot.personalTotal;
+    final int myToday = currentTodayCount + count; // Independent daily counter, NOT myTotal!
+    final int myTotal = currentTotalCount + count;
     final updatedStreak = _snapshot.currentStreak <= 0 ? 1 : _snapshot.currentStreak;
     final updatedPoints = _snapshot.duroodPoints + count;
-    final updatedPersonalTotal = _snapshot.personalTotal + count;
     final updatedGlobalTotal = _snapshot.globalTotal + count;
     final updatedGlobalToday = _snapshot.globalToday + count;
 
@@ -722,29 +732,29 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     _updateSnapshot(CounterSnapshot(
       globalTotal: updatedGlobalTotal,
       globalToday: updatedGlobalToday,
-      personalTotal: updatedPersonalTotal,
-      personalToday: updatedMyToday,
+      personalTotal: myTotal,
+      personalToday: myToday,
       currentStreak: updatedStreak,
       duroodPoints: updatedPoints,
     ));
 
     // 2. Persist to local storage
     final userKey = _todayKey;
-    _prefs?.setInt(userKey, updatedMyToday);
+    _prefs?.setInt(userKey, myToday);
     final uid = _activeUid ?? _auth.currentUser?.uid ?? 'guest';
-    _prefs?.setInt('my_today_${uid}_$todayStr', updatedMyToday);
-    _prefs?.setInt('my_total_$uid', updatedPersonalTotal);
+    _prefs?.setInt('my_today_${uid}_$todayStr', myToday);
+    _prefs?.setInt('my_total_$uid', myTotal);
     _prefs?.setInt('durood_points_$uid', updatedPoints);
     _prefs?.setInt('user_streak_$uid', updatedStreak);
 
     if (uid != 'guest') {
-      _prefs?.setInt('my_durood_${uid}_$todayStr', updatedMyToday);
-      _prefs?.setInt('${_keyPersonalTotal}_$uid', updatedPersonalTotal);
+      _prefs?.setInt('my_durood_${uid}_$todayStr', myToday);
+      _prefs?.setInt('${_keyPersonalTotal}_$uid', myTotal);
       _prefs?.setInt('${_keyStreak}_$uid', updatedStreak);
       _prefs?.setInt('${_keyPoints}_$uid', updatedPoints);
     }
-    _prefs?.setInt('$_prefixMyDurood$todayStr', updatedMyToday);
-    _prefs?.setInt('$_prefixMyTodayLegacy$todayStr', updatedMyToday);
+    _prefs?.setInt('$_prefixMyDurood$todayStr', myToday);
+    _prefs?.setInt('$_prefixMyTodayLegacy$todayStr', myToday);
     _prefs?.setString(_keyMyDuroodDate, todayStr);
     _prefs?.setInt(_keyStreak, updatedStreak);
     _prefs?.setInt(_keyPoints, updatedPoints);
@@ -787,6 +797,9 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
           SetOptions(merge: true),
         );
 
+        // If this is the first tap of a new day (currentTodayCount == 0), reset 'myToday'
+        // on the parent user document to the new count rather than incrementing on top of stale days.
+        final bool isFirstTapToday = currentTodayCount == 0;
         batch.set(
           userRef,
           {
@@ -794,11 +807,11 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
             'totalDurood': FieldValue.increment(count),
             'totalCount': FieldValue.increment(count),
             'personal_total_durood': FieldValue.increment(count),
-            'myToday': FieldValue.increment(count),
-            'todayTotal': FieldValue.increment(count),
-            'todayCount': FieldValue.increment(count),
-            'todayDuroodCount': FieldValue.increment(count),
-            'personal_today_durood': FieldValue.increment(count),
+            'myToday': isFirstTapToday ? count : FieldValue.increment(count),
+            'todayTotal': isFirstTapToday ? count : FieldValue.increment(count),
+            'todayCount': isFirstTapToday ? count : FieldValue.increment(count),
+            'todayDuroodCount': isFirstTapToday ? count : FieldValue.increment(count),
+            'personal_today_durood': isFirstTapToday ? count : FieldValue.increment(count),
             'duroodPoints': FieldValue.increment(count),
             'totalPoints': FieldValue.increment(count),
             'points': FieldValue.increment(count),

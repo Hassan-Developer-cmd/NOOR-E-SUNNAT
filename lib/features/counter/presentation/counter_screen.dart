@@ -237,14 +237,26 @@ class _CounterScreenState extends State<CounterScreen> {
                 builder: (context, dailySnap) {
                   final dailyData = dailySnap.data?.data();
                   final int? cloudMyToday = ((dailyData?['myToday'] ?? dailyData?['todayCount']) as num?)?.toInt();
+                  // Sanitize: If local snapshot was contaminated with myTotal from an old session, recover with authoritative cloud daily count
+                  final bool snapIsContaminated = (cloudMyToday != null) &&
+                      (effectiveMyTotal > 0) &&
+                      (snap.personalToday >= effectiveMyTotal) &&
+                      (cloudMyToday < snap.personalToday);
+
+                  final int resolvedToday = snapIsContaminated ? cloudMyToday : snap.personalToday;
+
                   final int effectiveMyToday = (cloudMyToday != null)
-                      ? math.max(snap.personalToday, cloudMyToday + widget.counterService.pendingBuffer)
-                      : snap.personalToday;
+                      ? math.max(resolvedToday, cloudMyToday + widget.counterService.pendingBuffer)
+                      : resolvedToday;
 
                   final double goalProgress = (_dailyTargetGoal > 0)
                       ? (effectiveMyToday / _dailyTargetGoal).clamp(0.0, 1.0)
                       : 0.0;
-                  final int percentVal = (goalProgress * 100).toInt();
+                  final bool isGoalCompleted = effectiveMyToday >= _dailyTargetGoal;
+                  final double percentage = goalProgress * 100;
+                  final String percentText = (percentage > 0 && percentage < 1)
+                      ? percentage.toStringAsFixed(1)
+                      : '${percentage.toInt()}';
 
                   return Scaffold(
                     backgroundColor: AppColors.bgPrimary,
@@ -410,18 +422,18 @@ class _CounterScreenState extends State<CounterScreen> {
                                         ),
                                         const SizedBox(height: 6),
 
-                                        // Goal Progress text
-                                        Align(
-                                          alignment: AlignmentDirectional.centerEnd,
-                                          child: Text(
-                                            '$percentVal% ${lp.isUrdu ? 'مکمل' : 'Completed'}',
-                                            style: const TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
-                                              color: Color(0xFF64748B),
-                                            ),
-                                          ),
-                                        ),
+                                         // Goal Progress text
+                                         Align(
+                                           alignment: AlignmentDirectional.centerEnd,
+                                           child: Text(
+                                             '$percentText% ${lp.isUrdu ? 'مکمل' : 'Completed'}',
+                                             style: TextStyle(
+                                               fontSize: 11,
+                                               fontWeight: FontWeight.w600,
+                                               color: isGoalCompleted ? AppColors.primaryEmerald : const Color(0xFF64748B),
+                                             ),
+                                           ),
+                                         ),
                                       ],
                                     ),
                                   ),
