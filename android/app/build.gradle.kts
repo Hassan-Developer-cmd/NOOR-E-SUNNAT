@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -7,8 +10,14 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
 android {
-    namespace = "com.example.islamic_app"
+    namespace = "com.nooresunnat.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -19,10 +28,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.islamic_app"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        applicationId = "com.nooresunnat.app"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -30,12 +36,22 @@ android {
         multiDexEnabled = true
     }
 
+    signingConfigs {
+        create("release") {
+            keyAlias = keystoreProperties["keyAlias"] as String?
+            keyPassword = keystoreProperties["keyPassword"] as String?
+            val storeFilePath = keystoreProperties["storeFile"] as String?
+            storeFile = if (storeFilePath != null) file(storeFilePath) else null
+            storePassword = keystoreProperties["storePassword"] as String?
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
             isShrinkResources = false
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            val releaseSigning = signingConfigs.getByName("release")
+            signingConfig = if (releaseSigning.storeFile != null) releaseSigning else signingConfigs.getByName("debug")
         }
         debug {
             isMinifyEnabled = false

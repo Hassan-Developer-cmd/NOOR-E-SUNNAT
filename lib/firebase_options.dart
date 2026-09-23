@@ -52,7 +52,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyB_hHQB35pKOLA1ZwzaXC-UX-c6hurTSWM',
-    appId: '1:201540801531:android:026fe54d65a05a889bb15e',
+    appId: '1:201540801531:android:af0ce5ba36ca65389bb15e',
     messagingSenderId: '201540801531',
     projectId: 'islamic-app-ed1ed',
     storageBucket: 'islamic-app-ed1ed.firebasestorage.app',

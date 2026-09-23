@@ -48,5 +48,14 @@ service-account.json
 *service-account*.json
 *.pem
 *.key
+# Keystore & Signing secrets
+key.properties
+**/key.properties
+*.keystore
+**/*.keystore
+*.jks
+**/*.jks
+
 # Agents
 .agents/
+

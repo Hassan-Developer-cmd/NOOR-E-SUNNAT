@@ -7,17 +7,25 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:201540801531:android:026fe54d65a05a889bb15e",
+        "mobilesdk_app_id": "1:201540801531:android:af0ce5ba36ca65389bb15e",
         "android_client_info": {
-          "package_name": "com.example.islamic_app"
+          "package_name": "com.nooresunnat.app"
         }
       },
       "oauth_client": [
         {
-          "client_id": "201540801531-ok8k3odn48vk5kdp237549mcmt0jsdoh.apps.googleusercontent.com",
+          "client_id": "201540801531-8ko52pntsb1svhckjb6rkal7bpoqdjfk.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.islamic_app",
+            "package_name": "com.nooresunnat.app",
+            "certificate_hash": "15c394b5d497a95d39fe336319ade71af1750594"
+          }
+        },
+        {
+          "client_id": "201540801531-ruod4pcobmr3vmpg1cobubhj3npjq9tk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nooresunnat.app",
             "certificate_hash": "9474ef4b30bea96af9f05a6404882be5aa3be337"
           }
         },
