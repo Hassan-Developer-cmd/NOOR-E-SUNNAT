@@ -124,7 +124,7 @@ class DailyHadithCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    isUrdu ? 'روز کی حدیث مبارکہ' : 'DAILY HADITH',
+                    isUrdu ? 'آج کی حدیث' : 'HADEES OF THE DAY',
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
@@ -357,7 +357,7 @@ class DailyAyatCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    isUrdu ? 'روز کی آیتِ مبارکہ' : 'DAILY AYAT',
+                    isUrdu ? 'آج کی آیت' : 'AYAT OF THE DAY',
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,

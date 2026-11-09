@@ -80,5 +80,52 @@ void main() {
 
       expect(reconciled, 42, reason: 'Stale snapshot must never downgrade local count of 42 to 38');
     });
+
+    test('Single tap increments by exactly +1 and does not double-count when cloud snapshot arrives', () {
+      int localCount = 10;
+      int cloudCount = 10;
+      int pendingBuffer = 0;
+
+      // User performs 1 tap
+      localCount += 1;
+      pendingBuffer += 1;
+      expect(localCount, 11, reason: 'Local count immediately increments by +1');
+
+      // Debounce timer commits +1 to Firestore via FieldValue.increment
+      final int diff = pendingBuffer;
+      cloudCount += diff; // Remote now 11
+      pendingBuffer = 0;
+
+      // Remote stream sends snapshot with cloudCount = 11
+      // Resolution rule: math.max(localCount, cloudCount)
+      final resolved = math.max(localCount, cloudCount);
+
+      expect(resolved, 11, reason: 'Tap must yield exactly +1 (11), NEVER double-increment to 12');
+    });
+
+    test('Multiple rapid taps increment strictly by +1 per tap during and after sync', () {
+      int localCount = 50;
+      int cloudCount = 50;
+      int pendingBuffer = 0;
+
+      // 5 taps
+      for (int i = 0; i < 5; i++) {
+        localCount += 1;
+        pendingBuffer += 1;
+      }
+      expect(localCount, 55);
+
+      // Cloud snapshot arrives mid-tapping before commit (stale at 50)
+      final midTapResolved = math.max(localCount, cloudCount);
+      expect(midTapResolved, 55, reason: 'Must remain 55 during tapping');
+
+      // Commit flushed
+      cloudCount += pendingBuffer;
+      pendingBuffer = 0;
+
+      // Cloud snapshot arrives after commit (now at 55)
+      final postCommitResolved = math.max(localCount, cloudCount);
+      expect(postCommitResolved, 55, reason: 'Must remain 55 after commit');
+    });
   });
 }

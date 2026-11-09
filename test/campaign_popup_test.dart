@@ -66,6 +66,40 @@ void main() {
       expect(restored.imageType, 'base64');
       expect(restored.imageBase64, 'abc123xyz');
     });
+
+    test('fromMap safely parses string and numeric representations of isActive', () {
+      final docWithStringFalse = {
+        'isActive': 'false',
+        'titleEnglish': 'Test Popup',
+      };
+      final model1 = CampaignPopupModel.fromMap('launch_popup', docWithStringFalse);
+      expect(model1.isActive, isFalse);
+
+      final docWithNumZero = {
+        'isActive': 0,
+        'titleEnglish': 'Test Popup',
+      };
+      final model2 = CampaignPopupModel.fromMap('launch_popup', docWithNumZero);
+      expect(model2.isActive, isFalse);
+
+      final docWithNullActive = {
+        'titleEnglish': 'Test Popup',
+      };
+      final model3 = CampaignPopupModel.fromMap('launch_popup', docWithNullActive);
+      expect(model3.isActive, isFalse, reason: 'Missing isActive in document should default to inactive');
+
+      final docWithTrueString = {
+        'isActive': 'true',
+        'titleEnglish': 'Test Popup',
+      };
+      final model4 = CampaignPopupModel.fromMap('launch_popup', docWithTrueString);
+      expect(model4.isActive, isTrue);
+    });
+
+    test('defaultConfig with isActive: false creates inactive config', () {
+      final inactiveDefault = CampaignPopupModel.defaultConfig(isActive: false);
+      expect(inactiveDefault.isActive, isFalse);
+    });
   });
 
   group('CampaignPopupService Session Guard Tests', () {

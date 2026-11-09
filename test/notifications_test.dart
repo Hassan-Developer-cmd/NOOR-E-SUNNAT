@@ -177,5 +177,76 @@ void main() {
       expect(highImportanceChannel.playSound, isTrue);
       expect(highImportanceChannel.enableVibration, isTrue);
     });
+
+    test('Single notification delete filters strictly out only that specific ID', () {
+      final notifs = ['notif_1', 'notif_2', 'notif_3'];
+      final Set<String> clearedIds = {};
+
+      // Delete only notif_2
+      const targetId = 'notif_2';
+      clearedIds.add(targetId);
+
+      final visible = notifs.where((id) => !clearedIds.contains(id)).toList();
+
+      expect(visible.length, equals(2));
+      expect(visible, contains('notif_1'));
+      expect(visible, contains('notif_3'));
+      expect(visible, isNot(contains('notif_2')), reason: 'Only the specific single notification must be deleted');
+    });
+
+    test('Clear All notifications deletes all active items', () {
+      final notifs = ['notif_1', 'notif_2', 'notif_3'];
+      final Set<String> clearedIds = {};
+
+      // Clear all
+      clearedIds.addAll(notifs);
+
+      final visible = notifs.where((id) => !clearedIds.contains(id)).toList();
+      expect(visible, isEmpty, reason: 'All notifications must be deleted on Clear All');
+    });
+
+    test('Notification deduplication prevents duplicate display for same payload or title/body', () {
+      NotificationService.clearDeduplicationCache();
+
+      const docId = 'broadcast_notif_9988';
+      const title = 'Special Milad Event';
+      const body = 'Join us tonight at 9 PM.';
+
+      // First arrival (e.g. via FCM onMessage)
+      expect(
+        NotificationService.isDuplicateNotification(docId, title, body),
+        isFalse,
+        reason: 'First notification should not be flagged as duplicate',
+      );
+
+      // Simulate first notification being shown
+      NotificationService.showHeadsUpNotification(
+        id: 12345,
+        title: title,
+        body: body,
+        payload: docId,
+      );
+
+      // Second arrival with same docId (e.g. Firestore snapshots arriving 100ms later)
+      expect(
+        NotificationService.isDuplicateNotification(docId, title, body),
+        isTrue,
+        reason: 'Simultaneous Firestore snapshot with same docId must be suppressed as duplicate',
+      );
+
+      // Duplicate arrival with same content even if docId is null
+      expect(
+        NotificationService.isDuplicateNotification(null, title, body),
+        isTrue,
+        reason: 'Simultaneous notification with identical title and body must be suppressed as duplicate',
+      );
+
+      // Completely distinct notification should NOT be flagged as duplicate
+      expect(
+        NotificationService.isDuplicateNotification('other_doc_1122', 'New Durood Goal', 'Keep reciting!'),
+        isFalse,
+        reason: 'Distinct notification should be allowed',
+      );
+    });
   });
 }

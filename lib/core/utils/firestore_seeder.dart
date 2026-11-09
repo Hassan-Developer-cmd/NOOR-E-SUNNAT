@@ -181,13 +181,15 @@ class FirestoreSeeder {
         }
       }
 
-      // Permanently delete stale counters/durood_stats if it exists
-      try {
-        final legacyDoc = await _firestore.collection('counters').doc('durood_stats').get();
-        if (legacyDoc.exists) {
-          await _firestore.collection('counters').doc('durood_stats').delete();
-        }
-      } catch (_) {}
+      // Permanently delete stale counters/durood_stats only if explicitly triggered by admin (force == true)
+      if (force) {
+        try {
+          final legacyDoc = await _firestore.collection('counters').doc('durood_stats').get();
+          if (legacyDoc.exists) {
+            await _firestore.collection('counters').doc('durood_stats').delete();
+          }
+        } catch (_) {}
+      }
 
       // 6. Check & Seed Launch Campaign Popup
       final popupRef = _firestore.collection('settings').doc('launch_popup');

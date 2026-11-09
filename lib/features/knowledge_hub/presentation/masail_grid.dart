@@ -514,7 +514,7 @@ class _HadithWisdomBanner extends StatelessWidget {
   }
 }
 
-class _MasailListScreen extends StatelessWidget {
+class _MasailListScreen extends StatefulWidget {
   final MasailCategory category;
   final String localizedTitle;
 
@@ -524,18 +524,27 @@ class _MasailListScreen extends StatelessWidget {
   });
 
   @override
+  State<_MasailListScreen> createState() => _MasailListScreenState();
+}
+
+class _MasailListScreenState extends State<_MasailListScreen> {
+  int? _expandedIndex;
+  // ignore: deprecated_member_use
+  final Map<int, ExpansionTileController> _controllers = {};
+
+  @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: globalLanguageProvider,
       builder: (context, _) {
         final lp = globalLanguageProvider;
         final isUrdu = lp.isUrdu;
-        final title = isUrdu ? category.titleUr : category.title;
+        final title = isUrdu ? widget.category.titleUr : widget.category.title;
 
         return Scaffold(
           backgroundColor: AppColors.bgPrimary,
           appBar: AppBar(
-            title: Text(title.isNotEmpty ? title : localizedTitle),
+            title: Text(title.isNotEmpty ? title : widget.localizedTitle),
             elevation: 0,
             backgroundColor: AppColors.primaryEmerald,
             iconTheme: const IconThemeData(color: Colors.white),
@@ -574,7 +583,7 @@ class _MasailListScreen extends StatelessWidget {
                 );
               }
               final all = snapshot.data ?? [];
-              final filtered = ContentService.getMasailByCategory(all, category.id);
+              final filtered = ContentService.getMasailByCategory(all, widget.category.id);
               if (filtered.isEmpty) {
                 return Center(child: Text(lp.tr('no_masail_found')));
               }
@@ -587,6 +596,9 @@ class _MasailListScreen extends StatelessWidget {
                   final qText = item.getQuestion(isUrdu);
                   final aText = item.getAnswer(isUrdu);
                   final bookText = item.getBook(isUrdu);
+                  final isExpanded = _expandedIndex == index;
+                  // ignore: deprecated_member_use
+                  final controller = _controllers.putIfAbsent(index, () => ExpansionTileController());
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
@@ -597,6 +609,22 @@ class _MasailListScreen extends StatelessWidget {
                         side: const BorderSide(color: AppColors.borderLight),
                       ),
                       child: ExpansionTile(
+                        key: Key('masail_$index'),
+                        controller: controller,
+                        initiallyExpanded: isExpanded,
+                        onExpansionChanged: (expanding) {
+                          if (expanding) {
+                            final prev = _expandedIndex;
+                            setState(() => _expandedIndex = index);
+                            if (prev != null && prev != index && _controllers.containsKey(prev)) {
+                              _controllers[prev]!.collapse();
+                            }
+                          } else {
+                            if (_expandedIndex == index) {
+                              setState(() => _expandedIndex = null);
+                            }
+                          }
+                        },
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         collapsedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),

@@ -33,6 +33,7 @@ final LanguageProvider globalLanguageProvider = LanguageProvider();
 /// Top-level background message handler invoked by native Android/iOS when the app is closed or in background.
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  WidgetsFlutterBinding.ensureInitialized();
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -41,56 +42,92 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
   if (kDebugMode) {
     print(
-      'FCM Background message received: ${message.messageId}, data: ${message.data}',
+      'FCM Background message received: ${message.messageId}, notification: ${message.notification?.title}, data: ${message.data}',
     );
   }
 
-  // If the background/terminated message is data-only (no top-level notification rendered by OS),
-  // immediately render a native heads-up system tray notification using high_importance_channel
-  if (message.notification == null && message.data.isNotEmpty) {
-    try {
-      final title =
-          message.data['title'] ??
-          message.data['title_en'] ??
-          message.data['title_ur'] ??
-          'NOOR E SUNNAT';
-      final body =
-          message.data['body'] ??
-          message.data['body_en'] ??
-          message.data['body_ur'] ??
-          message.data['message'] ??
-          '';
+  try {
+    final title = message.notification?.title ??
+        message.data['title'] ??
+        message.data['title_ur'] ??
+        message.data['title_en'] ??
+        'NOOR E SUNNAT';
+    final body = message.notification?.body ??
+        message.data['body'] ??
+        message.data['body_ur'] ??
+        message.data['body_en'] ??
+        message.data['message'] ??
+        '';
 
-      if (title.toString().isNotEmpty || body.toString().isNotEmpty) {
-        const androidDetails = AndroidNotificationDetails(
-          'high_importance_channel',
-          'High Importance Notifications',
-          channelDescription:
-              'High priority broadcast notifications, event alerts & answers',
-          importance: Importance.max,
-          priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
-          enableVibration: true,
-          playSound: true,
-        );
+    final cleanTitle = title.toString().trim();
+    final cleanBody = body.toString().trim();
 
-        const notificationDetails = NotificationDetails(
-          android: androidDetails,
-        );
-        await flutterLocalNotificationsPlugin.show(
-          id: message.messageId.hashCode,
-          title: title.toString(),
-          body: body.toString(),
-          notificationDetails: notificationDetails,
-          payload:
-              message.data['id'] ??
+    if (cleanTitle.isNotEmpty || cleanBody.isNotEmpty) {
+      final localNotif = FlutterLocalNotificationsPlugin();
+      const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const darwinInit = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
+      const initSettings = InitializationSettings(
+        android: androidInit,
+        iOS: darwinInit,
+      );
+      await localNotif.initialize(settings: initSettings);
+
+      final androidImpl = localNotif
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      await androidImpl?.createNotificationChannel(highImportanceChannel);
+
+      final docId = (message.data['id'] ??
+              message.data['eventId'] ??
               message.data['questionId'] ??
-              message.data['route'],
-        );
-      }
-    } catch (e) {
-      if (kDebugMode) print('Background local notification fallback error: $e');
+              '')
+          .toString()
+          .trim();
+
+      final notifId = docId.isNotEmpty
+          ? (docId.hashCode & 0x7FFFFFFF)
+          : (message.messageId.hashCode & 0x7FFFFFFF);
+
+      final androidDetails = AndroidNotificationDetails(
+        highImportanceChannel.id,
+        highImportanceChannel.name,
+        channelDescription: highImportanceChannel.description,
+        importance: Importance.max,
+        priority: Priority.high,
+        icon: '@mipmap/ic_launcher',
+        enableVibration: true,
+        playSound: true,
+        styleInformation: BigTextStyleInformation(
+          cleanBody,
+          contentTitle: cleanTitle,
+          summaryText: 'NOOR E SUNNAT',
+        ),
+      );
+
+      final notificationDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+          presentBanner: true,
+          presentList: true,
+        ),
+      );
+
+      await localNotif.show(
+        id: notifId,
+        title: cleanTitle,
+        body: cleanBody,
+        notificationDetails: notificationDetails,
+        payload: docId.isNotEmpty ? docId : null,
+      );
     }
+  } catch (e) {
+    if (kDebugMode) print('Background local notification fallback error: $e');
   }
 }
 
@@ -112,6 +149,11 @@ void main() async {
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  // Register background messaging handler before UI launch
+  if (!kIsWeb) {
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  }
+
   // 1. Enable Firestore Offline Persistence explicitly for instant cached reads
   try {
     FirebaseFirestore.instance.settings = const Settings(
@@ -129,7 +171,7 @@ void main() async {
   // 4. Immediately launch the UI without blocking on network initializers
   runApp(const NoorESunnatApp());
 
-  // 4. Non-blocking background initializations (FCM, Seeding, Channels, Topic subscriptions)
+  // 5. Non-blocking background initializations (FCM, Seeding, Channels, Topic subscriptions)
   _initNonBlockingServices();
 }
 
@@ -148,8 +190,6 @@ void _initNonBlockingServices() {
 
 Future<void> _initMobileMessaging() async {
   try {
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
     final messaging = FirebaseMessaging.instance;
     await messaging.requestPermission(
       alert: true,
@@ -165,11 +205,12 @@ Future<void> _initMobileMessaging() async {
       if (kDebugMode) print('Error subscribing to all_users topic: $e');
     }
 
-    await flutterLocalNotificationsPlugin
+    final androidImpl = flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.createNotificationChannel(highImportanceChannel);
+        >();
+    await androidImpl?.createNotificationChannel(highImportanceChannel);
+    await androidImpl?.requestNotificationsPermission();
 
     await messaging.setForegroundNotificationPresentationOptions(
       alert: true,

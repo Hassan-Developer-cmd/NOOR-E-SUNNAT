@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -134,16 +135,29 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
   int _pendingBuffer = 0;
   int _inFlightBuffer = 0;
   DateTime? _lastTapTime;
+  DateTime? _lastResetTime;
+  Timer? _debounceTimer;
+  String? _lastKnownGlobalDate;
+
+  static const Duration _debounceDuration = Duration(milliseconds: 650);
+  static const Duration _idleThreshold = Duration(milliseconds: 1800);
 
   /// Returns total active uncommitted increment (pending in timer queue + actively in-flight to Firestore)
   int get pendingBuffer => _pendingBuffer + _inFlightBuffer;
 
-  /// True when user has tapped within the last 1200ms
-  bool get isBurstActive =>
-      _lastTapTime != null &&
-      DateTime.now().difference(_lastTapTime!).inMilliseconds < 1200;
+  /// True when the user is actively in a tapping burst or has uncommitted writes
+  bool get isActivelyTapping {
+    if (pendingBuffer > 0) return true;
+    if (_lastTapTime == null) return false;
+    return DateTime.now().difference(_lastTapTime!) < _idleThreshold;
+  }
 
-  Timer? _debounceTimer;
+  /// True when the user is completely idle and remote updates can be safely evaluated
+  bool get isIdle => !isActivelyTapping;
+
+  /// Backward-compatible alias for existing callers
+  bool get isBurstActive => isActivelyTapping;
+
   StreamSubscription? _authSub;
   StreamSubscription? _globalSub;
   StreamSubscription? _userSub;
@@ -378,6 +392,7 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     _pendingBuffer = 0;
     _inFlightBuffer = 0;
     _lastTapTime = null;
+    _lastResetTime = null;
     _debounceTimer?.cancel();
     _debounceTimer = null;
     _userDailySub?.cancel();
@@ -482,49 +497,39 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         .doc(todayStr)
         .snapshots()
         .listen((snap) {
-      if (snap.exists && snap.data() != null) {
-        final data = snap.data()!;
-        final int cloudMyToday = ((data['myToday'] ??
-                data['todayDuroodCount'] ??
-                data['todayCount'] ??
-                data['count']) as num?)
-                ?.toInt() ??
-            0;
+      if (!snap.exists || snap.data() == null) return;
 
-        // Authoritative cloud count + any active uncommitted pending buffer
-        final int incomingToday = cloudMyToday + pendingBuffer;
-        final int currentLocal = _snapshot.personalToday;
+      final data = snap.data()!;
+      final int cloudMyToday = ((data['myToday'] ??
+              data['todayDuroodCount'] ??
+              data['todayCount'] ??
+              data['count']) as num?)
+              ?.toInt() ??
+          0;
 
-        // Optimistic while bursting/tapping; authoritative from cloud when idle or reset
-        final int effectiveMyToday = (pendingBuffer > 0 || isBurstActive)
-            ? (incomingToday >= currentLocal ? incomingToday : currentLocal)
-            : incomingToday;
-
-        if (effectiveMyToday != _snapshot.personalToday) {
-          _updateSnapshot(_snapshot.copyWith(personalToday: effectiveMyToday));
-        }
-        _prefs?.setInt(userKey, effectiveMyToday);
-        if (_activeUid != null && _activeUid != 'guest') {
-          _prefs?.setInt('my_today_${_activeUid}_$todayStr', effectiveMyToday);
-          _prefs?.setInt('my_durood_${_activeUid}_$todayStr', effectiveMyToday);
-        }
-        _prefs?.setString(_keyMyDuroodDate, todayStr);
-      } else {
-        // Document does not exist yet in Firestore today:
-        final int currentLocal = _snapshot.personalToday;
-        final int incomingToday = pendingBuffer;
-        final int effectiveMyToday = (pendingBuffer > 0 || isBurstActive)
-            ? (incomingToday >= currentLocal ? incomingToday : currentLocal)
-            : 0;
-        if (effectiveMyToday != _snapshot.personalToday) {
-          _updateSnapshot(_snapshot.copyWith(personalToday: effectiveMyToday));
-        }
-        _prefs?.setInt(userKey, effectiveMyToday);
-        if (_activeUid != null && _activeUid != 'guest') {
-          _prefs?.setInt('my_today_${_activeUid}_$todayStr', effectiveMyToday);
-          _prefs?.setInt('my_durood_${_activeUid}_$todayStr', effectiveMyToday);
-        }
+      // Ignore lagging cloud snapshots right after an explicit local reset
+      if (_lastResetTime != null &&
+          DateTime.now().difference(_lastResetTime!).inSeconds < 5 &&
+          !isActivelyTapping) {
+        return;
       }
+
+      // STREAM LISTENER GUARD:
+      // Optimistic local state already reflects user taps.
+      // Remote snapshot is merged only if remote count has grown larger (e.g. recitation on another device).
+      // We NEVER add pendingBuffer to incoming cloud count, as that double-counts optimistic taps!
+      final int currentLocal = _snapshot.personalToday;
+      final int effectiveMyToday = math.max(currentLocal, cloudMyToday);
+
+      if (effectiveMyToday != _snapshot.personalToday) {
+        _updateSnapshot(_snapshot.copyWith(personalToday: effectiveMyToday));
+      }
+      _prefs?.setInt(userKey, effectiveMyToday);
+      if (_activeUid != null && _activeUid != 'guest') {
+        _prefs?.setInt('my_today_${_activeUid}_$todayStr', effectiveMyToday);
+        _prefs?.setInt('my_durood_${_activeUid}_$todayStr', effectiveMyToday);
+      }
+      _prefs?.setString(_keyMyDuroodDate, todayStr);
     }, onError: (e) {
       if (kDebugMode) print('CounterService user daily stats stream error: $e');
     });
@@ -533,6 +538,7 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
   void _processGlobalSnap(Map<String, dynamic> data) {
     final todayStr = _todayDateString;
     final docDate = (data['date'] ?? data['last_reset_date'] ?? data['lastUpdatedDate'])?.toString();
+    _lastKnownGlobalDate = docDate;
     final isSameDay = docDate == todayStr;
 
     final int rawFirestoreToday = isSameDay
@@ -540,37 +546,28 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         : 0;
     final int firestoreToday = (rawFirestoreToday > 1000000000 || rawFirestoreToday < 0) ? 0 : rawFirestoreToday;
 
-    final int rawFirestoreTotal = ((data['globalTotal'] ?? data['total_count']) as num?)?.toInt() ?? 0;
+    final int rawFirestoreTotal = ((data['globalTotal'] ?? data['total_count'] ?? data['totalCount']) as num?)?.toInt() ?? 0;
     final int firestoreTotal = (rawFirestoreTotal > 1000000000 || rawFirestoreTotal < 0) ? 0 : rawFirestoreTotal;
 
-    // Detect if local snapshot was corrupted with astronomical numbers (> 1 billion)
-    final bool isCorrupted = _snapshot.globalTotal > 1000000000 ||
-        _snapshot.globalTotal < 0 ||
-        _snapshot.globalToday > 1000000000 ||
-        _snapshot.globalToday < 0;
-
-    // Detect if database was cleaned/reset or has a massive discrepancy (> 10,000)
-    final bool isCleanReset = firestoreTotal == 0 && pendingBuffer == 0 && !isBurstActive;
-    final bool largeDiscrepancy = (_snapshot.globalTotal - firestoreTotal).abs() > 10000;
-
-    final int incomingGlobalTotal = firestoreTotal + pendingBuffer;
-    final int incomingGlobalToday = isSameDay ? (firestoreToday + pendingBuffer) : 0;
+    // STREAM LISTENER GUARD:
+    // Optimistic local state already reflects user taps.
+    // Remote snapshot updates global count only if remote is greater (e.g. other users worldwide reciting).
+    // Never add pendingBuffer on top of remote, preventing double counting (+2 on single tap).
+    final int currentGlobalTotal = _snapshot.globalTotal;
+    final int currentGlobalToday = _snapshot.globalToday;
 
     final int effectiveGlobalTotal;
     final int effectiveGlobalToday;
 
-    if (isCorrupted || largeDiscrepancy || isCleanReset || (pendingBuffer == 0 && !isBurstActive)) {
-      // Authoritative cloud value (+ any pending local buffer)
-      effectiveGlobalTotal = incomingGlobalTotal;
-      effectiveGlobalToday = incomingGlobalToday;
-    } else {
-      // Retain optimistic increments with strict monotonic guarantee
-      effectiveGlobalTotal = incomingGlobalTotal >= _snapshot.globalTotal
-          ? incomingGlobalTotal
-          : _snapshot.globalTotal;
+    if (isActivelyTapping) {
+      effectiveGlobalTotal = math.max(currentGlobalTotal, firestoreTotal);
       effectiveGlobalToday = isSameDay
-          ? (incomingGlobalToday >= _snapshot.globalToday ? incomingGlobalToday : _snapshot.globalToday)
-          : 0;
+          ? math.max(currentGlobalToday, firestoreToday)
+          : currentGlobalToday;
+    } else {
+      // Idle: Authoritative remote sync with Firestore
+      effectiveGlobalTotal = firestoreTotal > 0 ? firestoreTotal : currentGlobalTotal;
+      effectiveGlobalToday = isSameDay ? firestoreToday : 0;
     }
 
     _updateSnapshot(CounterSnapshot(
@@ -609,18 +606,16 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         data['current_streak'] ??
         data['daily_streak']) as num?)?.toInt() ?? 0;
 
-    // Snapchat-style streak calculation: 0 if last streak date is older than yesterday
     int effectiveStreak = StreakHelper.calculateEffectiveStreak(
       storedStreak: rawStreak,
       lastActiveDate: lastActive,
     );
 
-    // If an optimistic pending buffer is actively being tapped, ensure at least 1
     if (pendingBuffer > 0 && effectiveStreak == 0) {
       effectiveStreak = 1;
     }
 
-    // 2. PERSONAL TOTAL: Firestore document is the authoritative Single Source of Truth
+    // 2. PERSONAL TOTAL (Guarded)
     final int firestorePersonalTotal = ((data['myTotal'] ??
         data['personal_total_durood'] ??
         data['total_durood_count'] ??
@@ -629,50 +624,49 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         data['total_count'] ??
         data['totalDurood']) as num?)?.toInt() ?? 0;
 
-    final bool isCleanReset = firestorePersonalTotal == 0 && pendingBuffer == 0 && !isBurstActive;
+    final int currentLocalTotal = _snapshot.personalTotal;
+    final int effectivePersonalTotal = math.max(currentLocalTotal, firestorePersonalTotal);
 
-    // Single source of truth with strict monotonic non-decreasing guarantee during tap bursts:
-    final int incomingPersonalTotal = firestorePersonalTotal + pendingBuffer;
-    final int effectivePersonalTotal = (isCleanReset || (pendingBuffer == 0 && !isBurstActive))
-        ? incomingPersonalTotal
-        : (incomingPersonalTotal >= _snapshot.personalTotal ? incomingPersonalTotal : _snapshot.personalTotal);
-
-    // 3. PERSONAL TODAY: Sourced primarily from userDailyStatsStream (daily_stats/{todayDateString}).
-    // Guard against contaminated user doc where myToday was erroneously set to myTotal.
+    // 3. PERSONAL TODAY fallback from user doc (Guarded)
     final bool isSameDay = StreakHelper.isSameDay(lastActive, todayStr);
     final int? rawUserDocToday = isSameDay
         ? (((data['myToday'] ?? data['todayDuroodCount'] ?? data['personal_today_durood'] ?? data['todayCount']) as num?)?.toInt())
         : null;
 
-    final bool isContaminatedWithTotal = rawUserDocToday != null &&
-        firestorePersonalTotal > 0 &&
-        rawUserDocToday >= firestorePersonalTotal &&
-        _snapshot.personalToday < rawUserDocToday;
-
-    final int? firestorePersonalToday = isContaminatedWithTotal ? null : rawUserDocToday;
-
-    final int effectivePersonalToday;
-    if (firestorePersonalToday != null) {
-      final int incomingPersonalToday = firestorePersonalToday + pendingBuffer;
-      effectivePersonalToday = (isCleanReset || (pendingBuffer == 0 && !isBurstActive))
-          ? incomingPersonalToday
-          : (incomingPersonalToday >= _snapshot.personalToday ? incomingPersonalToday : _snapshot.personalToday);
-    } else if (isCleanReset || (pendingBuffer == 0 && !isBurstActive)) {
+    int effectivePersonalToday = _snapshot.personalToday;
+    if (rawUserDocToday != null) {
+      effectivePersonalToday = math.max(_snapshot.personalToday, rawUserDocToday);
+    } else if (!isSameDay && !isActivelyTapping) {
       effectivePersonalToday = 0;
-    } else {
-      effectivePersonalToday = _snapshot.personalToday;
     }
 
-    // 4. DUROOD POINTS: Parse across all field variations with strict monotonic guarantee during tap bursts:
+    // If midnight passed and the user doc in Firestore has stale yesterday count, purge it
+    if (!isSameDay && lastActive != null) {
+      final int staleCount = ((data['myToday'] ?? data['personal_today_durood']) as num?)?.toInt() ?? 0;
+      if (staleCount > 0) {
+        final uid = _activeUid ?? _auth.currentUser?.uid;
+        if (uid != null && uid != 'guest') {
+          _firestore.collection('users').doc(uid).set({
+            'myToday': 0,
+            'todayTotal': 0,
+            'todayCount': 0,
+            'todayDuroodCount': 0,
+            'personal_today_durood': 0,
+          }, SetOptions(merge: true)).catchError((e) {
+            if (kDebugMode) print('CounterService: purge stale user today in Firestore: $e');
+          });
+        }
+      }
+    }
+
+    // 4. DUROOD POINTS (Guarded)
     final int firestorePoints = ((data['duroodPoints'] ??
         data['total_durood_points'] ??
         data['durood_points'] ??
         data['points']) as num?)?.toInt() ?? 0;
 
-    final int incomingPoints = firestorePoints + pendingBuffer;
-    final int effectivePoints = (isCleanReset || (pendingBuffer == 0 && !isBurstActive))
-        ? incomingPoints
-        : (incomingPoints >= _snapshot.duroodPoints ? incomingPoints : _snapshot.duroodPoints);
+    final int currentLocalPoints = _snapshot.duroodPoints;
+    final int effectivePoints = math.max(currentLocalPoints, firestorePoints);
 
     _updateSnapshot(CounterSnapshot(
       globalTotal: _snapshot.globalTotal,
@@ -701,6 +695,8 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
     try {
       final payload = {
         'todayTotal': 0,
+        'today_count': 0,
+        'globalToday': 0,
         'date': todayStr,
         'updatedAt': FieldValue.serverTimestamp(),
       };
@@ -712,66 +708,102 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Unified atomic pipeline for submitting Durood counts (both single-tap and Quick Add).
   ///
-  /// Atomically updates local optimistic state, notifies UI, and commits directly
-  /// to Firestore via WriteBatch using FieldValue.increment(count) on both global_counter and users documents.
+  /// Optimistic UI update is immediate for responsive feedback; Firestore write is debounced
+  /// (650ms after the last tap) using FieldValue.increment(diff) across all documents.
   Future<void> submitDuroodCount({required int count}) async {
     if (count <= 0) return;
 
     _lastTapTime = DateTime.now();
     final todayStr = _todayDateString;
-    final int currentTodayCount = _snapshot.personalToday;
-    final int currentTotalCount = _snapshot.personalTotal;
-    final int myToday = currentTodayCount + count; // Independent daily counter, NOT myTotal!
-    final int myTotal = currentTotalCount + count;
-    final updatedStreak = _snapshot.currentStreak <= 0 ? 1 : _snapshot.currentStreak;
-    final updatedPoints = _snapshot.duroodPoints + count;
-    final updatedGlobalTotal = _snapshot.globalTotal + count;
-    final updatedGlobalToday = _snapshot.globalToday + count;
+    final int nextToday = _snapshot.personalToday + count;
+    final int nextTotal = _snapshot.personalTotal + count;
+    final int nextGlobalTotal = _snapshot.globalTotal + count;
+    final int nextGlobalToday = _snapshot.globalToday + count;
+    final int nextPoints = _snapshot.duroodPoints + count;
+    final int nextStreak = _snapshot.currentStreak <= 0 ? 1 : _snapshot.currentStreak;
 
-    // 1. Immediate optimistic UI state update (identical for single tap and quick add)
+    // 1. Immediate optimistic UI state update (zero delay, instant feedback)
     _updateSnapshot(CounterSnapshot(
-      globalTotal: updatedGlobalTotal,
-      globalToday: updatedGlobalToday,
-      personalTotal: myTotal,
-      personalToday: myToday,
-      currentStreak: updatedStreak,
-      duroodPoints: updatedPoints,
+      globalTotal: nextGlobalTotal,
+      globalToday: nextGlobalToday,
+      personalTotal: nextTotal,
+      personalToday: nextToday,
+      currentStreak: nextStreak,
+      duroodPoints: nextPoints,
     ));
 
-    // 2. Persist to local storage
+    // 2. Accumulate into pending buffer
+    _pendingBuffer += count;
+
+    // 3. Immediately persist to local storage (offline/crash resilient)
     final userKey = _todayKey;
-    _prefs?.setInt(userKey, myToday);
+    _prefs?.setInt(userKey, nextToday);
     final uid = _activeUid ?? _auth.currentUser?.uid ?? 'guest';
-    _prefs?.setInt('my_today_${uid}_$todayStr', myToday);
-    _prefs?.setInt('my_total_$uid', myTotal);
-    _prefs?.setInt('durood_points_$uid', updatedPoints);
-    _prefs?.setInt('user_streak_$uid', updatedStreak);
+    _prefs?.setInt('my_today_${uid}_$todayStr', nextToday);
+    _prefs?.setInt('my_total_$uid', nextTotal);
+    _prefs?.setInt('durood_points_$uid', nextPoints);
+    _prefs?.setInt('user_streak_$uid', nextStreak);
 
     if (uid != 'guest') {
-      _prefs?.setInt('my_durood_${uid}_$todayStr', myToday);
-      _prefs?.setInt('${_keyPersonalTotal}_$uid', myTotal);
-      _prefs?.setInt('${_keyStreak}_$uid', updatedStreak);
-      _prefs?.setInt('${_keyPoints}_$uid', updatedPoints);
+      _prefs?.setInt('my_durood_${uid}_$todayStr', nextToday);
+      _prefs?.setInt('${_keyPersonalTotal}_$uid', nextTotal);
+      _prefs?.setInt('${_keyStreak}_$uid', nextStreak);
+      _prefs?.setInt('${_keyPoints}_$uid', nextPoints);
     }
-    _prefs?.setInt('$_prefixMyDurood$todayStr', myToday);
-    _prefs?.setInt('$_prefixMyTodayLegacy$todayStr', myToday);
+    _prefs?.setInt('$_prefixMyDurood$todayStr', nextToday);
+    _prefs?.setInt('$_prefixMyTodayLegacy$todayStr', nextToday);
     _prefs?.setString(_keyMyDuroodDate, todayStr);
-    _prefs?.setInt(_keyStreak, updatedStreak);
-    _prefs?.setInt(_keyPoints, updatedPoints);
-    _saveToStorage();
+    _prefs?.setInt(_keyStreak, nextStreak);
+    _prefs?.setInt(_keyPoints, nextPoints);
 
-    // 3. Atomically write to Firestore in a single unified WriteBatch
+    // 4. Debounce Firestore writes: resets timer on every tap, commits 650ms after the last tap
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(_debounceDuration, () => _commitPendingBuffer());
+  }
+
+  /// Commits all accumulated pending counts to Firestore via FieldValue.increment.
+  Future<void> _commitPendingBuffer() async {
+    final int diff = _pendingBuffer;
+    if (diff <= 0) return;
+
+    // Move pending buffer into in-flight before the async network call
+    _inFlightBuffer += diff;
+    _pendingBuffer = 0;
+
+    try {
+      await _flushBufferToFirestore(diff);
+      _inFlightBuffer = math.max(0, _inFlightBuffer - diff);
+      _saveToStorage();
+    } catch (e) {
+      if (kDebugMode) print('CounterService._commitPendingBuffer error: $e');
+      // On error, restore diff into pending buffer so the next attempt will include it
+      _pendingBuffer += diff;
+      _inFlightBuffer = math.max(0, _inFlightBuffer - diff);
+    }
+  }
+
+  /// Atomically commits [diff] to Firestore using FieldValue.increment across all counter docs.
+  Future<void> _flushBufferToFirestore(int diff) async {
+    if (diff <= 0) return;
+    final todayStr = _todayDateString;
     final effectiveUid = _auth.currentUser?.uid ?? _activeUid;
+    final updatedStreak = _snapshot.currentStreak <= 0 ? 1 : _snapshot.currentStreak;
+
     try {
       final batch = _firestore.batch();
 
-      // 1. Atomically update Global Counters
+      // 1. Atomically increment Global Counters
       final globalRef = _firestore.collection('global_counter').doc('main');
+      final bool isGlobalNewDay = _lastKnownGlobalDate != null && _lastKnownGlobalDate != todayStr;
       batch.set(
         globalRef,
         {
-          'globalTotal': FieldValue.increment(count),
-          'todayTotal': FieldValue.increment(count),
+          'globalTotal': FieldValue.increment(diff),
+          'total_count': FieldValue.increment(diff),
+          'totalCount': FieldValue.increment(diff),
+          'todayTotal': isGlobalNewDay ? _snapshot.globalToday : FieldValue.increment(diff),
+          'today_count': isGlobalNewDay ? _snapshot.globalToday : FieldValue.increment(diff),
+          'globalToday': isGlobalNewDay ? _snapshot.globalToday : FieldValue.increment(diff),
           'date': todayStr,
           'lastUpdated': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
@@ -779,44 +811,45 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
         SetOptions(merge: true),
       );
 
-      // 2. Atomically update User Document & Daily Stats
+      // 2. Atomically increment User Document & Daily Stats
       if (effectiveUid != null && effectiveUid != 'guest') {
         final userRef = _firestore.collection('users').doc(effectiveUid);
         final dailyStatRef = userRef.collection('daily_stats').doc(todayStr);
 
+        // Daily stats doc
         batch.set(
           dailyStatRef,
           {
-            'myToday': FieldValue.increment(count),
-            'todayDuroodCount': FieldValue.increment(count),
-            'todayCount': FieldValue.increment(count),
-            'count': FieldValue.increment(count),
+            'myToday': FieldValue.increment(diff),
+            'todayDuroodCount': FieldValue.increment(diff),
+            'todayCount': FieldValue.increment(diff),
+            'count': FieldValue.increment(diff),
             'date': todayStr,
             'updatedAt': FieldValue.serverTimestamp(),
           },
           SetOptions(merge: true),
         );
 
-        // If this is the first tap of a new day (currentTodayCount == 0), reset 'myToday'
-        // on the parent user document to the new count rather than incrementing on top of stale days.
-        final bool isFirstTapToday = currentTodayCount == 0;
+        // Parent user doc:
+        // 'myTotal' and 'duroodPoints' increment across all time
+        // 'myToday' is strictly bound to today's personal count (_snapshot.personalToday)
         batch.set(
           userRef,
           {
-            'myTotal': FieldValue.increment(count),
-            'totalDurood': FieldValue.increment(count),
-            'totalCount': FieldValue.increment(count),
-            'personal_total_durood': FieldValue.increment(count),
-            'myToday': isFirstTapToday ? count : FieldValue.increment(count),
-            'todayTotal': isFirstTapToday ? count : FieldValue.increment(count),
-            'todayCount': isFirstTapToday ? count : FieldValue.increment(count),
-            'todayDuroodCount': isFirstTapToday ? count : FieldValue.increment(count),
-            'personal_today_durood': isFirstTapToday ? count : FieldValue.increment(count),
-            'duroodPoints': FieldValue.increment(count),
-            'totalPoints': FieldValue.increment(count),
-            'points': FieldValue.increment(count),
-            'durood_points': FieldValue.increment(count),
-            'total_durood_points': FieldValue.increment(count),
+            'myTotal': FieldValue.increment(diff),
+            'totalDurood': FieldValue.increment(diff),
+            'totalCount': FieldValue.increment(diff),
+            'personal_total_durood': FieldValue.increment(diff),
+            'myToday': _snapshot.personalToday,
+            'todayTotal': _snapshot.personalToday,
+            'todayCount': _snapshot.personalToday,
+            'todayDuroodCount': _snapshot.personalToday,
+            'personal_today_durood': _snapshot.personalToday,
+            'duroodPoints': FieldValue.increment(diff),
+            'totalPoints': FieldValue.increment(diff),
+            'points': FieldValue.increment(diff),
+            'durood_points': FieldValue.increment(diff),
+            'total_durood_points': FieldValue.increment(diff),
             'streak': updatedStreak,
             'current_streak': updatedStreak,
             'currentStreak': updatedStreak,
@@ -834,7 +867,8 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
 
       await batch.commit();
     } catch (e) {
-      if (kDebugMode) print('CounterService.submitDuroodCount error: $e');
+      if (kDebugMode) print('CounterService._flushBufferToFirestore error: $e');
+      rethrow;
     }
   }
 
@@ -847,10 +881,8 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
   /// Immediately commits any buffered increments to Firestore.
   Future<void> flushImmediately() async {
     _debounceTimer?.cancel();
-    if (_pendingBuffer <= 0) return;
-    final count = _pendingBuffer;
-    _pendingBuffer = 0;
-    await submitDuroodCount(count: count);
+    _debounceTimer = null;
+    await _commitPendingBuffer();
   }
 
   // ── App Lifecycle: Flush on pause, inactive, or detach ───────
@@ -895,6 +927,13 @@ class CounterService extends ChangeNotifier with WidgetsBindingObserver {
   // ── Reset ───────────────────────────────────────────────────
 
   Future<void> resetPersonalToday() async {
+    _lastResetTime = DateTime.now();
+    _lastTapTime = null;
+    _debounceTimer?.cancel();
+    _debounceTimer = null;
+    _pendingBuffer = 0;
+    _inFlightBuffer = 0;
+
     final todayStr = _todayDateString;
     _updateSnapshot(_snapshot.copyWith(personalToday: 0));
     final userKey = _getUserTodayKey(_activeUid ?? _auth.currentUser?.uid, todayStr);

@@ -54,13 +54,54 @@ class AppUser {
     return defaultValue;
   }
 
-  int get myTotal => (rawData != null && rawData!['myTotal'] != null)
-      ? parseNumeric(rawData!['myTotal'])
-      : totalCount;
+  int get myTotal {
+    if (rawData != null) {
+      for (final key in const [
+        'myTotal',
+        'personalTotal',
+        'totalCount',
+        'duroodCount',
+        'total_count',
+        'personal_total_durood',
+        'totalDurood',
+        'total_durood_count',
+        'total_recitations',
+      ]) {
+        if (rawData!.containsKey(key) && rawData![key] != null) {
+          final val = parseNumeric(rawData![key]);
+          if (val > 0) return val;
+        }
+      }
+    }
+    return personalTotalDurood > 0 ? personalTotalDurood : totalCount;
+  }
 
-  int get myToday => (rawData != null && rawData!['myToday'] != null)
-      ? parseNumeric(rawData!['myToday'])
-      : personalTodayDurood;
+  int get myToday {
+    final todayStr = DateTime.now().toIso8601String().split('T')[0];
+    final activeDateStr = (lastActiveDuroodDate != null)
+        ? lastActiveDuroodDate!.toIso8601String().split('T')[0]
+        : (rawData != null ? (rawData!['lastActiveDate'] ?? rawData!['lastStreakDate'] ?? rawData!['last_active_durood_date'])?.toString().split('T')[0] : null);
+
+    final bool isToday = activeDateStr == todayStr;
+    if (!isToday) return 0;
+
+    if (rawData != null) {
+      for (final key in const [
+        'myToday',
+        'personal_today_durood',
+        'today_durood_count',
+        'today_count',
+        'todayTotal',
+        'todayDuroodCount',
+      ]) {
+        if (rawData!.containsKey(key) && rawData![key] != null) {
+          final val = parseNumeric(rawData![key]);
+          if (val > 0) return val;
+        }
+      }
+    }
+    return personalTodayDurood;
+  }
 
   int get streak => currentStreak;
   int get effectiveStreak => currentStreak;
@@ -197,6 +238,12 @@ class AppUser {
         map['has_accepted_terms'] == true ||
         map['has_accepted_terms_v1'] == true;
 
+    final todayStr = DateTime.now().toIso8601String().split('T')[0];
+    final activeDateStr = (activeDate != null)
+        ? activeDate.toIso8601String().split('T')[0]
+        : (rawDate is String ? rawDate.split('T')[0] : null);
+    final bool isUserActiveToday = activeDateStr == todayStr;
+
     return AppUser(
       userId: map['user_id'] as String? ?? map['userId'] as String? ?? map['uid'] as String? ?? '',
       email: map['email'] as String? ?? '',
@@ -215,13 +262,15 @@ class AppUser {
             map['total_count'] ??
             map['totalDurood'],
       ),
-      personalTodayDurood: parseNumeric(
-        map['myToday'] ??
-            map['personal_today_durood'] ??
-            map['today_durood_count'] ??
-            map['today_count'] ??
-            map['todayTotal'],
-      ),
+      personalTodayDurood: isUserActiveToday
+          ? parseNumeric(
+              map['myToday'] ??
+                  map['personal_today_durood'] ??
+                  map['today_durood_count'] ??
+                  map['today_count'] ??
+                  map['todayTotal'],
+            )
+          : 0,
       currentStreak: effectiveStreak,
       longestStreak: rawLongest >= effectiveStreak ? rawLongest : effectiveStreak,
       totalDuroodPoints: parseNumeric(

@@ -36,29 +36,16 @@ class CampaignPopupService {
           if (doc.exists && doc.data() != null) {
             return CampaignPopupModel.fromMap(doc.id, doc.data());
           }
-          return CampaignPopupModel.defaultConfig(id: _docId);
+          return CampaignPopupModel.defaultConfig(id: _docId, isActive: false);
         });
   }
 
   /// One-shot fetch of the campaign popup configuration from Firestore.
-  /// Checks campaigns/active, settings/launch_popup, and app_popups collection for active campaigns.
+  /// Checks settings/launch_popup (authoritative admin config), app_popups mirror,
+  /// campaigns/active, and queries. Respects explicit inactive status (isActive == false).
   static Future<CampaignPopupModel> getCampaignPopup() async {
     try {
-      // 1. Check campaigns/active
-      try {
-        final activeCampaignDoc = await _firestore
-            .collection('campaigns')
-            .doc('active')
-            .get()
-            .timeout(const Duration(seconds: 3));
-        if (activeCampaignDoc.exists && activeCampaignDoc.data() != null) {
-          final model = CampaignPopupModel.fromMap(
-              activeCampaignDoc.id, activeCampaignDoc.data());
-          return model;
-        }
-      } catch (_) {}
-
-      // 2. Settings check: settings/launch_popup
+      // 1. Primary check: settings/launch_popup (authoritative config managed by admin)
       try {
         final doc = await _firestore
             .collection(_settingsCollection)
@@ -66,12 +53,13 @@ class CampaignPopupService {
             .get()
             .timeout(const Duration(seconds: 3));
         if (doc.exists && doc.data() != null) {
-          final model = CampaignPopupModel.fromMap(doc.id, doc.data());
-          if (model.isActive) return model;
+          return CampaignPopupModel.fromMap(doc.id, doc.data());
         }
-      } catch (_) {}
+      } catch (e) {
+        if (kDebugMode) print('getCampaignPopup settings check error: $e');
+      }
 
-      // 3. Fallback check: app_popups/launch_popup
+      // 2. Secondary check: app_popups/launch_popup (mirrored config)
       try {
         final fallbackDoc = await _firestore
             .collection(_popupsCollection)
@@ -79,52 +67,57 @@ class CampaignPopupService {
             .get()
             .timeout(const Duration(seconds: 3));
         if (fallbackDoc.exists && fallbackDoc.data() != null) {
-          final model =
-              CampaignPopupModel.fromMap(fallbackDoc.id, fallbackDoc.data());
-          if (model.isActive) return model;
+          return CampaignPopupModel.fromMap(fallbackDoc.id, fallbackDoc.data());
         }
-      } catch (_) {}
+      } catch (e) {
+        if (kDebugMode) print('getCampaignPopup fallback check error: $e');
+      }
 
-      // 4. Collection query: app_popups where isActive == true
+      // 3. Compatibility check: campaigns/active
       try {
-        final activeQuery = await _firestore
-            .collection(_popupsCollection)
-            .where('isActive', isEqualTo: true)
-            .limit(1)
+        final activeCampaignDoc = await _firestore
+            .collection('campaigns')
+            .doc('active')
             .get()
             .timeout(const Duration(seconds: 3));
-        if (activeQuery.docs.isNotEmpty) {
-          final activeDoc = activeQuery.docs.first;
-          return CampaignPopupModel.fromMap(activeDoc.id, activeDoc.data());
+        if (activeCampaignDoc.exists && activeCampaignDoc.data() != null) {
+          return CampaignPopupModel.fromMap(
+              activeCampaignDoc.id, activeCampaignDoc.data());
         }
-      } catch (_) {}
+      } catch (e) {
+        if (kDebugMode) print('getCampaignPopup campaigns/active check error: $e');
+      }
     } catch (e) {
       if (kDebugMode) {
         print('CampaignPopupService.getCampaignPopup error: $e');
       }
     }
-    return CampaignPopupModel.defaultConfig(id: _docId);
+    // Safe fallback: when no popup config exists in Firestore, popup must NOT show (isActive: false)
+    return CampaignPopupModel.defaultConfig(id: _docId, isActive: false);
   }
 
   /// Saves & publishes the campaign popup config to Firestore.
-  /// Dual-writes to settings/launch_popup and app_popups/launch_popup for universal schema compatibility.
+  /// Dual-writes to settings/launch_popup, app_popups/launch_popup, and campaigns/active
+  /// for universal cross-collection consistency.
   static Future<void> saveCampaignPopup(CampaignPopupModel config) async {
     final data = config.toMap();
     final batch = _firestore.batch();
 
     final settingsDocRef = _firestore.collection(_settingsCollection).doc(_docId);
     final popupsDocRef = _firestore.collection(_popupsCollection).doc(_docId);
+    final campaignsDocRef = _firestore.collection('campaigns').doc('active');
 
     batch.set(settingsDocRef, data, SetOptions(merge: true));
     batch.set(popupsDocRef, data, SetOptions(merge: true));
+    batch.set(campaignsDocRef, data, SetOptions(merge: true));
 
     await batch.commit();
     if (kDebugMode) {
-      print('CampaignPopupService: Campaign popup configuration successfully saved.');
+      print('CampaignPopupService: Campaign popup configuration successfully saved across all collections.');
     }
   }
 
-  /// Toggles the active state of the startup popup.
+  /// Toggles the active state of the startup popup across all collections.
   static Future<void> togglePopupStatus(bool isActive) async {
     final updateData = {
       'isActive': isActive,
@@ -133,11 +126,16 @@ class CampaignPopupService {
     final batch = _firestore.batch();
     final settingsDocRef = _firestore.collection(_settingsCollection).doc(_docId);
     final popupsDocRef = _firestore.collection(_popupsCollection).doc(_docId);
+    final campaignsDocRef = _firestore.collection('campaigns').doc('active');
 
     batch.set(settingsDocRef, updateData, SetOptions(merge: true));
     batch.set(popupsDocRef, updateData, SetOptions(merge: true));
+    batch.set(campaignsDocRef, updateData, SetOptions(merge: true));
 
     await batch.commit();
+    if (kDebugMode) {
+      print('CampaignPopupService: Campaign popup active status toggled to $isActive.');
+    }
   }
 
   /// Checks Firestore on mobile startup and displays the modal once per fresh app session.

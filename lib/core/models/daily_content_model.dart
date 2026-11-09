@@ -227,11 +227,11 @@ class DailyContentModel {
       if (titleUr.isNotEmpty) return titleUr;
       if (title.isNotEmpty && _containsUrduOrArabic(title)) return title;
       if (isTopicOfTheDay) return 'آج کا خاص موضوع';
-      return isAyat ? 'آج کی آیتِ مبارکہ' : 'آج کی حدیث مبارکہ';
+      return isAyat ? 'آج کی آیت' : 'آج کی حدیث';
     } else {
       if (title.isNotEmpty && !_containsUrduOrArabic(title)) return title;
       if (isTopicOfTheDay) return 'Topic of the Day';
-      return isAyat ? 'DAILY AYAT' : 'DAILY HADITH';
+      return isAyat ? 'Ayat of the Day' : 'Hadees of the Day';
     }
   }
 

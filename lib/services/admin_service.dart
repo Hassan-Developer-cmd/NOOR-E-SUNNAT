@@ -614,24 +614,29 @@ class AdminService {
       }
     }
 
-    // 4. Parallel Cloud Function HTTP Endpoint Trigger (Fallback)
-    try {
-      final url = Uri.parse(
-        'https://us-central1-islamic-app-ed1ed.cloudfunctions.net/sendFCMBroadcastHttp',
-      );
-      await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'title': cleanTitle,
-          'body': cleanBody,
-          'target': target,
-          'type': type,
-          'id': docRef.id,
-          'eventId': eventId ?? '',
-        }),
-      );
-    } catch (_) {}
+    // 4. Cloud Function HTTP Endpoint Trigger (Fallback only if direct FCM dispatch did not succeed)
+    if (fcmResult != 'fcm_v1_success' && fcmResult != 'fcm_sent_success') {
+      try {
+        final url = Uri.parse(
+          'https://us-central1-islamic-app-ed1ed.cloudfunctions.net/sendFCMBroadcastHttp',
+        );
+        final cfRes = await http.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'title': cleanTitle,
+            'body': cleanBody,
+            'target': target,
+            'type': type,
+            'id': docRef.id,
+            'eventId': eventId ?? '',
+          }),
+        );
+        if (cfRes.statusCode == 200) {
+          fcmResult = 'fcm_cf_success';
+        }
+      } catch (_) {}
+    }
 
     return fcmResult;
   }
@@ -726,9 +731,10 @@ class AdminService {
         await _firestore.collection('notifications').add(notifData);
 
         // Direct targeted 1-to-1 FCM v1 push notification
+        bool v1Sent = false;
         if (question.fcmToken != null && question.fcmToken!.isNotEmpty) {
           try {
-            await FcmV1Service.sendToToken(
+            v1Sent = await FcmV1Service.sendToToken(
               fcmToken: question.fcmToken!,
               title: 'آپ کے سوال کا جواب دے دیا گیا ہے / Question Answered',
               body: 'علمائے کرام نے آپ کے سوال کا جواب فراہم کر دیا ہے۔ دیکھنے کے لیے ٹیپ کریں۔',
@@ -738,7 +744,7 @@ class AdminService {
           } catch (_) {}
         } else {
           try {
-            await FcmV1Service.sendBroadcast(
+            v1Sent = await FcmV1Service.sendBroadcast(
               topic: 'user_${question.userId}',
               title: 'آپ کے سوال کا جواب دے دیا گیا ہے / Question Answered',
               body: 'علمائے کرام نے آپ کے سوال کا جواب فراہم کر دیا ہے۔ دیکھنے کے لیے ٹیپ کریں۔',
@@ -748,58 +754,66 @@ class AdminService {
           } catch (_) {}
         }
 
-        // Direct 1-to-1 FCM Legacy REST Dispatch (if server key configured)
-        final serverKey = await getFcmServerKey();
-        if (serverKey != null && serverKey.isNotEmpty) {
-          try {
-            final targetRecipient = (question.fcmToken != null && question.fcmToken!.isNotEmpty)
-                ? question.fcmToken!
-                : '/topics/user_${question.userId}';
+        // Direct 1-to-1 FCM Legacy REST Dispatch (Fallback if v1 not sent and server key configured)
+        bool legacySent = false;
+        if (!v1Sent) {
+          final serverKey = await getFcmServerKey();
+          if (serverKey != null && serverKey.isNotEmpty) {
+            try {
+              final targetRecipient = (question.fcmToken != null && question.fcmToken!.isNotEmpty)
+                  ? question.fcmToken!
+                  : '/topics/user_${question.userId}';
 
+              final resp = await http.post(
+                Uri.parse('https://fcm.googleapis.com/fcm/send'),
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': 'key=$serverKey',
+                },
+                body: jsonEncode({
+                  'to': targetRecipient,
+                  'priority': 'high',
+                  'notification': {
+                    'title': 'آپ کے سوال کا جواب دے دیا گیا ہے / Question Answered',
+                    'body': 'علمائے کرام نے آپ کے سوال کا جواب فراہم کر دیا ہے۔ دیکھنے کے لیے ٹیپ کریں۔',
+                    'sound': 'default',
+                    'android_channel_id': 'high_importance_channel',
+                  },
+                  'data': {
+                    'click_action': 'FLUTTER_NOTIFICATION_CLICK',
+                    'type': 'question_answered',
+                    'route': '/qna',
+                    'questionId': questionId,
+                  },
+                }),
+              );
+              if (resp.statusCode == 200) {
+                legacySent = true;
+              }
+            } catch (_) {}
+          }
+        }
+
+        // Direct 1-to-1 FCM HTTP Bridge Trigger (Fallback only if neither v1 nor legacy succeeded)
+        if (!v1Sent && !legacySent) {
+          try {
+            final url = Uri.parse(
+              'https://us-central1-islamic-app-ed1ed.cloudfunctions.net/sendFCMBroadcastHttp',
+            );
             await http.post(
-              Uri.parse('https://fcm.googleapis.com/fcm/send'),
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'key=$serverKey',
-              },
+              url,
+              headers: {'Content-Type': 'application/json'},
               body: jsonEncode({
-                'to': targetRecipient,
-                'priority': 'high',
-                'notification': {
-                  'title': 'آپ کے سوال کا جواب دے دیا گیا ہے / Question Answered',
-                  'body': 'علمائے کرام نے آپ کے سوال کا جواب فراہم کر دیا ہے۔ دیکھنے کے لیے ٹیپ کریں۔',
-                  'sound': 'default',
-                  'android_channel_id': 'high_importance_channel',
-                },
-                'data': {
-                  'click_action': 'FLUTTER_NOTIFICATION_CLICK',
-                  'type': 'question_answered',
-                  'route': '/qna',
-                  'questionId': questionId,
-                },
+                'title': 'آپ کے سوال کا جواب دے دیا گیا ہے / Question Answered',
+                'body': 'علمائے کرام نے آپ کے سوال کا جواب فراہم کر دیا ہے۔ دیکھنے کے لیے ٹیپ کریں۔',
+                'target': question.userId,
+                'fcmToken': question.fcmToken,
+                'type': 'question_answered',
+                'questionId': questionId,
               }),
             );
           } catch (_) {}
         }
-
-        // Direct 1-to-1 FCM HTTP Bridge Trigger (Fallback)
-        try {
-          final url = Uri.parse(
-            'https://us-central1-islamic-app-ed1ed.cloudfunctions.net/sendFCMBroadcastHttp',
-          );
-          await http.post(
-            url,
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'title': 'آپ کے سوال کا جواب دے دیا گیا ہے / Question Answered',
-              'body': 'علمائے کرام نے آپ کے سوال کا جواب فراہم کر دیا ہے۔ دیکھنے کے لیے ٹیپ کریں۔',
-              'target': question.userId,
-              'fcmToken': question.fcmToken,
-              'type': 'question_answered',
-              'questionId': questionId,
-            }),
-          );
-        } catch (_) {}
       }
     } catch (e) {
       if (kDebugMode) print('AdminService.answerQuestion notification error: $e');
@@ -849,9 +863,15 @@ class AdminService {
         .map((snap) {
           final data = snap.data();
           if (data != null && data.isNotEmpty) {
+            final todayStr = DateTime.now().toIso8601String().split('T')[0];
+            final docDate = (data['date'] ?? data['last_reset_date'] ?? data['lastUpdatedDate'])?.toString().split('T')[0];
+            final isSameDay = docDate == todayStr;
+
             _lastGlobalCounterData = {
-              'globalTotal': (data['globalTotal'] as num?)?.toInt() ?? 0,
-              'todayTotal': (data['todayTotal'] as num?)?.toInt() ?? 0,
+              'globalTotal': ((data['globalTotal'] ?? data['total_count'] ?? data['totalCount']) as num?)?.toInt() ?? 0,
+              'todayTotal': isSameDay
+                  ? (((data['todayTotal'] ?? data['today_count'] ?? data['globalToday']) as num?)?.toInt() ?? 0)
+                  : 0,
               'date': data['date']?.toString() ?? '',
             };
             return _lastGlobalCounterData;
@@ -869,9 +889,15 @@ class AdminService {
       final snap = await _firestore.collection('global_counter').doc('main').get();
       if (snap.exists && snap.data() != null && snap.data()!.isNotEmpty) {
         final data = snap.data()!;
+        final todayStr = DateTime.now().toIso8601String().split('T')[0];
+        final docDate = (data['date'] ?? data['last_reset_date'] ?? data['lastUpdatedDate'])?.toString().split('T')[0];
+        final isSameDay = docDate == todayStr;
+
         _lastGlobalCounterData = {
-          'globalTotal': (data['globalTotal'] as num?)?.toInt() ?? 0,
-          'todayTotal': (data['todayTotal'] as num?)?.toInt() ?? 0,
+          'globalTotal': ((data['globalTotal'] ?? data['total_count'] ?? data['totalCount']) as num?)?.toInt() ?? 0,
+          'todayTotal': isSameDay
+              ? (((data['todayTotal'] ?? data['today_count'] ?? data['globalToday']) as num?)?.toInt() ?? 0)
+              : 0,
           'date': data['date']?.toString() ?? '',
         };
         return _lastGlobalCounterData;

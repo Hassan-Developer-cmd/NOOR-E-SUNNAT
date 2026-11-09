@@ -40,10 +40,7 @@ class ProfileSettingsSheets {
     final message = lp.tr('share_app_msg');
 
     try {
-      await Share.share(
-        message,
-        subject: 'NOOR E SUNNAT',
-      );
+      await Share.share(message, subject: 'NOOR E SUNNAT');
     } catch (_) {
       // Fallback to clipboard if native share sheet is unavailable
       await Clipboard.setData(ClipboardData(text: message));
@@ -108,14 +105,22 @@ class ProfileSettingsSheets {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: const LinearGradient(
-                            colors: [AppColors.emeraldDeep, AppColors.primaryEmerald],
+                            colors: [
+                              AppColors.emeraldDeep,
+                              AppColors.primaryEmerald,
+                            ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
-                          border: Border.all(color: AppColors.goldBright, width: 2),
+                          border: Border.all(
+                            color: AppColors.goldBright,
+                            width: 2,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primaryEmerald.withValues(alpha: 0.25),
+                              color: AppColors.primaryEmerald.withValues(
+                                alpha: 0.25,
+                              ),
                               blurRadius: 16,
                               offset: const Offset(0, 6),
                             ),
@@ -125,11 +130,12 @@ class ProfileSettingsSheets {
                           child: Image.asset(
                             'assets/images/app_logo.png',
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => const Icon(
-                              Icons.shield_moon_rounded,
-                              color: AppColors.goldBright,
-                              size: 40,
-                            ),
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(
+                                  Icons.shield_moon_rounded,
+                                  color: AppColors.goldBright,
+                                  size: 40,
+                                ),
                           ),
                         ),
                       ),
@@ -142,7 +148,9 @@ class ProfileSettingsSheets {
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                           color: AppColors.emeraldDeep,
-                          fontFamily: isUrdu ? AppTypography.urduFontFamily : AppTypography.englishFontFamily,
+                          fontFamily: isUrdu
+                              ? AppTypography.urduFontFamily
+                              : AppTypography.englishFontFamily,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -161,11 +169,18 @@ class ProfileSettingsSheets {
 
                       // Version Badge
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.emeraldContainer,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.primaryEmerald.withValues(alpha: 0.3)),
+                          border: Border.all(
+                            color: AppColors.primaryEmerald.withValues(
+                              alpha: 0.3,
+                            ),
+                          ),
                         ),
                         child: Text(
                           lp.tr('app_version_label'),
@@ -193,8 +208,11 @@ class ProfileSettingsSheets {
                                 children: [
                                   Row(
                                     children: [
-                                      const Icon(Icons.info_outline_rounded,
-                                          color: AppColors.primaryEmerald, size: 20),
+                                      const Icon(
+                                        Icons.info_outline_rounded,
+                                        color: AppColors.primaryEmerald,
+                                        size: 20,
+                                      ),
                                       const SizedBox(width: 8),
                                       Text(
                                         'ہمارے بارے میں',
@@ -202,7 +220,8 @@ class ProfileSettingsSheets {
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
                                           color: AppColors.emeraldDeep,
-                                          fontFamily: AppTypography.urduFontFamily,
+                                          fontFamily:
+                                              AppTypography.urduFontFamily,
                                         ),
                                       ),
                                     ],
@@ -214,48 +233,70 @@ class ProfileSettingsSheets {
                                         fontSize: 13.5,
                                         height: 1.75,
                                         color: const Color(0xFF334155),
-                                        fontFamily: AppTypography.urduFontFamily,
+                                        fontFamily:
+                                            AppTypography.urduFontFamily,
                                       ),
                                       children: const [
                                         TextSpan(
                                           text: 'نورِ سنت ',
-                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.emeraldDark),
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.emeraldDark,
+                                          ),
                                         ),
                                         TextSpan(
-                                          text: 'ایک ڈیجیٹل پلیٹ فارم ہے جس کا مقصد جدید ٹیکنالوجی کے ذریعے مستند اسلامی علم کو عام لوگوں، خصوصاً مسلم نوجوانوں تک آسان انداز میں پہنچانا ہے۔\n\n'
+                                          text:
+                                              'ایک ڈیجیٹل پلیٹ فارم ہے جس کا مقصد جدید ٹیکنالوجی کے ذریعے مستند اسلامی علم کو عام لوگوں، خصوصاً مسلم نوجوانوں تک آسان انداز میں پہنچانا ہے۔\n\n'
                                               'ہماری کوشش ہے کہ صارفین ',
                                         ),
                                         TextSpan(
-                                          text: 'اسلام کے بنیادی عقائد اور ضروری تعلیمات ',
-                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.emeraldDark),
+                                          text:
+                                              'اسلام کے بنیادی عقائد اور ضروری تعلیمات ',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.emeraldDark,
+                                          ),
                                         ),
                                         TextSpan(
-                                          text: 'کو سمجھیں اور ہمارے پیارے نبی محمد مصطفیٰ ﷺ کی سنتوں کو اپنی روزمرہ زندگی کا حصہ بنائیں۔\n\n'
+                                          text:
+                                              'کو سمجھیں اور ہمارے پیارے نبی محمد مصطفیٰ ﷺ کی سنتوں کو اپنی روزمرہ زندگی کا حصہ بنائیں۔\n\n'
                                               'ایپ میں ',
                                         ),
                                         TextSpan(
-                                          text: 'درود و سلام، اسلامی عقائد، ضروری اسلامی رہنمائی اور روزمرہ مسائل کے جوابات ',
-                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.emeraldDark),
+                                          text:
+                                              'درود و سلام، اسلامی عقائد، ضروری اسلامی رہنمائی اور روزمرہ مسائل کے جوابات ',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.emeraldDark,
+                                          ),
                                         ),
                                         TextSpan(
-                                          text: 'سمیت مختلف اسلامی سہولیات اور مواد فراہم کیا جاتا ہے۔\n\n'
+                                          text:
+                                              'سمیت مختلف اسلامی سہولیات اور مواد فراہم کیا جاتا ہے۔\n\n'
                                               'ہمارا اسلامی مواد ',
                                         ),
                                         TextSpan(
-                                          text: 'مستند اسلامی ماخذ اور اہلِ سنت کی معتبر کتب ',
-                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.emeraldDark),
+                                          text:
+                                              'مستند اسلامی ماخذ اور اہلِ سنت کی معتبر کتب ',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.emeraldDark,
+                                          ),
                                         ),
                                         TextSpan(
-                                          text: 'سے اخذ کیا گیا ہے اور اسے علمائے کرام کی رہنمائی و نگرانی میں مرتب کیا جاتا ہے۔\n\n'
+                                          text:
+                                              'سے اخذ کیا گیا ہے اور اسے علمائے کرام کی رہنمائی و نگرانی میں مرتب کیا جاتا ہے۔\n\n'
                                               'نورِ سنت کے ذریعے ہمارا مقصد ٹیکنالوجی کو ',
                                         ),
                                         TextSpan(
-                                          text: 'اسلام کی خدمت، نفع بخش علم کی اشاعت اور ہمارے پیارے نبی محمد مصطفیٰ ﷺ کی محبت کو دلوں میں مضبوط کرنے ',
-                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.emeraldDark),
+                                          text:
+                                              'اسلام کی خدمت، نفع بخش علم کی اشاعت اور ہمارے پیارے نبی محمد مصطفیٰ ﷺ کی محبت کو دلوں میں مضبوط کرنے ',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.emeraldDark,
+                                          ),
                                         ),
-                                        TextSpan(
-                                          text: 'کا ذریعہ بنانا ہے۔',
-                                        ),
+                                        TextSpan(text: 'کا ذریعہ بنانا ہے۔'),
                                       ],
                                     ),
                                     textAlign: TextAlign.start,
@@ -267,8 +308,11 @@ class ProfileSettingsSheets {
                                 children: [
                                   Row(
                                     children: [
-                                      const Icon(Icons.info_outline_rounded,
-                                          color: AppColors.primaryEmerald, size: 20),
+                                      const Icon(
+                                        Icons.info_outline_rounded,
+                                        color: AppColors.primaryEmerald,
+                                        size: 20,
+                                      ),
                                       const SizedBox(width: 8),
                                       const Text(
                                         'About Us',
@@ -291,42 +335,63 @@ class ProfileSettingsSheets {
                                       children: [
                                         TextSpan(
                                           text: 'Noor-e-Sunnat ',
-                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.emeraldDark),
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.emeraldDark,
+                                          ),
                                         ),
                                         TextSpan(
-                                          text: 'is a digital platform dedicated to making authentic Islamic knowledge accessible through modern technology, especially for Muslim youth.\n\n'
+                                          text:
+                                              'is a digital platform dedicated to making authentic Islamic knowledge accessible through modern technology, especially for Muslim youth.\n\n'
                                               'Our mission is to help users understand the ',
                                         ),
                                         TextSpan(
-                                          text: 'fundamental beliefs and essential teachings of Islam ',
-                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.emeraldDark),
+                                          text:
+                                              'fundamental beliefs and essential teachings of Islam ',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.emeraldDark,
+                                          ),
                                         ),
                                         TextSpan(
-                                          text: 'and bring the Sunnahs of our beloved Prophet Muhammad ﷺ into their daily lives.\n\n'
+                                          text:
+                                              'and bring the Sunnahs of our beloved Prophet Muhammad ﷺ into their daily lives.\n\n'
                                               'The app offers ',
                                         ),
                                         TextSpan(
-                                          text: 'Durood & Salawat, Islamic beliefs, essential Islamic guidance, and answers to everyday questions',
-                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.emeraldDark),
+                                          text:
+                                              'Durood & Salawat, Islamic beliefs, essential Islamic guidance, and answers to everyday questions',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.emeraldDark,
+                                          ),
                                         ),
                                         TextSpan(
-                                          text: '.\n\nOur content is carefully prepared from ',
+                                          text:
+                                              '.\n\nOur content is carefully prepared from ',
                                         ),
                                         TextSpan(
-                                          text: 'authentic Islamic sources and recognized books of Ahl al-Sunnah',
-                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.emeraldDark),
+                                          text:
+                                              'authentic Islamic sources and recognized books of Ahl al-Sunnah',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.emeraldDark,
+                                          ),
                                         ),
                                         TextSpan(
-                                          text: ', under the guidance and supervision of Islamic scholars.\n\n'
+                                          text:
+                                              ', under the guidance and supervision of Islamic scholars.\n\n'
                                               'Through Noor-e-Sunnat, we strive to use technology as a means to ',
                                         ),
                                         TextSpan(
-                                          text: 'serve Islam, spread beneficial knowledge, and strengthen the love for our beloved Prophet Muhammad ﷺ',
-                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.emeraldDark),
+                                          text:
+                                              'serve Islam, spread beneficial knowledge, and strengthen the love for our beloved Prophet Muhammad ﷺ',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.emeraldDark,
+                                          ),
                                         ),
-                                        TextSpan(
-                                          text: '.',
-                                        ),
+                                        TextSpan(text: '.'),
                                       ],
                                     ),
                                     textAlign: TextAlign.start,
@@ -338,7 +403,9 @@ class ProfileSettingsSheets {
 
                       // Key Features Section
                       Align(
-                        alignment: isUrdu ? Alignment.centerRight : Alignment.centerLeft,
+                        alignment: isUrdu
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
                         child: Text(
                           lp.tr('about_key_features'),
                           style: const TextStyle(
@@ -350,11 +417,26 @@ class ProfileSettingsSheets {
                       ),
                       const SizedBox(height: 12),
 
-                      _buildFeatureTile(Icons.countertops_rounded, lp.tr('about_feat_1')),
-                      _buildFeatureTile(Icons.auto_stories_rounded, lp.tr('about_feat_2')),
-                      _buildFeatureTile(Icons.menu_book_rounded, lp.tr('about_feat_3')),
-                      _buildFeatureTile(Icons.question_answer_rounded, lp.tr('about_feat_4')),
-                      _buildFeatureTile(Icons.military_tech_rounded, lp.tr('about_feat_5')),
+                      _buildFeatureTile(
+                        Icons.countertops_rounded,
+                        lp.tr('about_feat_1'),
+                      ),
+                      _buildFeatureTile(
+                        Icons.auto_stories_rounded,
+                        lp.tr('about_feat_2'),
+                      ),
+                      _buildFeatureTile(
+                        Icons.menu_book_rounded,
+                        lp.tr('about_feat_3'),
+                      ),
+                      _buildFeatureTile(
+                        Icons.question_answer_rounded,
+                        lp.tr('about_feat_4'),
+                      ),
+                      _buildFeatureTile(
+                        Icons.military_tech_rounded,
+                        lp.tr('about_feat_5'),
+                      ),
                     ],
                   ),
                 ),
@@ -368,10 +450,15 @@ class ProfileSettingsSheets {
                     backgroundColor: AppColors.primaryEmerald,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                   onPressed: () => Navigator.pop(ctx),
-                  child: Text(lp.tr('close'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                  child: Text(
+                    lp.tr('close'),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ],
@@ -397,7 +484,11 @@ class ProfileSettingsSheets {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
         ],
@@ -435,190 +526,199 @@ class ProfileSettingsSheets {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-              // Grab Handle
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
+                // Grab Handle
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 18),
+                const SizedBox(height: 18),
 
-              Expanded(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Column(
-                    children: [
-                      // Header
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: const BoxDecoration(
-                              color: AppColors.emeraldContainer,
-                              shape: BoxShape.circle,
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      children: [
+                        // Header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: const BoxDecoration(
+                                color: AppColors.emeraldContainer,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.groups_rounded,
+                                color: AppColors.primaryEmerald,
+                                size: 26,
+                              ),
                             ),
-                            child: const Icon(
-                              Icons.groups_rounded,
-                              color: AppColors.primaryEmerald,
-                              size: 26,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Flexible(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  lp.tr('our_team_title'),
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.emeraldDeep,
+                            const SizedBox(width: 12),
+                            Flexible(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    lp.tr('our_team_title'),
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.emeraldDeep,
+                                    ),
                                   ),
+                                  Text(
+                                    lp.tr('our_team_subtitle'),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 22),
+
+                        // Section 1: IT TEAM
+                        _buildTeamSection(
+                          context: ctx,
+                          categoryTitle: isUrdu ? 'آئی ٹی ٹیم' : 'IT TEAM',
+                          members: TeamMember.itTeam,
+                          isUrdu: isUrdu,
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Section 2: ISLAMIC RESEARCH TEAM
+                        _buildTeamSection(
+                          context: ctx,
+                          categoryTitle: isUrdu
+                              ? 'اسلامک ریسرچ ٹیم'
+                              : 'ISLAMIC RESEARCH TEAM',
+                          members: TeamMember.islamicResearchTeam,
+                          isUrdu: isUrdu,
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Contact Support Box
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () async {
+                              final uri = Uri(
+                                scheme: 'mailto',
+                                path: 'nooresunnatinfo@gmail.com',
+                                query:
+                                    'subject=NOOR E SUNNAT App Feedback & Support',
+                              );
+                              try {
+                                await launchUrl(
+                                  uri,
+                                  mode: LaunchMode.externalApplication,
+                                );
+                              } catch (e) {
+                                debugPrint('Failed to launch email: $e');
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: AppColors.borderLight,
                                 ),
-                                Text(
-                                  lp.tr('our_team_subtitle'),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.emeraldContainer,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.mail_outline_rounded,
+                                      color: AppColors.primaryEmerald,
+                                      size: 20,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 22),
-
-                      // Section 1: IT TEAM
-                      _buildTeamSection(
-                        context: ctx,
-                        categoryTitle: isUrdu ? 'آئی ٹی ٹیم' : 'IT TEAM',
-                        members: TeamMember.itTeam,
-                        isUrdu: isUrdu,
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Section 2: ISLAMIC RESEARCH TEAM
-                      _buildTeamSection(
-                        context: ctx,
-                        categoryTitle: isUrdu ? 'اسلامک ریسرچ ٹیم' : 'ISLAMIC RESEARCH TEAM',
-                        members: TeamMember.islamicResearchTeam,
-                        isUrdu: isUrdu,
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Contact Support Box
-                      Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () async {
-                            final uri = Uri(
-                              scheme: 'mailto',
-                              path: 'nooresunnatinfo@gmail.com',
-                              query: 'subject=NOOR E SUNNAT App Feedback & Support',
-                            );
-                            try {
-                              await launchUrl(uri, mode: LaunchMode.externalApplication);
-                            } catch (e) {
-                              debugPrint('Failed to launch email: $e');
-                            }
-                          },
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF8FAFC),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: AppColors.borderLight),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.emeraldContainer,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.mail_outline_rounded,
-                                    color: AppColors.primaryEmerald,
-                                    size: 20,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        lp.tr('contact_support'),
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                          color: AppColors.textPrimary,
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          lp.tr('contact_support'),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                            color: AppColors.textPrimary,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        lp.tr('contact_email_label'),
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: AppColors.primaryEmerald,
-                                          fontWeight: FontWeight.w600,
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          lp.tr('contact_email_label'),
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.primaryEmerald,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                const Icon(
-                                  Icons.arrow_forward_ios_rounded,
-                                  size: 14,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ],
+                                  const Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    size: 14,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 14),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryEmerald,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      ],
                     ),
                   ),
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text(
-                    lp.tr('close'),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryEmerald,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(
+                      lp.tr('close'),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   /// Builds a section with a Teal pill header, vertical timeline line, and member cards
   static Widget _buildTeamSection({
@@ -653,7 +753,10 @@ class ProfileSettingsSheets {
               Expanded(
                 child: Column(
                   children: members
-                      .map((member) => _buildTeamMemberCard(context, member, isUrdu))
+                      .map(
+                        (member) =>
+                            _buildTeamMemberCard(context, member, isUrdu),
+                      )
                       .toList(),
                 ),
               ),
@@ -759,7 +862,10 @@ class ProfileSettingsSheets {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFF007A6C),
                           borderRadius: BorderRadius.circular(8),
@@ -780,7 +886,9 @@ class ProfileSettingsSheets {
                       Flexible(
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
-                          alignment: isUrdu ? Alignment.centerRight : Alignment.centerLeft,
+                          alignment: isUrdu
+                              ? Alignment.centerRight
+                              : Alignment.centerLeft,
                           child: Text(
                             isUrdu ? member.tagUr : member.tag,
                             style: const TextStyle(
@@ -804,21 +912,20 @@ class ProfileSettingsSheets {
     );
   }
 
-
-
   /// Circular Member Avatar with fallback handling
   static Widget _buildMemberAvatar(TeamMember member) {
     final initials = member.name.trim().isNotEmpty
         ? member.name
-            .trim()
-            .split(' ')
-            .where((e) => e.isNotEmpty)
-            .map((e) => e[0])
-            .take(2)
-            .join()
+              .trim()
+              .split(' ')
+              .where((e) => e.isNotEmpty)
+              .map((e) => e[0])
+              .take(2)
+              .join()
         : 'NS';
 
-    final hasImage = member.imagePath != null && member.imagePath!.trim().isNotEmpty;
+    final hasImage =
+        member.imagePath != null && member.imagePath!.trim().isNotEmpty;
 
     return Container(
       width: 56,
@@ -846,7 +953,9 @@ class ProfileSettingsSheets {
                 height: 56,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
-                  debugPrint('Team image load failed for ${member.name} (${member.imagePath}): $error');
+                  debugPrint(
+                    'Team image load failed for ${member.name} (${member.imagePath}): $error',
+                  );
                   return _buildAvatarFallback(initials);
                 },
               )
@@ -896,7 +1005,9 @@ class ProfileSettingsSheets {
       useRootNavigator: true,
       builder: (dialogCtx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
           contentPadding: const EdgeInsets.all(20),
           content: Directionality(
             textDirection: lp.textDirection,
@@ -910,18 +1021,29 @@ class ProfileSettingsSheets {
                       color: Color(0xFFFEF3C7),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.star_rounded, color: Color(0xFFD97706), size: 36),
+                    child: const Icon(
+                      Icons.star_rounded,
+                      color: Color(0xFFD97706),
+                      size: 36,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     lp.tr('rate_app_title'),
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     lp.tr('rate_question'),
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: Colors.grey.shade600,
+                    ),
                   ),
                   const SizedBox(height: 16),
 
@@ -934,7 +1056,9 @@ class ProfileSettingsSheets {
                         iconSize: 34,
                         padding: const EdgeInsets.symmetric(horizontal: 2),
                         icon: Icon(
-                          starIndex <= selectedRating ? Icons.star_rounded : Icons.star_outline_rounded,
+                          starIndex <= selectedRating
+                              ? Icons.star_rounded
+                              : Icons.star_outline_rounded,
                           color: const Color(0xFFF59E0B),
                         ),
                         onPressed: () {
@@ -953,7 +1077,15 @@ class ProfileSettingsSheets {
                     children: tags.map((t) {
                       final isSelected = selectedTags.contains(t);
                       return FilterChip(
-                        label: Text(t, style: TextStyle(fontSize: 11, color: isSelected ? Colors.white : AppColors.textPrimary)),
+                        label: Text(
+                          t,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isSelected
+                                ? Colors.white
+                                : AppColors.textPrimary,
+                          ),
+                        ),
                         selected: isSelected,
                         selectedColor: AppColors.primaryEmerald,
                         backgroundColor: AppColors.bgOffWhite,
@@ -979,17 +1111,27 @@ class ProfileSettingsSheets {
                     style: const TextStyle(fontSize: 13),
                     decoration: InputDecoration(
                       hintText: lp.tr('rate_feedback_hint'),
-                      hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                      hintStyle: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade500,
+                      ),
                       filled: true,
                       fillColor: AppColors.bgOffWhite,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.borderLight),
+                        borderSide: const BorderSide(
+                          color: AppColors.borderLight,
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.borderLight),
+                        borderSide: const BorderSide(
+                          color: AppColors.borderLight,
+                        ),
                       ),
                     ),
                   ),
@@ -1003,14 +1145,22 @@ class ProfileSettingsSheets {
                         backgroundColor: const Color(0xFF064E3B),
                         foregroundColor: AppColors.goldBright,
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       onPressed: () async {
                         Navigator.of(dialogCtx, rootNavigator: true).pop();
                         await openPlayStore();
                       },
                       icon: const Icon(Icons.shop_rounded, size: 20),
-                      label: Text(lp.tr('rate_on_playstore'), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      label: Text(
+                        lp.tr('rate_on_playstore'),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -1022,9 +1172,14 @@ class ProfileSettingsSheets {
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
-                          onPressed: () => Navigator.of(dialogCtx, rootNavigator: true).pop(),
+                          onPressed: () => Navigator.of(
+                            dialogCtx,
+                            rootNavigator: true,
+                          ).pop(),
                           child: Text(lp.tr('cancel')),
                         ),
                       ),
@@ -1035,7 +1190,9 @@ class ProfileSettingsSheets {
                             backgroundColor: AppColors.primaryEmerald,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                           onPressed: () {
                             Navigator.of(dialogCtx, rootNavigator: true).pop();
@@ -1043,23 +1200,35 @@ class ProfileSettingsSheets {
                               SnackBar(
                                 content: Row(
                                   children: [
-                                    const Icon(Icons.star_rounded, color: Color(0xFFFDE047), size: 20),
+                                    const Icon(
+                                      Icons.star_rounded,
+                                      color: Color(0xFFFDE047),
+                                      size: 20,
+                                    ),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
                                         lp.tr('rate_thank_you'),
-                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ),
                                   ],
                                 ),
                                 backgroundColor: const Color(0xFF064E3B),
                                 behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                             );
                           },
-                          child: Text(lp.tr('rate_submit_btn'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                          child: Text(
+                            lp.tr('rate_submit_btn'),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ),
                     ],
@@ -1111,7 +1280,11 @@ class ProfileSettingsSheets {
 
                 Text(
                   lp.tr('terms_policy_title'),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.emeraldDeep),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.emeraldDeep,
+                  ),
                 ),
                 const SizedBox(height: 14),
 
@@ -1131,7 +1304,9 @@ class ProfileSettingsSheets {
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             decoration: BoxDecoration(
-                              color: activeTab == 0 ? AppColors.primaryEmerald : Colors.transparent,
+                              color: activeTab == 0
+                                  ? AppColors.primaryEmerald
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             alignment: Alignment.center,
@@ -1140,7 +1315,9 @@ class ProfileSettingsSheets {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
-                                color: activeTab == 0 ? Colors.white : Colors.grey.shade700,
+                                color: activeTab == 0
+                                    ? Colors.white
+                                    : Colors.grey.shade700,
                               ),
                             ),
                           ),
@@ -1152,7 +1329,9 @@ class ProfileSettingsSheets {
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             decoration: BoxDecoration(
-                              color: activeTab == 1 ? AppColors.primaryEmerald : Colors.transparent,
+                              color: activeTab == 1
+                                  ? AppColors.primaryEmerald
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             alignment: Alignment.center,
@@ -1161,7 +1340,9 @@ class ProfileSettingsSheets {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
-                                color: activeTab == 1 ? Colors.white : Colors.grey.shade700,
+                                color: activeTab == 1
+                                    ? Colors.white
+                                    : Colors.grey.shade700,
                               ),
                             ),
                           ),
@@ -1185,19 +1366,34 @@ class ProfileSettingsSheets {
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF0FDF4),
                                   borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(color: const Color(0xFFBBF7D0)),
+                                  border: Border.all(
+                                    color: const Color(0xFFBBF7D0),
+                                  ),
                                 ),
                                 child: Text(
                                   lp.tr('terms_intro'),
-                                  style: TextStyle(fontSize: 13, color: Colors.grey.shade800, height: 1.4),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey.shade800,
+                                    height: 1.4,
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 14),
-                              _buildPolicyPoint(Icons.verified_rounded, lp.tr('terms_point_1')),
+                              _buildPolicyPoint(
+                                Icons.verified_rounded,
+                                lp.tr('terms_point_1'),
+                              ),
                               const SizedBox(height: 10),
-                              _buildPolicyPoint(Icons.favorite_rounded, lp.tr('terms_point_2')),
+                              _buildPolicyPoint(
+                                Icons.favorite_rounded,
+                                lp.tr('terms_point_2'),
+                              ),
                               const SizedBox(height: 10),
-                              _buildPolicyPoint(Icons.info_outline_rounded, lp.tr('terms_point_disclaimer')),
+                              _buildPolicyPoint(
+                                Icons.info_outline_rounded,
+                                lp.tr('terms_point_disclaimer'),
+                              ),
                             ],
                           )
                         : Column(
@@ -1208,19 +1404,34 @@ class ProfileSettingsSheets {
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFEFF6FF),
                                   borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(color: const Color(0xFFBFDBFE)),
+                                  border: Border.all(
+                                    color: const Color(0xFFBFDBFE),
+                                  ),
                                 ),
                                 child: Text(
                                   lp.tr('privacy_intro'),
-                                  style: TextStyle(fontSize: 13, color: Colors.grey.shade800, height: 1.4),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey.shade800,
+                                    height: 1.4,
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 14),
-                              _buildPolicyPoint(Icons.security_rounded, lp.tr('privacy_point_1')),
+                              _buildPolicyPoint(
+                                Icons.security_rounded,
+                                lp.tr('privacy_point_1'),
+                              ),
                               const SizedBox(height: 10),
-                              _buildPolicyPoint(Icons.block_rounded, lp.tr('privacy_point_2')),
+                              _buildPolicyPoint(
+                                Icons.block_rounded,
+                                lp.tr('privacy_point_2'),
+                              ),
                               const SizedBox(height: 10),
-                              _buildPolicyPoint(Icons.lock_outline_rounded, lp.tr('privacy_point_3')),
+                              _buildPolicyPoint(
+                                Icons.lock_outline_rounded,
+                                lp.tr('privacy_point_3'),
+                              ),
                             ],
                           ),
                   ),
@@ -1234,10 +1445,15 @@ class ProfileSettingsSheets {
                       backgroundColor: AppColors.primaryEmerald,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                     onPressed: () => Navigator.pop(sheetCtx),
-                    child: Text(lp.tr('close'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                    child: Text(
+                      lp.tr('close'),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               ],
@@ -1264,7 +1480,11 @@ class ProfileSettingsSheets {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(fontSize: 13, height: 1.4, color: AppColors.textPrimary),
+              style: const TextStyle(
+                fontSize: 13,
+                height: 1.4,
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
         ],
@@ -1345,7 +1565,10 @@ class ProfileSettingsSheets {
   }
 
   /// Executes full account deletion, Firestore purge, SharedPreferences wipe, dialog dismiss, and navigation reset.
-  static Future<void> executeAccountDeletion(BuildContext context, {String? reauthPassword}) async {
+  static Future<void> executeAccountDeletion(
+    BuildContext context, {
+    String? reauthPassword,
+  }) async {
     final lp = globalLanguageProvider;
     final rootNav = Navigator.of(context, rootNavigator: true);
     bool dialogPopped = false;
@@ -1355,7 +1578,8 @@ class ProfileSettingsSheets {
         dialogPopped = true;
         if (rootNav.canPop()) {
           rootNav.pop();
-        } else if (context.mounted && Navigator.of(context, rootNavigator: true).canPop()) {
+        } else if (context.mounted &&
+            Navigator.of(context, rootNavigator: true).canPop()) {
           Navigator.of(context, rootNavigator: true).pop();
         }
       }
@@ -1369,7 +1593,9 @@ class ProfileSettingsSheets {
       builder: (ctx) => PopScope(
         canPop: false,
         child: AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           content: Row(
             children: [
               const SizedBox(
@@ -1384,7 +1610,10 @@ class ProfileSettingsSheets {
               Expanded(
                 child: Text(
                   lp.tr('deleting_account'),
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
                 ),
               ),
             ],
@@ -1401,7 +1630,9 @@ class ProfileSettingsSheets {
 
       // 2. Navigate and reset stack only after the dialog has popped
       if (context.mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -1420,15 +1651,24 @@ class ProfileSettingsSheets {
           showDialog(
             context: context,
             builder: (ctx) => AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               title: Row(
                 children: [
-                  const Icon(Icons.security_rounded, color: Color(0xFFDC2626), size: 24),
+                  const Icon(
+                    Icons.security_rounded,
+                    color: Color(0xFFDC2626),
+                    size: 24,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       lp.isUrdu ? 'سیکیورٹی تصدیق' : 'Security Verification',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                 ],
@@ -1451,7 +1691,9 @@ class ProfileSettingsSheets {
                     Navigator.pop(ctx);
                     await AuthService.signOut();
                     if (context.mounted) {
-                      Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                      Navigator.of(
+                        context,
+                      ).pushNamedAndRemoveUntil('/login', (route) => false);
                     }
                   },
                   child: Text(lp.isUrdu ? 'لاگ آؤٹ کریں' : 'Log Out Now'),

@@ -81,23 +81,45 @@ class CampaignPopupModel {
   }
 
   factory CampaignPopupModel.fromMap(String id, Map<String, dynamic>? map) {
-    if (map == null) return CampaignPopupModel.defaultConfig(id: id);
+    if (map == null) return CampaignPopupModel.defaultConfig(id: id, isActive: false);
 
-    // Support both camelCase and snake_case keys for resilience
-    final isActive = (map['isActive'] ?? map['is_active'] ?? map['active']) as bool? ?? true;
-    final showActionButton = (map['showActionButton'] ?? map['show_action_button'] ?? true) as bool? ?? true;
-    final titleEn = (map['titleEnglish'] ?? map['title_en'] ?? map['title'] ?? map['heading']) as String? ?? 'Global Durood Campaign';
-    final titleUr = (map['titleUrdu'] ?? map['title_ur'] ?? map['heading_ur'] ?? '') as String? ?? 'خصوصی مہم برائے درود پاک';
-    final detailsEn = (map['detailsEnglish'] ?? map['details_en'] ?? map['details'] ?? map['body_en'] ?? map['message'] ?? map['body'] ?? map['description']) as String? ??
+    // Support both camelCase and snake_case keys for resilience with safe type parsing
+    final rawActive = map['isActive'] ?? map['is_active'] ?? map['active'];
+    final bool isActive;
+    if (rawActive is bool) {
+      isActive = rawActive;
+    } else if (rawActive is String) {
+      isActive = rawActive.toLowerCase() == 'true' || rawActive == '1';
+    } else if (rawActive is num) {
+      isActive = rawActive != 0;
+    } else {
+      isActive = false;
+    }
+
+    final rawShowActionButton = map['showActionButton'] ?? map['show_action_button'];
+    final bool showActionButton;
+    if (rawShowActionButton is bool) {
+      showActionButton = rawShowActionButton;
+    } else if (rawShowActionButton is String) {
+      showActionButton = rawShowActionButton.toLowerCase() != 'false' && rawShowActionButton != '0';
+    } else if (rawShowActionButton is num) {
+      showActionButton = rawShowActionButton != 0;
+    } else {
+      showActionButton = true;
+    }
+
+    final titleEn = (map['titleEnglish'] ?? map['title_en'] ?? map['title'] ?? map['heading'])?.toString() ?? 'Global Durood Campaign';
+    final titleUr = (map['titleUrdu'] ?? map['title_ur'] ?? map['heading_ur'])?.toString() ?? 'خصوصی مہم برائے درود پاک';
+    final detailsEn = (map['detailsEnglish'] ?? map['details_en'] ?? map['details'] ?? map['body_en'] ?? map['message'] ?? map['body'] ?? map['description'])?.toString() ??
         'Join thousands of believers worldwide in sending Salawat upon the Beloved Prophet ﷺ today.';
-    final detailsUr = (map['detailsUrdu'] ?? map['details_ur'] ?? map['body_ur'] ?? map['message_ur'] ?? map['description_ur'] ?? '') as String? ??
+    final detailsUr = (map['detailsUrdu'] ?? map['details_ur'] ?? map['body_ur'] ?? map['message_ur'] ?? map['description_ur'])?.toString() ??
         'آج ہی حضور نبی اکرم ﷺ کی بارگاہِ اقدس میں صلوات و سلام کا نذرانہ پیش کریں اور عالمی مہم کا حصہ بنیں۔';
-    final btnEn = (map['buttonTextEnglish'] ?? map['button_text_en'] ?? map['buttonText'] ?? map['cta_text'] ?? 'Recite Now') as String;
-    final btnUr = (map['buttonTextUrdu'] ?? map['button_text_ur'] ?? 'شرکت کریں') as String;
-    final targetRoute = (map['targetRoute'] ?? map['target_route'] ?? defaultTargetRoute) as String;
-    final imageType = (map['imageType'] ?? map['image_type'] ?? imageTypeUrl) as String;
-    final imageUrl = (map['imageUrl'] ?? map['image_url']) as String?;
-    final imageBase64 = (map['imageBase64'] ?? map['image_base64']) as String?;
+    final btnEn = (map['buttonTextEnglish'] ?? map['button_text_en'] ?? map['buttonText'] ?? map['cta_text'])?.toString() ?? 'Recite Now';
+    final btnUr = (map['buttonTextUrdu'] ?? map['button_text_ur'])?.toString() ?? 'شرکت کریں';
+    final targetRoute = (map['targetRoute'] ?? map['target_route'])?.toString() ?? defaultTargetRoute;
+    final imageType = (map['imageType'] ?? map['image_type'])?.toString() ?? imageTypeUrl;
+    final imageUrl = (map['imageUrl'] ?? map['image_url'])?.toString();
+    final imageBase64 = (map['imageBase64'] ?? map['image_base64'])?.toString();
     final updatedAt = map['updatedAt'] ?? map['updated_at'];
 
     return CampaignPopupModel(
@@ -118,10 +140,13 @@ class CampaignPopupModel {
     );
   }
 
-  factory CampaignPopupModel.defaultConfig({String id = 'launch_popup'}) {
+  factory CampaignPopupModel.defaultConfig({
+    String id = 'launch_popup',
+    bool isActive = true,
+  }) {
     return CampaignPopupModel(
       id: id,
-      isActive: true,
+      isActive: isActive,
       showActionButton: true,
       titleEnglish: 'Global Durood Campaign',
       titleUrdu: 'خصوصی مہم برائے درود پاک',

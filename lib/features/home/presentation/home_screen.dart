@@ -424,7 +424,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               if (sanitizedSnapTotal == 0 || (sanitizedSnapTotal - firestoreTotal).abs() > 10000) {
                                 effectiveGlobalTotal = firestoreTotal;
                               } else {
-                                effectiveGlobalTotal = sanitizedSnapTotal >= firestoreTotal ? sanitizedSnapTotal : firestoreTotal;
+                                effectiveGlobalTotal = widget.counterService.isBurstActive
+                                    ? (sanitizedSnapTotal >= firestoreTotal ? sanitizedSnapTotal : firestoreTotal)
+                                    : (firestoreTotal > 0 ? firestoreTotal : sanitizedSnapTotal);
                               }
                             } else {
                               effectiveGlobalTotal = (snap.globalTotal > 1000000000 || snap.globalTotal < 0) ? 0 : snap.globalTotal;
@@ -444,7 +446,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 if (sanitizedSnapToday == 0 || (sanitizedSnapToday - firestoreToday).abs() > 10000) {
                                   effectiveTodayTotal = firestoreToday;
                                 } else {
-                                  effectiveTodayTotal = sanitizedSnapToday >= firestoreToday ? sanitizedSnapToday : firestoreToday;
+                                  effectiveTodayTotal = widget.counterService.isBurstActive
+                                      ? (sanitizedSnapToday >= firestoreToday ? sanitizedSnapToday : firestoreToday)
+                                      : firestoreToday;
                                 }
                               }
                             } else {

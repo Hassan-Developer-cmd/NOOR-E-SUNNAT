@@ -14,6 +14,7 @@ class _CounterButtonState extends State<CounterButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
+  DateTime? _lastTapTime;
 
   @override
   void initState() {
@@ -34,6 +35,12 @@ class _CounterButtonState extends State<CounterButton>
   }
 
   void _handleTap() {
+    final now = DateTime.now();
+    // Guard against rapid hardware touch jitter / duplicate tap events within 80ms
+    if (_lastTapTime != null && now.difference(_lastTapTime!).inMilliseconds < 80) {
+      return;
+    }
+    _lastTapTime = now;
     _controller.forward().then((_) => _controller.reverse());
     widget.onTap();
   }

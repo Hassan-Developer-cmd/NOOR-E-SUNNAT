@@ -104,6 +104,7 @@ class NotificationService {
   static final Set<String> _seenNotificationIds = {};
   static final Set<String> _readNotificationIds = {};
   static final Set<String> _clearedNotificationIds = {};
+  static final Map<String, int> _recentlyDispatchedHeadsUp = {};
 
   /// Reactive notifiers for live UI updates
   static final ValueNotifier<int> unreadCountNotifier = ValueNotifier<int>(0);
@@ -217,7 +218,7 @@ class NotificationService {
           },
         );
 
-        // 2. Create High Importance Channel on Android
+        // 2. Create High Importance Channel on Android & Request Android 13+ Permission
         final androidImplementation = _localNotifications
             .resolvePlatformSpecificImplementation<
                 AndroidFlutterLocalNotificationsPlugin>();
@@ -231,6 +232,7 @@ class NotificationService {
             enableVibration: true,
           );
           await androidImplementation.createNotificationChannel(channel);
+          await androidImplementation.requestNotificationsPermission();
         }
 
         // 3. Request FCM Permissions (Android 13+ & iOS)
@@ -264,15 +266,40 @@ class NotificationService {
           sound: true,
         );
 
-        // 6. Foreground FCM Message Listener
+        // 6. Foreground FCM Message Listener with Deduplication
         FirebaseMessaging.onMessage.listen((RemoteMessage message) {
           final notification = message.notification;
-          if (notification != null) {
+          final title = (notification?.title ??
+                  message.data['title'] ??
+                  message.data['title_ur'] ??
+                  message.data['title_en'] ??
+                  'NOOR E SUNNAT Notification')
+              .toString()
+              .trim();
+          final body = (notification?.body ??
+                  message.data['body'] ??
+                  message.data['body_ur'] ??
+                  message.data['body_en'] ??
+                  message.data['message'] ??
+                  '')
+              .toString()
+              .trim();
+
+          final docId = (message.data['id'] ??
+                  message.data['eventId'] ??
+                  message.data['questionId'] ??
+                  '')
+              .toString()
+              .trim();
+
+          if (title.isNotEmpty || body.isNotEmpty) {
             showHeadsUpNotification(
-              id: message.messageId.hashCode,
-              title: notification.title ?? 'NOOR E SUNNAT Notification',
-              body: notification.body ?? '',
-              payload: message.data['id'],
+              id: docId.isNotEmpty
+                  ? (docId.hashCode & 0x7FFFFFFF)
+                  : (message.messageId.hashCode & 0x7FFFFFFF),
+              title: title,
+              body: body,
+              payload: docId.isNotEmpty ? docId : null,
             );
           }
         });
@@ -283,6 +310,7 @@ class NotificationService {
       _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) async {
         await _loadUserState();
         _seenNotificationIds.clear();
+        _recentlyDispatchedHeadsUp.clear();
         startListeningToLiveNotifications();
         if (!kIsWeb && user != null && user.uid != 'guest') {
           try {
@@ -418,30 +446,45 @@ class NotificationService {
         for (var change in snapshot.docChanges) {
           if (change.type == DocumentChangeType.added) {
             final doc = change.doc;
-            if (!_seenNotificationIds.contains(doc.id)) {
-              _seenNotificationIds.add(doc.id);
-              final data = doc.data();
-              if (data != null) {
-                // Strictly verify recipient relevance before showing heads-up notification!
-                if (!isRelevantToUser(data, targetUid: uid, targetEmail: email)) {
-                  continue;
-                }
+            final docId = doc.id.trim();
 
-                // If user already cleared this, do not show
-                if (_clearedNotificationIds.contains(doc.id)) {
-                  continue;
-                }
+            if (_seenNotificationIds.contains(docId) ||
+                _recentlyDispatchedHeadsUp.containsKey(docId)) {
+              _seenNotificationIds.add(docId);
+              continue;
+            }
 
-                final title = (data['title'] as String? ?? 'Notification').trim();
-                final body = (data['body'] as String? ?? '').trim();
-                if (title.isNotEmpty || body.isNotEmpty) {
-                  showHeadsUpNotification(
-                    id: doc.id.hashCode,
-                    title: title,
-                    body: body,
-                    payload: doc.id,
-                  );
-                }
+            final data = doc.data();
+            if (data != null) {
+              // Strictly verify recipient relevance before showing heads-up notification!
+              if (!isRelevantToUser(data, targetUid: uid, targetEmail: email)) {
+                _seenNotificationIds.add(docId);
+                continue;
+              }
+
+              // If user already cleared this, do not show
+              if (_clearedNotificationIds.contains(docId)) {
+                _seenNotificationIds.add(docId);
+                continue;
+              }
+
+              final title = (data['title'] as String? ?? 'Notification').trim();
+              final body = (data['body'] as String? ?? '').trim();
+              final contentKey = '$title|$body';
+
+              if (_recentlyDispatchedHeadsUp.containsKey(contentKey)) {
+                _seenNotificationIds.add(docId);
+                continue;
+              }
+
+              _seenNotificationIds.add(docId);
+              if (title.isNotEmpty || body.isNotEmpty) {
+                showHeadsUpNotification(
+                  id: docId.hashCode & 0x7FFFFFFF,
+                  title: title,
+                  body: body,
+                  payload: docId,
+                );
               }
             }
           }
@@ -454,14 +497,67 @@ class NotificationService {
     }
   }
 
+  /// Checks whether a notification is duplicate based on payload docId or content.
+  static bool isDuplicateNotification(String? docId, String title, String body) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    _recentlyDispatchedHeadsUp.removeWhere((_, time) => now - time > 120000);
+
+    final cleanDoc = docId?.trim();
+    if (cleanDoc != null && cleanDoc.isNotEmpty) {
+      if (_recentlyDispatchedHeadsUp.containsKey(cleanDoc)) {
+        return true;
+      }
+    }
+    final contentKey = '${title.trim()}|${body.trim()}';
+    if (contentKey != '|' && _recentlyDispatchedHeadsUp.containsKey(contentKey)) {
+      return true;
+    }
+    return false;
+  }
+
+  /// Clears recently dispatched deduplication cache (useful for testing & auth resets).
+  static void clearDeduplicationCache() {
+    _recentlyDispatchedHeadsUp.clear();
+    _seenNotificationIds.clear();
+  }
+
   /// Displays an immediate high-priority heads-up notification (like WhatsApp).
+  /// Strictly deduplicated: suppresses duplicate calls with same payload or title/body within 60 seconds.
   static Future<void> showHeadsUpNotification({
-    required int id,
+    int? id,
     required String title,
     required String body,
     String? payload,
   }) async {
     if (kIsWeb) return;
+
+    final cleanTitle = title.trim();
+    final cleanBody = body.trim();
+    if (cleanTitle.isEmpty && cleanBody.isEmpty) return;
+
+    final cleanPayload = payload?.trim();
+    final contentKey = '$cleanTitle|$cleanBody';
+
+    if (isDuplicateNotification(cleanPayload, cleanTitle, cleanBody)) {
+      if (kDebugMode) {
+        print(
+          'NotificationService: Suppressed duplicate notification ($cleanPayload / $contentKey)',
+        );
+      }
+      return;
+    }
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (cleanPayload != null && cleanPayload.isNotEmpty) {
+      _recentlyDispatchedHeadsUp[cleanPayload] = now;
+    }
+    if (contentKey != '|') {
+      _recentlyDispatchedHeadsUp[contentKey] = now;
+    }
+
+    final int canonicalId = (cleanPayload != null && cleanPayload.isNotEmpty)
+        ? (cleanPayload.hashCode & 0x7FFFFFFF)
+        : (id != null ? id.abs() : (contentKey.hashCode & 0x7FFFFFFF));
 
     try {
       final androidDetails = AndroidNotificationDetails(
@@ -476,8 +572,8 @@ class NotificationService {
         enableVibration: true,
         playSound: true,
         styleInformation: BigTextStyleInformation(
-          body,
-          contentTitle: title,
+          cleanBody,
+          contentTitle: cleanTitle,
           summaryText: 'Islamic App',
         ),
       );
@@ -496,11 +592,11 @@ class NotificationService {
       );
 
       await _localNotifications.show(
-        id: id,
-        title: title,
-        body: body,
+        id: canonicalId,
+        title: cleanTitle,
+        body: cleanBody,
         notificationDetails: notificationDetails,
-        payload: payload,
+        payload: cleanPayload,
       );
     } catch (e) {
       if (kDebugMode) print('NotificationService.showHeadsUpNotification error: $e');
@@ -650,24 +746,30 @@ class NotificationService {
     }
   }
 
-  /// Clears all notifications locally from the active user's view.
-  static Future<void> clearAllNotificationsLocally() async {
+  /// Clears all notifications locally and remotely for the active user.
+  static Future<void> clearAllNotificationsLocally({List<String>? currentIds}) async {
     try {
       final uid = _currentUserId;
       final email = _currentUserEmail;
+      final Set<String> targetIds = {};
+
+      if (currentIds != null && currentIds.isNotEmpty) {
+        targetIds.addAll(currentIds);
+      }
 
       for (var data in _latestNotificationData) {
         if (!isRelevantToUser(data, targetUid: uid, targetEmail: email)) continue;
         final id = data['id'] as String?;
         if (id != null) {
-          _clearedNotificationIds.add(id);
-          _readNotificationIds.add(id);
+          targetIds.add(id);
         }
       }
       for (var id in _seenNotificationIds) {
-        _clearedNotificationIds.add(id);
-        _readNotificationIds.add(id);
+        targetIds.add(id);
       }
+
+      _clearedNotificationIds.addAll(targetIds);
+      _readNotificationIds.addAll(targetIds);
 
       clearedNotificationIdsNotifier.value = Set.from(_clearedNotificationIds);
       readNotificationIdsNotifier.value = Set.from(_readNotificationIds);
@@ -676,6 +778,20 @@ class NotificationService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(_clearedIdsPrefKey(uid), _clearedNotificationIds.toList());
       await prefs.setStringList(_readIdsPrefKey(uid), _readNotificationIds.toList());
+
+      // Remote Firestore sync for all cleared notifications
+      if (uid.isNotEmpty && uid != 'guest' && targetIds.isNotEmpty) {
+        final batch = _firestore.batch();
+        for (final id in targetIds) {
+          final docRef = _firestore.collection('notifications').doc(id);
+          batch.set(docRef, {
+            'deleted_by_users': FieldValue.arrayUnion([uid]),
+          }, SetOptions(merge: true));
+        }
+        await batch.commit().catchError((e) {
+          if (kDebugMode) print('NotificationService batch clear remote error: $e');
+        });
+      }
     } catch (e) {
       if (kDebugMode) print('NotificationService.clearAllNotificationsLocally error: $e');
     }

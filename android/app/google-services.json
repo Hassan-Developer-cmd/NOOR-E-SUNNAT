@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "201540801531-f8chpsedbjj50874dodmdddsf0htmn2n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nooresunnat.app",
+            "certificate_hash": "9dadeffef17c1cb8248dc18aa7369c684e4458e1"
+          }
+        },
+        {
           "client_id": "201540801531-ruod4pcobmr3vmpg1cobubhj3npjq9tk.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

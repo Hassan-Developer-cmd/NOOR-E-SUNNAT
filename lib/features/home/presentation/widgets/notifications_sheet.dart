@@ -103,20 +103,54 @@ class NotificationsSheet extends StatelessWidget {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.delete_sweep_rounded, size: 20, color: Colors.grey),
-                      tooltip: isUrdu ? 'تمام صاف کریں' : 'Clear all',
+                      icon: const Icon(Icons.delete_sweep_rounded, size: 22, color: Colors.redAccent),
+                      tooltip: isUrdu ? 'تمام ڈیلیٹ کریں' : 'Delete all',
                       padding: const EdgeInsets.all(6),
                       constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                       visualDensity: VisualDensity.compact,
                       onPressed: () async {
-                        await NotificationService.clearAllNotificationsLocally();
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(isUrdu ? 'تمام اعلانات صاف کر دیے گئے ہیں' : 'All notifications cleared'),
-                              duration: const Duration(seconds: 1),
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            title: Text(
+                              isUrdu ? 'تمام اعلانات ڈیلیٹ کریں؟' : 'Delete All Notifications?',
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
-                          );
+                            content: Text(
+                              isUrdu
+                                  ? 'کیا آپ واقعی تمام اعلانات ڈیلیٹ کرنا چاہتے ہیں؟'
+                                  : 'Are you sure you want to delete all notifications?',
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: Text(isUrdu ? 'منسوخ' : 'Cancel'),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red.shade600,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: Text(isUrdu ? 'سب ڈیلیٹ کریں' : 'Delete All'),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (confirm == true) {
+                          await NotificationService.clearAllNotificationsLocally();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(isUrdu ? 'تمام اعلانات ڈیلیٹ کر دیے گئے ہیں' : 'All notifications deleted'),
+                                duration: const Duration(seconds: 1),
+                              ),
+                            );
+                          }
                         }
                       },
                     ),
@@ -137,74 +171,82 @@ class NotificationsSheet extends StatelessWidget {
                   return const Center(child: CircularProgressIndicator(color: AppColors.primaryEmerald));
                 }
 
-                final items = snapshot.data ?? [];
-                if (items.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: AppColors.emeraldContainer.withValues(alpha: 0.5),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.notifications_off_outlined,
-                              size: 40,
-                              color: AppColors.primaryEmerald,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            isUrdu ? 'فی الحال کوئی نیا اعلان نہیں ہے' : 'No notifications yet',
-                            style: AppTypography.headingMedium.copyWith(fontSize: 16),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            isUrdu ? 'ایونٹس اور اپ ڈیٹس کے اعلانات یہاں ظاہر ہوں گے۔' : 'Event announcements and updates will appear here.',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 13, color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
+                final rawItems = snapshot.data ?? [];
 
-                return ListView.separated(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  itemCount: items.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    final item = items[index];
-                    return Dismissible(
-                      key: ValueKey(item.id),
-                      direction: DismissDirection.endToStart,
-                      background: Container(
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.only(right: 20),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade400,
-                          borderRadius: BorderRadius.circular(16),
+                return ValueListenableBuilder<Set<String>>(
+                  valueListenable: NotificationService.clearedNotificationIdsNotifier,
+                  builder: (context, clearedIds, _) {
+                    final items = rawItems.where((item) => !clearedIds.contains(item.id)).toList();
+
+                    if (items.isEmpty) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: AppColors.emeraldContainer.withValues(alpha: 0.5),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.notifications_off_outlined,
+                                  size: 40,
+                                  color: AppColors.primaryEmerald,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                isUrdu ? 'فی الحال کوئی نیا اعلان نہیں ہے' : 'No notifications yet',
+                                style: AppTypography.headingMedium.copyWith(fontSize: 16),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                isUrdu ? 'ایونٹس اور اپ ڈیٹس کے اعلانات یہاں ظاہر ہوں گے۔' : 'Event announcements and updates will appear here.',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(fontSize: 13, color: Colors.grey),
+                              ),
+                            ],
+                          ),
                         ),
-                        child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 24),
-                      ),
-                      onDismissed: (_) async {
-                        await NotificationService.deleteNotification(item.id);
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(isUrdu ? 'اعلان حذف کر دیا گیا' : 'Notification deleted'),
-                              duration: const Duration(seconds: 1),
+                      );
+                    }
+
+                    return ListView.separated(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      itemCount: items.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final item = items[index];
+                        return Dismissible(
+                          key: ValueKey(item.id),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 20),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade400,
+                              borderRadius: BorderRadius.circular(16),
                             ),
-                          );
-                        }
+                            child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 24),
+                          ),
+                          onDismissed: (_) async {
+                            await NotificationService.deleteNotification(item.id);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(isUrdu ? 'اعلان ڈیلیٹ کر دیا گیا' : 'Notification deleted'),
+                                  duration: const Duration(seconds: 1),
+                                ),
+                              );
+                            }
+                          },
+                          child: _NotificationTile(item: item, isUrdu: isUrdu),
+                        );
                       },
-                      child: _NotificationTile(item: item, isUrdu: isUrdu),
                     );
                   },
                 );
@@ -415,21 +457,29 @@ class _NotificationTile extends StatelessWidget {
                                 ),
                               ],
                               const SizedBox(width: 8),
-                              GestureDetector(
-                                behavior: HitTestBehavior.opaque,
+                              InkWell(
                                 onTap: () async {
                                   await NotificationService.deleteNotification(item.id);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(isUrdu ? 'اعلان ڈیلیٹ کر دیا گیا' : 'Notification deleted'),
+                                        duration: const Duration(seconds: 1),
+                                      ),
+                                    );
+                                  }
                                 },
+                                borderRadius: BorderRadius.circular(16),
                                 child: Container(
-                                  padding: const EdgeInsets.all(4),
+                                  padding: const EdgeInsets.all(5),
                                   decoration: BoxDecoration(
-                                    color: Colors.grey.shade100,
+                                    color: Colors.red.shade50,
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(
-                                    Icons.close_rounded,
-                                    size: 14,
-                                    color: Colors.grey,
+                                  child: Icon(
+                                    Icons.delete_outline_rounded,
+                                    size: 16,
+                                    color: Colors.red.shade600,
                                   ),
                                 ),
                               ),

@@ -148,7 +148,7 @@ class FcmV1Service {
           'questionId': questionId ?? '',
         },
         'android': {
-          'priority': 'high',
+          'priority': 'HIGH',
           'notification': {
             'channel_id': 'high_importance_channel',
             'sound': 'default',
@@ -196,7 +196,7 @@ class FcmV1Service {
           'questionId': questionId ?? '',
         },
         'android': {
-          'priority': 'high',
+          'priority': 'HIGH',
           'notification': {
             'channel_id': 'high_importance_channel',
             'sound': 'default',

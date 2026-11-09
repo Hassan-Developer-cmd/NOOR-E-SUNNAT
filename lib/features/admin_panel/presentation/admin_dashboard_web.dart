@@ -604,12 +604,17 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
           stream: _globalCounterStream,
           builder: (context, snap) {
             final rawDoc = snap.data?.data();
+            final todayStr = DateTime.now().toIso8601String().split('T')[0];
+            final docDate = (rawDoc?['date'] ?? rawDoc?['last_reset_date'] ?? rawDoc?['lastUpdatedDate'])?.toString().split('T')[0];
+            final isSameDay = docDate == todayStr;
 
             // Total Durood: strictly bound to global_counter/main -> globalTotal
-            final total = (rawDoc?['globalTotal'] as num?)?.toInt() ?? 0;
+            final total = ((rawDoc?['globalTotal'] ?? rawDoc?['total_count'] ?? rawDoc?['totalCount']) as num?)?.toInt() ?? 0;
 
-            // Today's Durood: strictly bound to global_counter/main -> todayTotal
-            final today = (rawDoc?['todayTotal'] as num?)?.toInt() ?? 0;
+            // Today's Durood: strictly bound to global_counter/main -> todayTotal for today's date
+            final today = isSameDay
+                ? (((rawDoc?['todayTotal'] ?? rawDoc?['today_count'] ?? rawDoc?['globalToday']) as num?)?.toInt() ?? 0)
+                : 0;
 
             return StreamBuilder<List<EventModel>>(
               stream: _eventsStream,
@@ -2974,30 +2979,45 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
           u.isAdmin ? AppColors.goldLight : AppColors.emeraldContainer,
           u.isAdmin ? AppColors.goldDark : AppColors.primaryEmerald,
         )),
-        // Total Durood
+        // Total Durood & Today
         DataCell(
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.emeraldContainer,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.primaryEmerald.withValues(alpha: 0.2)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.auto_awesome, size: 12, color: AppColors.primaryEmerald),
-                const SizedBox(width: 5),
-                Text(
-                  _fmt(u.myTotal > 0 ? u.myTotal : u.totalCount),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.emeraldDeep,
-                    fontSize: 12,
-                  ),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.emeraldContainer,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.primaryEmerald.withValues(alpha: 0.2)),
                 ),
-              ],
-            ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.auto_awesome, size: 12, color: AppColors.primaryEmerald),
+                    const SizedBox(width: 5),
+                    Text(
+                      _fmt(u.myTotal),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.emeraldDeep,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Today: ${_fmt(u.myToday)}',
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                  color: u.myToday > 0 ? AppColors.primaryEmerald : Colors.grey.shade600,
+                ),
+              ),
+            ],
           ),
         ),
         // Streak & Points
@@ -3166,7 +3186,12 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                                   children: [
                                     Text(_fmt(u.myTotal),
                                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryEmerald)),
-                                    const Text('Durood', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                                    Text('Today: ${_fmt(u.myToday)}',
+                                        style: TextStyle(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: u.myToday > 0 ? AppColors.primaryEmerald : Colors.grey,
+                                        )),
                                   ],
                                 ),
                                 Container(width: 1, height: 18, color: AppColors.borderLight),
@@ -3473,12 +3498,27 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
                             style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                           ),
                           const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Expanded(child: _buildUserMetricTile('Total Durood', _fmt(u.myTotal), Icons.auto_awesome, AppColors.primaryEmerald)),
-                              const SizedBox(width: 10),
-                              Expanded(child: _buildUserMetricTile('Today\'s Durood', _fmt(u.personalTodayDurood), Icons.today_rounded, AppColors.emeraldLight)),
-                            ],
+                          StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                            stream: FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(u.userId)
+                                .collection('daily_stats')
+                                .doc(DateTime.now().toIso8601String().split('T')[0])
+                                .snapshots(),
+                            builder: (context, dailySnap) {
+                              int liveToday = u.myToday;
+                              if (dailySnap.hasData && dailySnap.data!.exists && dailySnap.data!.data() != null) {
+                                final d = dailySnap.data!.data()!;
+                                liveToday = ((d['myToday'] ?? d['todayDuroodCount'] ?? d['todayCount'] ?? d['count']) as num?)?.toInt() ?? liveToday;
+                              }
+                              return Row(
+                                children: [
+                                  Expanded(child: _buildUserMetricTile('Total Durood', _fmt(u.myTotal), Icons.auto_awesome, AppColors.primaryEmerald)),
+                                  const SizedBox(width: 10),
+                                  Expanded(child: _buildUserMetricTile('Today\'s Durood', _fmt(liveToday), Icons.today_rounded, AppColors.emeraldLight)),
+                                ],
+                              );
+                            },
                           ),
                           const SizedBox(height: 10),
                           Row(
@@ -5841,18 +5881,27 @@ class _AdminDashboardWebState extends State<AdminDashboardWeb> {
     int points,
     String name,
   ) {
-    final personalTotal = ((data['personal_total_durood'] ??
+    final todayStr = DateTime.now().toIso8601String().split('T')[0];
+    final lastActive = (data['lastActiveDate'] ?? data['lastStreakDate'] ?? data['last_active_durood_date'] ?? data['last_active_date'])?.toString();
+    final bool isToday = lastActive != null && lastActive.split('T').first == todayStr;
+
+    final personalTotal = ((data['myTotal'] ??
+            data['personal_total_durood'] ??
             data['totalDurood'] ??
             data['total_durood_count'] ??
             data['total_count']) as num?)
             ?.toInt() ??
         0;
-    final personalToday = ((data['personal_today_durood'] ??
-            data['todayDurood'] ??
-            data['todayDuroodCount'] ??
-            data['today_count']) as num?)
-            ?.toInt() ??
-        0;
+    final personalToday = isToday
+        ? (((data['myToday'] ??
+                data['personal_today_durood'] ??
+                data['todayDurood'] ??
+                data['todayDuroodCount'] ??
+                data['today_count'] ??
+                data['todayTotal']) as num?)
+                ?.toInt() ??
+            0)
+        : 0;
     final email = data['email']?.toString() ?? '';
 
     showDialog(

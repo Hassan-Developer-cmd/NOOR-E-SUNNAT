@@ -21,9 +21,10 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // ── Counters Collection (Legacy Cleanup) ────────────────────
+    // ── Counters Collection (Legacy Path Compatibility) ────────
     match /counters/{docId} {
-      allow read, write, delete: if isAdmin();
+      allow read: if true;
+      allow write, delete: if isAdmin();
     }
 
     // ── User Profiles Collection (Strict User Data Privacy & Isolation) ──

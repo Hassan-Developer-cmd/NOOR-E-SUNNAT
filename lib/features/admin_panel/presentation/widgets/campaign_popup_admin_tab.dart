@@ -20,6 +20,7 @@ class _CampaignPopupAdminTabState extends State<CampaignPopupAdminTab> {
   bool _isLoading = true;
   bool _isSaving = false;
   bool _isUploadingImage = false;
+  bool _isTogglingStatus = false;
 
   bool _isActive = true;
   bool _showActionButton = true;
@@ -411,13 +412,72 @@ class _CampaignPopupAdminTabState extends State<CampaignPopupAdminTab> {
                 ),
               ),
             const SizedBox(width: 8),
-            Switch.adaptive(
-              value: _isActive,
-              activeTrackColor: AppColors.primaryEmerald,
-              onChanged: (val) {
-                setState(() => _isActive = val);
-              },
-            ),
+            if (_isTogglingStatus)
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: Padding(
+                  padding: EdgeInsets.all(2.0),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryEmerald),
+                ),
+              )
+            else
+              Switch.adaptive(
+                value: _isActive,
+                activeTrackColor: AppColors.primaryEmerald,
+                onChanged: (_isSaving || _isLoading)
+                    ? null
+                    : (val) async {
+                        setState(() {
+                          _isActive = val;
+                          _isTogglingStatus = true;
+                        });
+                        try {
+                          await CampaignPopupService.togglePopupStatus(val);
+                          if (!mounted) return;
+                          setState(() => _isTogglingStatus = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  Icon(
+                                    val ? Icons.check_circle_rounded : Icons.pause_circle_rounded,
+                                    color: val ? const Color(0xFF34D399) : const Color(0xFFF87171),
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      val
+                                          ? '${lp.tr('campaign_popup')} enabled'
+                                          : '${lp.tr('campaign_popup')} disabled',
+                                      style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              backgroundColor: val ? const Color(0xFF064E3B) : const Color(0xFF7F1D1D),
+                              behavior: SnackBarBehavior.floating,
+                              duration: const Duration(seconds: 3),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          );
+                        } catch (e) {
+                          if (!mounted) return;
+                          setState(() {
+                            _isActive = !val;
+                            _isTogglingStatus = false;
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error updating status: $e', style: const TextStyle(color: Colors.white)),
+                              backgroundColor: Colors.red.shade800,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      },
+              ),
           ],
         ),
       ],

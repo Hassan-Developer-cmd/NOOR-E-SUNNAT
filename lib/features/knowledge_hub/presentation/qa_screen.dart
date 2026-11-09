@@ -73,18 +73,6 @@ class _QAScreenState extends State<QAScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
               actions: [
-                IconButton(
-                  tooltip: lp.tr('ask_question'),
-                  icon: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Icon(Icons.add_comment_rounded, color: Colors.white, size: 18),
-                  ),
-                  onPressed: () => AskQuestionSheet.show(context),
-                ),
                 Center(
                   child: Padding(
                     padding: const EdgeInsetsDirectional.only(end: 12, start: 4),
@@ -249,18 +237,7 @@ class _QAScreenState extends State<QAScreen> {
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(fontSize: 13, color: Colors.grey),
                                 ),
-                                const SizedBox(height: 20),
-                                ElevatedButton.icon(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primaryEmerald,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                  ),
-                                  onPressed: () => AskQuestionSheet.show(context),
-                                  icon: const Icon(Icons.add_comment_rounded, size: 18),
-                                  label: Text(lp.tr('ask_question')),
-                                ),
+                                const SizedBox(height: 8),
                               ],
                             ),
                           ),
@@ -285,13 +262,19 @@ class _QAScreenState extends State<QAScreen> {
               onPressed: () => _openAskQuestionModal(context),
               backgroundColor: const Color(0xFF0F6848),
               elevation: 4,
+              extendedPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               icon: const Icon(Icons.add_comment_rounded, color: Colors.white, size: 20),
-              label: Text(
-                isUrdu ? 'سوال پوچھیں' : 'Ask Question',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
+              label: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Text(
+                  isUrdu ? 'سوال پوچھیں' : 'Ask Question',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: isUrdu ? 14.5 : 14,
+                    height: isUrdu ? 1.35 : 1.2,
+                    fontFamily: isUrdu ? AppTypography.urduFontFamily : null,
+                  ),
                 ),
               ),
             ),
